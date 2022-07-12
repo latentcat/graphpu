@@ -1,14 +1,12 @@
-pub struct MainApp;
-
-impl Default for MainApp {
-  fn default() -> Self {
-      Self {}
-  }
+pub struct MainApp {
+  custom3d: crate::widgets::Custom3d,
 }
 
 impl MainApp {
-  pub fn new(_: &eframe::CreationContext<'_>) -> Self {
-    Default::default()
+  pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    Self {
+      custom3d: crate::widgets::Custom3d::new(cc),
+    }
   }
 }
 
@@ -21,7 +19,9 @@ impl eframe::App for MainApp {
       });
 
       egui::CentralPanel::default().show(ctx, |ui| {
-          
+        egui::Frame::canvas(ui.style()).show(ui, |ui| {
+          self.custom3d.custom_painting(ui);
+        });
       });
 
       egui::SidePanel::right("side_panel").show(ctx, |ui| {
