@@ -14,7 +14,7 @@ eframe = { path = "./lib/egui/eframe" }
 egui-wgpu = { path= "./lib/egui/egui-wgpu" }
 
 bytemuck = { version = "1.9.1", optional = true }
-wgpu = { version = "0.13", optional = true, features = ["webgl"] }
+wgpu = { version = "0.13", optional = true }
 pollster = { version = "0.2.5", optional = true }
 
 

@@ -20,17 +20,6 @@ const NUM_PARTICLES: u32 = 1500;
 
 const PARTICLES_PER_GROUP: u32 = 64;
 
-/// Example struct holds references to wgpu resources and frame persistent data
-struct Example {
-    particle_bind_groups: Vec<wgpu::BindGroup>,
-    particle_buffers: Vec<wgpu::Buffer>,
-    vertices_buffer: wgpu::Buffer,
-    compute_pipeline: wgpu::ComputePipeline,
-    render_pipeline: wgpu::RenderPipeline,
-    work_group_count: u32,
-    frame_num: usize,
-}
-
 impl Custom3d {
     pub fn new<'a>(cc: &'a eframe::CreationContext<'a>) -> Self {
         // Get the WGPU render state from the eframe creation context. This can also be retrieved
@@ -300,28 +289,27 @@ struct TriangleRenderResources {
 }
 
 impl TriangleRenderResources {
-    fn prepare(&self, _device: &wgpu::Device, queue: &wgpu::Queue, angle: f32) {
-        // Update our uniform buffer with the angle from the UI
-        // queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[angle]));
-    }
+    fn prepare(&self, device: &wgpu::Device, queue: &wgpu::Queue, angle: f32) {
 
-    fn paint<'rpass>(
-        &'rpass self,
-        rpass: &mut wgpu::RenderPass<'rpass>,
-    ) {
+        let mut command_encoder =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
-        // // get command encoder
-        // let mut command_encoder =
-        //     &self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        //
-        // command_encoder.push_debug_group("compute boid movement");
+        let mut cpass =
+            command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+        cpass.set_pipeline(&self.compute_pipeline);
+        cpass.set_bind_group(0, &self.particle_bind_groups[self.frame_num % 2], &[]);
+        cpass.dispatch_workgroups(self.work_group_count, 1, 1);
+
+        // command_encoder.push_debug_group("render boids");
         // {
-        //     // compute pass
-        //     let mut cpass =
-        //         command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-        //     cpass.set_pipeline(&self.compute_pipeline);
-        //     cpass.set_bind_group(0, &self.particle_bind_groups[self.frame_num % 2], &[]);
-        //     cpass.dispatch_workgroups(self.work_group_count, 1, 1);
+        //     // render pass
+        //     let mut rpass = command_encoder.begin_render_pass(&render_pass_descriptor);
+        //     rpass.set_pipeline(&self.render_pipeline);
+        //     // render dst particles
+        //     rpass.set_vertex_buffer(0, self.particle_buffers[(self.frame_num + 1) % 2].slice(..));
+        //     // the three instance-local vertices
+        //     rpass.set_vertex_buffer(1, self.vertices_buffer.slice(..));
+        //     rpass.draw(0..3, 0..NUM_PARTICLES);
         // }
         // command_encoder.pop_debug_group();
 
@@ -331,6 +319,14 @@ impl TriangleRenderResources {
         // done
         // queue.submit(Some(command_encoder.finish()));
 
+        println!("123")
+
+    }
+
+    fn paint<'rpass>(
+        &'rpass self,
+        rpass: &mut wgpu::RenderPass<'rpass>,
+    ) {
         rpass.set_pipeline(&self.render_pipeline);
         // render dst particles
         rpass.set_vertex_buffer(0, self.particle_buffers[(self.frame_num + 1) % 2].slice(..));
