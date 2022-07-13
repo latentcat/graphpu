@@ -12,9 +12,14 @@ impl MainApp {
 
 impl eframe::App for MainApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-      egui::TopBottomPanel::top("menu").show(ctx, |ui| {
+      egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
+        // The top panel is often a good place for a menu bar:
         egui::menu::bar(ui, |ui| {
-          // TODO Menu Bar
+          ui.menu_button("File", |ui| {
+            if ui.button("Quit").clicked() {
+              frame.quit();
+            }
+          });
         });
       });
 
