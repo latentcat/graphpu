@@ -2,7 +2,6 @@
 fn main() {
     let native_options = eframe::NativeOptions {
         drag_and_drop_support: true,
-        #[cfg(feature = "wgpu")]
         renderer: eframe::Renderer::Wgpu,
         ..Default::default()
     };
