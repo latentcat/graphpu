@@ -231,6 +231,7 @@ impl Boids {
 impl Boids {
     pub fn custom_painting(&mut self, ui: &mut egui::Ui) {
         let (rect, _) = ui.allocate_exact_size(egui::Vec2::splat(300.0), egui::Sense::drag());
+        ui.ctx().request_repaint();
 
         let cb = egui_wgpu::CallbackFn::new()
             .prepare(move |device, queue, paint_callback_resources| {
