@@ -12,13 +12,13 @@ impl MainApp {
 
 impl eframe::App for MainApp {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
-      egui::TopBottomPanel::top("menu").show(ctx, |ui| {
+      egui::TopBottomPanel::top("menubar_view").show(ctx, |ui| {
         egui::menu::bar(ui, |_| {
           // TODO Menu Bar
         });
       });
 
-      egui::SidePanel::right("side_panel").show(ctx, |_| {
+      egui::SidePanel::right("inspector_view").show(ctx, |_| {
         // TODO Side Panel
       });
 
