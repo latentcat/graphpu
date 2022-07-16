@@ -8,6 +8,8 @@ use eframe::{
 use egui::Painter;
 use nanorand::{Rng, WyRand};
 
+use super::GraphicObject;
+
 // number of boid particles to simulate
 
 const NUM_PARTICLES: u32 = 1500;
@@ -229,8 +231,8 @@ impl Boids {
     }
 }
 
-impl Boids {
-    pub fn custom_painting(&mut self, ui: &mut egui::Ui) {
+impl GraphicObject for Boids {
+    fn custom_painting(&mut self, ui: &mut egui::Ui) {
         ui.ctx().request_repaint();
 
         let rect = ui.available_rect_before_wrap();

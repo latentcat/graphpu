@@ -1,4 +1,5 @@
 mod app;
-mod widgets;
+pub mod widgets;
+pub mod components;
 
 pub use app::MainApp;
