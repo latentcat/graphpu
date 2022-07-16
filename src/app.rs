@@ -18,14 +18,20 @@ impl eframe::App for MainApp {
         });
       });
 
+      egui::SidePanel::right("side_panel").show(ctx, |_| {
+        // TODO Side Panel
+      });
+
+      egui::TopBottomPanel::bottom("detail_view").show(ctx, |ui| {
+        egui::menu::bar(ui, |_| {
+          // TODO Menu Bar
+        });
+      });
+
       egui::CentralPanel::default()
         .frame(egui::Frame::canvas(&ctx.style()))
         .show(ctx, |ui| {
           self.boids.custom_painting(ui);
       });
-
-      egui::SidePanel::right("side_panel").show(ctx, |_| {
-        // TODO Side Panel
-      }); 
     }
 }
