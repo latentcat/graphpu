@@ -20,11 +20,10 @@ impl eframe::App for MainApp {
         });
       });
 
-      egui::CentralPanel::default().show(ctx, |ui| {
-        egui::Frame::canvas(ui.style()).show(ui, |ui| {
-          // self.custom3d.custom_painting(ui);
+      egui::CentralPanel::default()
+        .frame(egui::Frame::canvas(&ctx.style()))
+        .show(ctx, |ui| {
           self.boids.custom_painting(ui);
-        });
       });
 
       egui::SidePanel::right("side_panel").show(ctx, |ui| {

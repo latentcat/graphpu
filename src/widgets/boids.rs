@@ -5,6 +5,7 @@ use eframe::{
     egui_wgpu::{self, wgpu},
     wgpu::util::DeviceExt,
 };
+use egui::Painter;
 use nanorand::{Rng, WyRand};
 
 // number of boid particles to simulate
@@ -230,9 +231,9 @@ impl Boids {
 
 impl Boids {
     pub fn custom_painting(&mut self, ui: &mut egui::Ui) {
-        let (rect, _) = ui.allocate_exact_size(egui::Vec2::splat(300.0), egui::Sense::drag());
         ui.ctx().request_repaint();
 
+        let rect = ui.available_rect_before_wrap();
         let cb = egui_wgpu::CallbackFn::new()
             .prepare(move |device, queue, paint_callback_resources| {
                 let resources: &mut BoidsResources = paint_callback_resources.get_mut().unwrap();
@@ -250,7 +251,14 @@ impl Boids {
             callback: Arc::new(cb),
         };
 
-        ui.painter().add(callback);
+        let painter = Painter::new(
+            ui.ctx().clone(),
+            ui.layer_id(),
+            rect,
+        );
+        painter.add(callback);
+        ui.expand_to_include_rect(painter.clip_rect());
+
     }
 }
 
