@@ -30,6 +30,9 @@ impl AppView for InspectorView {
                             ui.selectable_value(radio, Enum::Third, "Third");
                         });
                 });
+                if ui.button("Reset").clicked() {
+                    app.inspector_model.reset();
+                }
                 egui::ScrollArea::vertical()
                     // .always_show_scroll(true)
                     .auto_shrink([false, false])
