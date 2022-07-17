@@ -1,4 +1,4 @@
-use crate::{context::AppContext, models::inspector::{Enum, ComputeMethod}, MainApp};
+use crate::{context::AppContext, models::inspector::ComputeMethod, MainApp};
 
 use super::AppView;
 
@@ -17,36 +17,30 @@ impl AppView for InspectorView {
             app,
         } = ctx;
 
+        let MainApp { inspector_model: model, .. } = app;
+
         egui::SidePanel::right("inspector_view")
             .default_width(250.0)
             .width_range(150.0..=400.0)
             .resizable(false)
             .show(egui_ctx, |ui| {
-                app.inspector_model.radio_arr.iter_mut().enumerate().for_each(|(index, radio)| {
-                    egui::ComboBox::from_label(format!("Take your pick {}", index))
-                        .selected_text(format!("{:?}", radio))
-                        .show_ui(ui, |ui| {
-                            ui.selectable_value(radio, Enum::First, "First");
-                            ui.selectable_value(radio, Enum::Second, "Second");
-                            ui.selectable_value(radio, Enum::Third, "Third");
-                        });
-                });
                 egui::ComboBox::from_label("Compute Method")
-                    .selected_text(format!("{:?}", app.inspector_model.compute_method))
+                    .selected_text(format!("{:?}", model.compute_method))
                     .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut app.inspector_model.compute_method, ComputeMethod::ForceAtlas2, "ForceAtlas2");
-                        ui.selectable_value(&mut app.inspector_model.compute_method, ComputeMethod::Randomize, "Randomize");
+                        ui.selectable_value(&mut model.compute_method, ComputeMethod::ForceAtlas2, "Force Atlas 2");
+                        ui.selectable_value(&mut model.compute_method, ComputeMethod::Randomize, "Randomize");
                     });
-                if ui.button("Reset").clicked() {
-                    app.inspector_model.reset();
+                let reset_button = ui.button(if !model.is_computing { "Start Computing" } else { "Pause Computing" });
+                if reset_button.clicked() {
+                    model.switch_computing();
                 }
                 egui::ScrollArea::vertical()
                     // .always_show_scroll(true)
                     .auto_shrink([false, false])
                     .id_source("source")
-                    .show(ui, |ui| {
-                        ui.label("Inspector View");
-                        lorem_ipsum(ui);
+                    .show(ui, |_ui| {
+                        // ui.label("Inspector View");
+                        // lorem_ipsum(ui);
                     });
             });
     }
