@@ -8,7 +8,7 @@ use eframe::{
 use egui::Painter;
 use nanorand::{Rng, WyRand};
 
-use super::GraphicObject;
+use super::{GraphicDelegation, GraphicObject};
 
 // number of boid particles to simulate
 
@@ -22,6 +22,59 @@ pub struct Boids;
 
 impl Boids {
     pub fn new<'a>(cc: &'a eframe::CreationContext<'a>) -> Self {
+        BoidsResources::init(cc);
+        Self {}
+    }
+}
+
+impl GraphicDelegation for Boids {
+    fn custom_painting(&mut self, ui: &mut egui::Ui) {
+        ui.ctx().request_repaint();
+
+        let rect = ui.available_rect_before_wrap();
+        let cb = egui_wgpu::CallbackFn::new()
+            .prepare(move |device, queue, paint_callback_resources| {
+                let resources: &mut BoidsResources = paint_callback_resources.get_mut().unwrap();
+
+                resources.compute(device, queue);
+            })
+            .paint(move |_info, rpass, paint_callback_resources| {
+                let resources: &BoidsResources = paint_callback_resources.get().unwrap();
+
+                resources.render(rpass);
+            });
+
+        let callback = egui::PaintCallback {
+            rect,
+            callback: Arc::new(cb),
+        };
+
+        let painter = Painter::new(
+            ui.ctx().clone(),
+            ui.layer_id(),
+            rect,
+        );
+        painter.add(callback);
+        ui.expand_to_include_rect(painter.clip_rect());
+
+    }
+}
+
+struct BoidsResources {
+    render_pipeline: wgpu::RenderPipeline,
+    compute_pipeline: wgpu::ComputePipeline,
+
+    particle_bind_groups: Vec<wgpu::BindGroup>,
+
+    vertices_buffer: wgpu::Buffer,
+    particle_buffers: Vec<wgpu::Buffer>,
+
+    work_group_count: u32,
+    frame_num: usize,
+}
+
+impl GraphicObject for BoidsResources {
+    fn init<'a>(cc: &'a eframe::CreationContext<'a>) {
         let render_state = cc.render_state.as_ref().expect("WGPU enabled");
         let device = &render_state.device;
 
@@ -226,59 +279,9 @@ impl Boids {
                 work_group_count,
                 frame_num: 0,
             });
-
-        Self {}
     }
-}
 
-impl GraphicObject for Boids {
-    fn custom_painting(&mut self, ui: &mut egui::Ui) {
-        ui.ctx().request_repaint();
-
-        let rect = ui.available_rect_before_wrap();
-        let cb = egui_wgpu::CallbackFn::new()
-            .prepare(move |device, queue, paint_callback_resources| {
-                let resources: &mut BoidsResources = paint_callback_resources.get_mut().unwrap();
-
-                resources.prepare(device, queue);
-            })
-            .paint(move |_info, rpass, paint_callback_resources| {
-                let resources: &BoidsResources = paint_callback_resources.get().unwrap();
-
-                resources.paint(rpass);
-            });
-
-        let callback = egui::PaintCallback {
-            rect,
-            callback: Arc::new(cb),
-        };
-
-        let painter = Painter::new(
-            ui.ctx().clone(),
-            ui.layer_id(),
-            rect,
-        );
-        painter.add(callback);
-        ui.expand_to_include_rect(painter.clip_rect());
-
-    }
-}
-
-struct BoidsResources {
-    render_pipeline: wgpu::RenderPipeline,
-    compute_pipeline: wgpu::ComputePipeline,
-
-    particle_bind_groups: Vec<wgpu::BindGroup>,
-
-    vertices_buffer: wgpu::Buffer,
-    particle_buffers: Vec<wgpu::Buffer>,
-
-    work_group_count: u32,
-    frame_num: usize,
-}
-
-impl BoidsResources {
-    fn prepare(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
+    fn compute(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
         let mut command_encoder =
           device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         command_encoder.push_debug_group("compute boid movement");
@@ -295,7 +298,7 @@ impl BoidsResources {
         self.frame_num += 1;
     }
 
-    fn paint<'rpass>(&'rpass self, rpass: &mut wgpu::RenderPass<'rpass>) {
+    fn render<'rpass>(&'rpass self, rpass: &mut wgpu::RenderPass<'rpass>) {
         rpass.set_pipeline(&self.render_pipeline);
         rpass.set_vertex_buffer(0, self.particle_buffers[(self.frame_num + 1) % 2].slice(..));
         rpass.set_vertex_buffer(1, self.vertices_buffer.slice(..));

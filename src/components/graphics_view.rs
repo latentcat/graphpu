@@ -1,13 +1,13 @@
-use crate::widgets::GraphicObject;
+use crate::widgets::GraphicDelegation;
 
 use super::AppView;
 
 pub struct GraphicsView<'a> {
-    graphic_object: &'a mut dyn GraphicObject,
+    graphic_object: &'a mut dyn GraphicDelegation,
 }
 
 impl<'a> GraphicsView<'a> {
-    pub fn new(graphic_object: &'a mut dyn GraphicObject) -> Self {
+    pub fn new(graphic_object: &'a mut dyn GraphicDelegation) -> Self {
         Self { graphic_object }
     }
 }
