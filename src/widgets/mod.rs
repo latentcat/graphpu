@@ -3,7 +3,7 @@ pub mod boids;
 pub trait GraphicDelegation {
 
   /// Graphics View Render View
-  fn custom_painting(&mut self, ui: &mut egui::Ui);
+  fn custom_painting(&self, ui: &mut egui::Ui);
 
 }
 

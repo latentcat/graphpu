@@ -1,6 +1,8 @@
 mod app;
+mod context;
 pub mod widgets;
 pub mod components;
+pub mod models;
 
 pub use app::MainApp;
 

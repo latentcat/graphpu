@@ -1,3 +1,5 @@
+use crate::context::AppContext;
+
 use super::AppView;
 
 pub struct InspectorView;
@@ -9,12 +11,12 @@ impl Default for InspectorView {
 }
 
 impl AppView for InspectorView {
-    fn show(self, ctx: &egui::Context) {
+    fn show(self, ctx: &mut AppContext) {
         egui::SidePanel::right("inspector_view")
             .default_width(250.0)
             .width_range(150.0..=400.0)
             .resizable(false)
-            .show(ctx, |ui| {
+            .show(ctx.egui_ctx, |ui| {
                 egui::ScrollArea::vertical()
                     // .always_show_scroll(true)
                     .auto_shrink([false, false])

@@ -3,12 +3,13 @@ use crate::{
         detail_view::DetailView, graphics_view::GraphicsView, inspector_view::InspectorView,
         menubar_view::MenuBarView, AppView,
     },
-    widgets::boids::Boids,
+    widgets::boids::Boids, models::{inspector::InspectorModel, graphics::GraphicsModel}, context::AppContext,
 };
 use egui::epaint;
 
 pub struct MainApp {
-    boids: Boids,
+    pub inspector_model: InspectorModel,
+    pub graphic_model: GraphicsModel,
 }
 
 impl MainApp {
@@ -18,16 +19,18 @@ impl MainApp {
         cc.egui_ctx.set_style(style);
 
         Self {
-            boids: Boids::new(cc),
+            inspector_model: InspectorModel::default(),
+            graphic_model: GraphicsModel::new(Box::new(Boids::new(cc))),
         }
     }
 }
 
 impl eframe::App for MainApp {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
-        MenuBarView::default().show(ctx);
-        InspectorView::default().show(ctx);
-        DetailView::default().show(ctx);
-        GraphicsView::new(&mut self.boids).show(ctx);
+        let mut ctx = AppContext::from(self, ctx);
+        MenuBarView::default().show(&mut ctx);
+        InspectorView::default().show(&mut ctx);
+        DetailView::default().show(&mut ctx);
+        GraphicsView::default().show(&mut ctx);
     }
 }

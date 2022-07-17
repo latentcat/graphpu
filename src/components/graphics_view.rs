@@ -1,28 +1,26 @@
-use crate::widgets::GraphicDelegation;
+use crate::context::AppContext;
 
 use super::AppView;
 
-pub struct GraphicsView<'a> {
-    graphic_object: &'a mut dyn GraphicDelegation,
-}
+pub struct GraphicsView;
 
-impl<'a> GraphicsView<'a> {
-    pub fn new(graphic_object: &'a mut dyn GraphicDelegation) -> Self {
-        Self { graphic_object }
+impl Default for GraphicsView {
+    fn default() -> Self {
+        Self {}
     }
 }
 
-impl AppView for GraphicsView<'_> {
-    fn show(self, ctx: &egui::Context) {
-        let style = &ctx.style();
+impl AppView for GraphicsView {
+    fn show(self, ctx: &mut AppContext) {
+        let style = &ctx.egui_ctx.style();
         egui::CentralPanel::default()
             .frame(egui::Frame::none())
-            .show(ctx, |ui| {
+            .show(ctx.egui_ctx, |ui| {
                 egui::Frame::none()
                     .fill(style.visuals.extreme_bg_color)
                     .stroke(style.visuals.window_stroke())
                     .show(ui, |ui| {
-                        self.graphic_object.custom_painting(ui);
+                        ctx.app.graphic_model.graphic_delegation.custom_painting(ui);
                     });
             });
     }

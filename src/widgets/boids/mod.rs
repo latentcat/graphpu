@@ -28,7 +28,7 @@ impl Boids {
 }
 
 impl GraphicDelegation for Boids {
-    fn custom_painting(&mut self, ui: &mut egui::Ui) {
+    fn custom_painting(&self, ui: &mut egui::Ui) {
         ui.ctx().request_repaint();
 
         let rect = ui.available_rect_before_wrap();
