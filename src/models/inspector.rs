@@ -5,6 +5,7 @@ pub enum Enum {
     Third,
 }
 
+#[derive(Debug, PartialEq)]
 pub enum ComputeMethod {
     ForceAtlas2,
     Randomize,

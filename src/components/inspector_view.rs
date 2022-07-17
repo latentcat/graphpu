@@ -1,4 +1,4 @@
-use crate::{context::AppContext, models::inspector::Enum};
+use crate::{context::AppContext, models::inspector::{Enum, ComputeMethod}, MainApp};
 
 use super::AppView;
 
@@ -16,6 +16,7 @@ impl AppView for InspectorView {
             egui_ctx,
             app,
         } = ctx;
+
         egui::SidePanel::right("inspector_view")
             .default_width(250.0)
             .width_range(150.0..=400.0)
@@ -30,6 +31,12 @@ impl AppView for InspectorView {
                             ui.selectable_value(radio, Enum::Third, "Third");
                         });
                 });
+                egui::ComboBox::from_label("Compute Method")
+                    .selected_text(format!("{:?}", app.inspector_model.compute_method))
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut app.inspector_model.compute_method, ComputeMethod::ForceAtlas2, "ForceAtlas2");
+                        ui.selectable_value(&mut app.inspector_model.compute_method, ComputeMethod::Randomize, "Randomize");
+                    });
                 if ui.button("Reset").clicked() {
                     app.inspector_model.reset();
                 }
