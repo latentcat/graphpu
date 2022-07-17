@@ -1,4 +1,4 @@
-use crate::context::AppContext;
+use crate::{context::AppContext, models::inspector::Enum};
 
 use super::AppView;
 
@@ -12,11 +12,24 @@ impl Default for InspectorView {
 
 impl AppView for InspectorView {
     fn show(self, ctx: &mut AppContext) {
+        let AppContext {
+            egui_ctx,
+            app,
+        } = ctx;
         egui::SidePanel::right("inspector_view")
             .default_width(250.0)
             .width_range(150.0..=400.0)
             .resizable(false)
-            .show(ctx.egui_ctx, |ui| {
+            .show(egui_ctx, |ui| {
+                app.inspector_model.radio_arr.iter_mut().enumerate().for_each(|(index, radio)| {
+                    egui::ComboBox::from_label(format!("Take your pick {}", index))
+                        .selected_text(format!("{:?}", radio))
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(radio, Enum::First, "First");
+                            ui.selectable_value(radio, Enum::Second, "Second");
+                            ui.selectable_value(radio, Enum::Third, "Third");
+                        });
+                });
                 egui::ScrollArea::vertical()
                     // .always_show_scroll(true)
                     .auto_shrink([false, false])
