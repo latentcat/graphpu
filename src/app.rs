@@ -27,7 +27,7 @@ impl eframe::App for MainApp {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
         MenuBarView::default().show(ctx);
         InspectorView::default().show(ctx);
-        GraphicsView::new(&mut self.boids).show(ctx);
         DetailView::default().show(ctx);
+        GraphicsView::new(&mut self.boids).show(ctx);
     }
 }

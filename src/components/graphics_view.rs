@@ -20,6 +20,7 @@ impl AppView for GraphicsView<'_> {
             .show(ctx, |ui| {
                 egui::Frame::none()
                     .fill(style.visuals.extreme_bg_color)
+                    .stroke(style.visuals.window_stroke())
                     .show(ui, |ui| {
                         self.graphic_object.custom_painting(ui);
                     });
