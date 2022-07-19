@@ -30,9 +30,11 @@ impl Boids {
 }
 
 impl GraphicDelegation for Boids {
-    fn custom_painting(&self, ctx: &MainApp, ui: &mut egui::Ui) {
+    fn custom_painting(&self, ctx: &mut MainApp, ui: &mut egui::Ui) {
 
         let is_computing = ctx.compute_model.is_computing;
+        let is_dispatching = ctx.compute_model.is_dispatching;
+        ctx.compute_model.set_dispatching(false);
         if is_computing { ui.ctx().request_repaint(); }
         let rect = ui.available_rect_before_wrap();
         let cb = egui_wgpu::CallbackFn::new()
