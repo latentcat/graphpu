@@ -3,7 +3,8 @@ use crate::{
         detail_view::DetailView, graphics_view::GraphicsView, inspector_view::InspectorView,
         menubar_view::MenuBarView, AppView,
     },
-    widgets::boids::Boids, models::{compute::ComputeModel, graphics::GraphicsModel},
+    models::{compute::ComputeModel, graphics::GraphicsModel},
+    widgets::boids::Boids,
 };
 use egui::epaint;
 
@@ -27,11 +28,14 @@ impl MainApp {
 
 impl eframe::App for MainApp {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
-        egui::CentralPanel::default().frame(egui::Frame::none()).show(ctx, |ui| {
-            MenuBarView::default().show(self, ui);
-            InspectorView::default().show(self, ui);
-            DetailView::default().show(self, ui);
-            GraphicsView::default().show(self, ui);
-        });
+        egui::CentralPanel::default()
+            .frame(egui::Frame::none())
+            .show(ctx, |ui| {
+                ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
+                MenuBarView::default().show(self, ui);
+                InspectorView::default().show(self, ui);
+                DetailView::default().show(self, ui);
+                GraphicsView::default().show(self, ui);
+            });
     }
 }

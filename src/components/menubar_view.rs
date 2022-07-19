@@ -15,6 +15,7 @@ impl Default for MenuBarView {
 impl AppView for MenuBarView {
     fn show(self, _: &mut MainApp, ui: &mut Ui) {
         egui::TopBottomPanel::top("menubar_view").show_inside(ui, |ui| {
+            ui.set_style(ui.ctx().style());
             egui::menu::bar(ui, |_| {
                 // TODO: Menu Bar
             });

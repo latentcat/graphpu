@@ -18,6 +18,7 @@ impl AppView for GraphicsView {
         egui::CentralPanel::default()
             .frame(egui::Frame::none())
             .show_inside(ui, |ui| {
+                ui.set_style(ui.ctx().style());
                 egui::Frame::none()
                     .fill(style.visuals.extreme_bg_color)
                     .stroke(style.visuals.window_stroke())
