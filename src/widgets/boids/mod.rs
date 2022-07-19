@@ -44,13 +44,15 @@ impl GraphicDelegation for Boids {
                 if is_computing {
                     resources.compute(device, queue);
                 }
+
+                if is_dispatching && !is_computing {
+                    resources.compute(device, queue);
+                }
             })
             .paint(move |_info, rpass, paint_callback_resources| {
                 let resources: &BoidsResources = paint_callback_resources.get().unwrap();
 
-                if is_dispatching {
-                    resources.render(rpass);
-                }
+                resources.render(rpass);
             });
 
         let callback = egui::PaintCallback {
