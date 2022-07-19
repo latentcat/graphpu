@@ -1,2 +1,2 @@
-pub mod inspector;
+pub mod compute;
 pub mod graphics;

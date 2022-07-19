@@ -1,6 +1,6 @@
 use egui::Ui;
 
-use crate::{models::inspector::ComputeMethod, MainApp};
+use crate::{models::compute::ComputeMethod, MainApp};
 
 use super::AppView;
 
@@ -14,7 +14,7 @@ impl Default for InspectorView {
 
 impl AppView for InspectorView {
     fn show(self, ctx: &mut MainApp, ui: &mut Ui) {
-        let MainApp { inspector_model: model, .. } = ctx;
+        let MainApp { compute_model: model, .. } = ctx;
 
         egui::SidePanel::right("inspector_view")
             .default_width(250.0)

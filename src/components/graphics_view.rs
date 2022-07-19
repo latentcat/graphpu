@@ -22,7 +22,7 @@ impl AppView for GraphicsView {
                     .fill(style.visuals.extreme_bg_color)
                     .stroke(style.visuals.window_stroke())
                     .show(ui, |ui| {
-                        ctx.graphic_model.graphic_delegation.custom_painting(ui);
+                        ctx.graphic_model.graphic_delegation.custom_painting(ctx, ui);
                     });
             });
     }

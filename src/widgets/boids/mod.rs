@@ -8,6 +8,8 @@ use eframe::{
 use egui::Painter;
 use nanorand::{Rng, WyRand};
 
+use crate::MainApp;
+
 use super::{GraphicDelegation, GraphicObject};
 
 // number of boid particles to simulate
@@ -28,15 +30,18 @@ impl Boids {
 }
 
 impl GraphicDelegation for Boids {
-    fn custom_painting(&self, ui: &mut egui::Ui) {
+    fn custom_painting(&self, ctx: &MainApp, ui: &mut egui::Ui) {
         ui.ctx().request_repaint();
 
+        let is_computing = ctx.compute_model.is_computing;
         let rect = ui.available_rect_before_wrap();
         let cb = egui_wgpu::CallbackFn::new()
             .prepare(move |device, queue, paint_callback_resources| {
                 let resources: &mut BoidsResources = paint_callback_resources.get_mut().unwrap();
 
-                resources.compute(device, queue);
+                if is_computing {
+                    resources.compute(device, queue);
+                }
             })
             .paint(move |_info, rpass, paint_callback_resources| {
                 let resources: &BoidsResources = paint_callback_resources.get().unwrap();

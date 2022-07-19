@@ -3,12 +3,12 @@ use crate::{
         detail_view::DetailView, graphics_view::GraphicsView, inspector_view::InspectorView,
         menubar_view::MenuBarView, AppView,
     },
-    widgets::boids::Boids, models::{inspector::InspectorModel, graphics::GraphicsModel},
+    widgets::boids::Boids, models::{compute::ComputeModel, graphics::GraphicsModel},
 };
 use egui::epaint;
 
 pub struct MainApp {
-    pub inspector_model: InspectorModel,
+    pub compute_model: ComputeModel,
     pub graphic_model: GraphicsModel,
 }
 
@@ -19,7 +19,7 @@ impl MainApp {
         cc.egui_ctx.set_style(style);
 
         Self {
-            inspector_model: InspectorModel::default(),
+            compute_model: ComputeModel::default(),
             graphic_model: GraphicsModel::new(Box::new(Boids::new(cc))),
         }
     }
