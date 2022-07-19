@@ -48,7 +48,9 @@ impl GraphicDelegation for Boids {
             .paint(move |_info, rpass, paint_callback_resources| {
                 let resources: &BoidsResources = paint_callback_resources.get().unwrap();
 
-                resources.render(rpass);
+                if is_dispatching {
+                    resources.render(rpass);
+                }
             });
 
         let callback = egui::PaintCallback {

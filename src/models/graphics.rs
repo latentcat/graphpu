@@ -1,11 +1,13 @@
+use std::rc::Rc;
+
 use crate::widgets::GraphicDelegation;
 
 pub struct GraphicsModel {
-  pub graphic_delegation: Box<dyn GraphicDelegation>,
+  pub graphic_delegation: Rc<dyn GraphicDelegation>,
 }
 
 impl GraphicsModel {
-  pub fn new(graphic_delegation: Box<dyn GraphicDelegation>) -> Self {
+  pub fn new(graphic_delegation: Rc<dyn GraphicDelegation>) -> Self {
     Self { graphic_delegation }
   }
 }

@@ -21,7 +21,7 @@ impl MainApp {
 
         Self {
             compute_model: ComputeModel::default(),
-            graphic_model: GraphicsModel::new(Box::new(Boids::new(cc))),
+            graphic_model: GraphicsModel::new(std::rc::Rc::new(Boids::new(cc))),
         }
     }
 }

@@ -31,6 +31,9 @@ impl AppView for InspectorView {
                 if reset_button.clicked() {
                     model.switch_computing();
                 }
+                if ui.button("dispatch").clicked() {
+                    model.set_dispatching(true);
+                }
                 egui::ScrollArea::vertical()
                     // .always_show_scroll(true)
                     .auto_shrink([false, false])
