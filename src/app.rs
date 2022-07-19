@@ -3,7 +3,7 @@ use crate::{
         detail_view::DetailView, graphics_view::GraphicsView, inspector_view::InspectorView,
         menubar_view::MenuBarView, AppView,
     },
-    widgets::boids::Boids, models::{inspector::InspectorModel, graphics::GraphicsModel}, context::AppContext,
+    widgets::boids::Boids, models::{inspector::InspectorModel, graphics::GraphicsModel},
 };
 use egui::epaint;
 
@@ -27,10 +27,11 @@ impl MainApp {
 
 impl eframe::App for MainApp {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
-        let mut ctx = AppContext::from(self, ctx);
-        MenuBarView::default().show(&mut ctx);
-        InspectorView::default().show(&mut ctx);
-        DetailView::default().show(&mut ctx);
-        GraphicsView::default().show(&mut ctx);
+        egui::CentralPanel::default().frame(egui::Frame::none()).show(ctx, |ui| {
+            MenuBarView::default().show(self, ui);
+            InspectorView::default().show(self, ui);
+            DetailView::default().show(self, ui);
+            GraphicsView::default().show(self, ui);
+        });
     }
 }

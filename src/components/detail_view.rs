@@ -1,4 +1,6 @@
-use crate::context::AppContext;
+use egui::Ui;
+
+use crate::{MainApp};
 
 use super::AppView;
 
@@ -11,8 +13,8 @@ impl Default for DetailView {
 }
 
 impl AppView for DetailView {
-    fn show(self, ctx: &mut AppContext) {
-        egui::TopBottomPanel::bottom("detail").show(ctx.egui_ctx, |ui| {
+    fn show(self, _: &mut MainApp, ui: &mut Ui) {
+        egui::TopBottomPanel::bottom("detail").show_inside(ui, |ui| {
             let layout = egui::Layout::top_down(egui::Align::Center).with_main_justify(true);
             ui.allocate_ui_with_layout(ui.available_size(), layout, |ui| {
                 ui.label("Detail View");

@@ -1,4 +1,6 @@
-use crate::context::AppContext;
+use egui::Ui;
+
+use crate::MainApp;
 
 use super::AppView;
 
@@ -11,8 +13,8 @@ impl Default for MenuBarView {
 }
 
 impl AppView for MenuBarView {
-    fn show(self, ctx: &mut AppContext) {
-        egui::TopBottomPanel::top("menubar_view").show(ctx.egui_ctx, |ui| {
+    fn show(self, _: &mut MainApp, ui: &mut Ui) {
+        egui::TopBottomPanel::top("menubar_view").show_inside(ui, |ui| {
             egui::menu::bar(ui, |_| {
                 // TODO: Menu Bar
             });

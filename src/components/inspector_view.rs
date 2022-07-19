@@ -1,4 +1,6 @@
-use crate::{context::AppContext, models::inspector::ComputeMethod, MainApp};
+use egui::Ui;
+
+use crate::{models::inspector::ComputeMethod, MainApp};
 
 use super::AppView;
 
@@ -11,19 +13,14 @@ impl Default for InspectorView {
 }
 
 impl AppView for InspectorView {
-    fn show(self, ctx: &mut AppContext) {
-        let AppContext {
-            egui_ctx,
-            app,
-        } = ctx;
-
-        let MainApp { inspector_model: model, .. } = app;
+    fn show(self, ctx: &mut MainApp, ui: &mut Ui) {
+        let MainApp { inspector_model: model, .. } = ctx;
 
         egui::SidePanel::right("inspector_view")
             .default_width(250.0)
             .width_range(150.0..=400.0)
             .resizable(false)
-            .show(egui_ctx, |ui| {
+            .show_inside(ui, |ui| {
                 egui::ComboBox::from_label("Compute Method")
                     .selected_text(format!("{:?}", model.compute_method))
                     .show_ui(ui, |ui| {
@@ -44,13 +41,4 @@ impl AppView for InspectorView {
                     });
             });
     }
-}
-
-fn lorem_ipsum(ui: &mut egui::Ui) {
-    ui.with_layout(
-        egui::Layout::top_down(egui::Align::LEFT).with_cross_align(egui::Align::Min),
-        |ui| {
-            ui.label(egui::RichText::new(crate::LOREM_IPSUM_LONG).weak());
-        },
-    );
 }
