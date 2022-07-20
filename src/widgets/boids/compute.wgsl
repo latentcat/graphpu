@@ -17,6 +17,26 @@ struct SimParams {
 @group(0) @binding(1) var<storage, read> particlesSrc : array<Particle>;
 @group(0) @binding(2) var<storage, read_write> particlesDst : array<Particle>;
 
+
+fn hash(s: u32) -> u32 {
+    var t : u32 = s;
+    t ^= 2747636419u;
+    t *= 2654435769u;
+    t ^= t >> 16u;
+    t *= 2654435769u;
+    t ^= t >> 16u;
+    t *= 2654435769u;
+    return t;
+}
+
+fn random(seed: u32) -> f32 {
+    return f32(hash(seed)) / 4294967295.0; // 2^32-1
+}
+
+fn random_xy(seed_x: u32, seed_y: u32) -> f32 {
+  return f32(hash(hash(seed_x) + seed_y)) / 4294967295.0; // 2^32-1
+}
+
 // https://github.com/austinEng/Project6-Vulkan-Flocking/blob/master/data/shaders/computeparticles/particle.comp
 @compute
 @workgroup_size(64)
@@ -94,6 +114,27 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
   if (vPos.y > 1.0) {
     vPos.y = -1.0;
   }
+
+  // Write back
+  particlesDst[index] = Particle(vPos, vVel);
+}
+
+
+@compute
+@workgroup_size(64)
+fn randomize(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
+  let total = arrayLength(&particlesSrc);
+  let index = global_invocation_id.x;
+  if (index >= total) {
+    return;
+  }
+
+  var vPos : vec2<f32> = particlesSrc[index].pos;
+  var vVel : vec2<f32> = particlesSrc[index].vel;
+
+  vPos.x = random(index)        * 2.0 - 1.0;
+  vPos.x = random_xy(index, 1u) * 2.0 - 1.0;
+  vPos.x = random_xy(index, 2u) * 2.0 - 1.0;
 
   // Write back
   particlesDst[index] = Particle(vPos, vVel);

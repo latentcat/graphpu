@@ -17,6 +17,9 @@ pub trait GraphicObject {
   /// Compute Dispatch
   fn compute(&mut self, device: &wgpu::Device, queue: &wgpu::Queue);
 
+  /// Randomize Dispatch
+  fn randomize(&mut self, device: &wgpu::Device, queue: &wgpu::Queue);
+
   /// Render Call
   fn render<'rpass>(&'rpass self, rpass: &mut wgpu::RenderPass<'rpass>);
 

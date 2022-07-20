@@ -31,7 +31,7 @@ impl AppView for InspectorView {
                 if reset_button.clicked() {
                     model.switch_computing();
                 }
-                if ui.button("dispatch").clicked() {
+                if ui.button("Randomize").clicked() {
                     model.set_dispatching(true);
                 }
                 egui::ScrollArea::vertical()

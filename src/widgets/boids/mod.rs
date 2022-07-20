@@ -46,7 +46,7 @@ impl GraphicDelegation for Boids {
                 }
 
                 if is_dispatching && !is_computing {
-                    resources.compute(device, queue);
+                    resources.randomize(device, queue);
                 }
             })
             .paint(move |_info, rpass, paint_callback_resources| {
@@ -74,6 +74,7 @@ impl GraphicDelegation for Boids {
 struct BoidsResources {
     render_pipeline: wgpu::RenderPipeline,
     compute_pipeline: wgpu::ComputePipeline,
+    randomize_pipeline: wgpu::ComputePipeline,
 
     particle_bind_groups: Vec<wgpu::BindGroup>,
 
@@ -211,6 +212,15 @@ impl GraphicObject for BoidsResources {
             entry_point: "main",
         });
 
+        // create randomize pipeline
+
+        let randomize_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some("Compute pipeline"),
+            layout: Some(&compute_pipeline_layout),
+            module: &compute_shader,
+            entry_point: "randomize",
+        });
+
         // buffer for the three 2d triangle vertices of each instance
 
         let vertex_buffer_data = [-0.01f32, -0.02, 0.01, -0.02, 0.00, 0.02];
@@ -284,6 +294,7 @@ impl GraphicObject for BoidsResources {
             .insert(BoidsResources {
                 render_pipeline,
                 compute_pipeline,
+                randomize_pipeline,
                 particle_bind_groups,
                 vertices_buffer,
                 particle_buffers,
@@ -295,12 +306,29 @@ impl GraphicObject for BoidsResources {
     fn compute(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
         let mut command_encoder =
           device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        command_encoder.push_debug_group("compute boid movement");
+        command_encoder.push_debug_group("compute boids movement");
         {
             // compute pass
             let mut cpass =
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
             cpass.set_pipeline(&self.compute_pipeline);
+            cpass.set_bind_group(0, &self.particle_bind_groups[self.frame_num % 2], &[]);
+            cpass.dispatch_workgroups(self.work_group_count, 1, 1);
+        }
+        command_encoder.pop_debug_group();
+        queue.submit(Some(command_encoder.finish()));
+        self.frame_num += 1;
+    }
+
+    fn randomize(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
+        let mut command_encoder =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        command_encoder.push_debug_group("randomize boids position");
+        {
+            // compute pass
+            let mut cpass =
+                command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+            cpass.set_pipeline(&self.randomize_pipeline);
             cpass.set_bind_group(0, &self.particle_bind_groups[self.frame_num % 2], &[]);
             cpass.dispatch_workgroups(self.work_group_count, 1, 1);
         }
