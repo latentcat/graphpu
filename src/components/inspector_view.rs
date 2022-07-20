@@ -22,10 +22,10 @@ impl AppView for InspectorView {
             .show_inside(ui, |ui| {
                 ui.set_style(ui.ctx().style());
                 egui::ComboBox::from_label("Compute Method")
-                    .selected_text(format!("{:?}", model.compute_method))
+                    .selected_text(model.compute_method.0)
                     .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut model.compute_method, ComputeMethod::ForceAtlas2, "Force Atlas 2");
-                        ui.selectable_value(&mut model.compute_method, ComputeMethod::Randomize, "Randomize");
+                        ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                        ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
                     });
                 let reset_button = ui.button(if !model.is_computing { "Start Computing" } else { "Pause Computing" });
                 if reset_button.clicked() {

@@ -1,7 +1,15 @@
-#[derive(Debug, PartialEq)]
-pub enum ComputeMethod {
-    ForceAtlas2,
-    Randomize,
+#[derive(PartialEq)]
+pub enum ComputeMethodType {
+    Continuous,
+    OneStep,
+}
+
+#[derive(PartialEq)]
+pub struct ComputeMethod(pub &'static str, pub ComputeMethodType);
+
+impl ComputeMethod {
+    pub const FORCE_ATLAS2: ComputeMethod = ComputeMethod("Force Atlas 2", ComputeMethodType::Continuous);
+    pub const RANDOMIZE: ComputeMethod = ComputeMethod("Randomize", ComputeMethodType::OneStep);
 }
 
 pub struct ComputeModel {
@@ -13,7 +21,7 @@ pub struct ComputeModel {
 impl Default for ComputeModel {
     fn default() -> Self {
         Self {
-            compute_method: ComputeMethod::ForceAtlas2,
+            compute_method: ComputeMethod::FORCE_ATLAS2,
             is_computing: false,
             is_dispatching: false,
         }
