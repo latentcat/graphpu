@@ -75,6 +75,7 @@ struct BoidsResources {
     render_pipeline: wgpu::RenderPipeline,
     compute_pipeline: wgpu::ComputePipeline,
     randomize_pipeline: wgpu::ComputePipeline,
+    copy_pipeline: wgpu::ComputePipeline,
 
     particle_bind_groups: Vec<wgpu::BindGroup>,
 
@@ -221,6 +222,15 @@ impl GraphicObject for BoidsResources {
             entry_point: "randomize",
         });
 
+        // create copy pipeline
+
+        let copy_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some("Compute pipeline"),
+            layout: Some(&compute_pipeline_layout),
+            module: &compute_shader,
+            entry_point: "copy",
+        });
+
         // buffer for the three 2d triangle vertices of each instance
 
         let vertex_buffer_data = [-0.01f32, -0.02, 0.01, -0.02, 0.00, 0.02];
@@ -295,6 +305,7 @@ impl GraphicObject for BoidsResources {
                 render_pipeline,
                 compute_pipeline,
                 randomize_pipeline,
+                copy_pipeline,
                 particle_bind_groups,
                 vertices_buffer,
                 particle_buffers,
@@ -330,6 +341,9 @@ impl GraphicObject for BoidsResources {
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
             cpass.set_pipeline(&self.randomize_pipeline);
             cpass.set_bind_group(0, &self.particle_bind_groups[self.frame_num % 2], &[]);
+            cpass.dispatch_workgroups(self.work_group_count, 1, 1);
+            cpass.set_pipeline(&self.copy_pipeline);
+            cpass.set_bind_group(0, &self.particle_bind_groups[(self.frame_num + 1) % 2], &[]);
             cpass.dispatch_workgroups(self.work_group_count, 1, 1);
         }
         command_encoder.pop_debug_group();

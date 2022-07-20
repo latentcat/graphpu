@@ -139,3 +139,19 @@ fn randomize(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
   // Write back
   particlesDst[index] = Particle(vPos, vVel);
 }
+
+@compute
+@workgroup_size(64)
+fn copy(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
+  let total = arrayLength(&particlesSrc);
+  let index = global_invocation_id.x;
+  if (index >= total) {
+    return;
+  }
+
+  var vPos : vec2<f32> = particlesSrc[index].pos;
+  var vVel : vec2<f32> = particlesSrc[index].vel;
+
+  // Write back
+  particlesDst[index] = Particle(vPos, vVel);
+}
