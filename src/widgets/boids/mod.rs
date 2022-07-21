@@ -77,6 +77,7 @@ struct BoidsResources {
     randomize_pipeline: wgpu::ComputePipeline,
     copy_pipeline: wgpu::ComputePipeline,
 
+    uniform_buffer: wgpu::Buffer,
     particle_bind_groups: Vec<wgpu::BindGroup>,
 
     vertices_buffer: wgpu::Buffer,
@@ -152,6 +153,16 @@ impl GraphicObject for BoidsResources {
                             ty: wgpu::BufferBindingType::Storage { read_only: false },
                             has_dynamic_offset: false,
                             min_binding_size: wgpu::BufferSize::new((NUM_PARTICLES * 16) as _),
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
                         },
                         count: None,
                     },
@@ -231,6 +242,15 @@ impl GraphicObject for BoidsResources {
             entry_point: "copy",
         });
 
+
+        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&[0u32]),
+            usage: wgpu::BufferUsages::COPY_DST
+                | wgpu::BufferUsages::MAP_WRITE
+                | wgpu::BufferUsages::UNIFORM,
+        });
+
         // buffer for the three 2d triangle vertices of each instance
 
         let vertex_buffer_data = [-0.01f32, -0.02, 0.01, -0.02, 0.00, 0.02];
@@ -288,6 +308,10 @@ impl GraphicObject for BoidsResources {
                         binding: 2,
                         resource: particle_buffers[(i + 1) % 2].as_entire_binding(), // bind to opposite buffer
                     },
+                    wgpu::BindGroupEntry {
+                        binding: 3,
+                        resource: uniform_buffer.as_entire_binding(),
+                    },
                 ],
                 label: None,
             }));
@@ -306,6 +330,7 @@ impl GraphicObject for BoidsResources {
                 compute_pipeline,
                 randomize_pipeline,
                 copy_pipeline,
+                uniform_buffer,
                 particle_bind_groups,
                 vertices_buffer,
                 particle_buffers,
@@ -334,6 +359,8 @@ impl GraphicObject for BoidsResources {
     fn randomize(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
         let mut command_encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+        queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[self.frame_num as u32]));
         command_encoder.push_debug_group("randomize boids position");
         {
             // compute pass
@@ -348,6 +375,7 @@ impl GraphicObject for BoidsResources {
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));
+        println!("{}", self.frame_num);
         self.frame_num += 1;
     }
 

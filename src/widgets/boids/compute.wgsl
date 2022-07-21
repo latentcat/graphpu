@@ -13,9 +13,14 @@ struct SimParams {
   rule3Scale : f32,
 };
 
+struct Uniforms {
+    frame_num: u32,
+};
+
 @group(0) @binding(0) var<uniform> params : SimParams;
 @group(0) @binding(1) var<storage, read> particlesSrc : array<Particle>;
 @group(0) @binding(2) var<storage, read_write> particlesDst : array<Particle>;
+@group(0) @binding(3) var<uniform> uniforms: Uniforms;
 
 
 fn hash(s: u32) -> u32 {
@@ -132,9 +137,8 @@ fn randomize(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
   var vPos : vec2<f32> = particlesSrc[index].pos;
   var vVel : vec2<f32> = particlesSrc[index].vel;
 
-  vPos.x = random(index)        * 2.0 - 1.0;
-  vPos.x = random_xy(index, 1u) * 2.0 - 1.0;
-  vPos.x = random_xy(index, 2u) * 2.0 - 1.0;
+  vPos.x = random_xy(index, 0u + 3u * uniforms.frame_num) * 2.0 - 1.0;
+  vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
 
   // Write back
   particlesDst[index] = Particle(vPos, vVel);
