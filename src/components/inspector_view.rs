@@ -15,10 +15,18 @@ impl Default for InspectorView {
 
 pub fn panel_style(style: &egui::Style) -> egui::Frame {
     egui::Frame {
-        inner_margin: egui::style::Margin::symmetric(8.0, 8.0),
+        inner_margin: egui::style::Margin::symmetric(0.0, 0.0),
         rounding: egui::Rounding::none(),
         fill: style.visuals.window_fill(),
         stroke: style.visuals.window_stroke(),
+        ..Default::default()
+    }
+}
+
+pub fn inner_panel_style(style: &egui::Style) -> egui::Frame {
+    egui::Frame {
+        inner_margin: egui::style::Margin::symmetric(8.0, 8.0),
+        rounding: egui::Rounding::none(),
         ..Default::default()
     }
 }
@@ -32,35 +40,88 @@ impl AppView for InspectorView {
             .width_range(150.0..=400.0)
             .resizable(false)
             .show_inside(ui, |ui| {
-                ui.set_style(ui.ctx().style());
-                ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
-                egui::ComboBox::from_label("Compute Method")
-                    .selected_text(model.compute_method.0)
-                    .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+
+                egui::TopBottomPanel::bottom("render")
+                    .frame(inner_panel_style(ui.style()))
+                    .show_inside(ui, |ui| {
+                        ui.set_style(ui.ctx().style());
+                        ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
+                        let render_button = ui.button("📷 Render Image");
+                        if render_button.clicked() {
+                            //
+                        }
+                });
+
+                egui::CentralPanel::default()
+                    .frame(inner_panel_style(ui.style()))
+                    .show_inside(ui, |ui| {
+                        ui.set_style(ui.ctx().style());
+                        ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
+
+                        let import_data_button = ui.button("⮋ Import Data");
+                        if import_data_button.clicked() {
+                            //
+                        }
+
                         ui.separator();
-                        ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
-                    });
-                if model.compute_method.1 == ComputeMethodType::Continuous {
-                    let continuous_button = ui.button(if !model.is_computing { "Start Computing" } else { "Pause Computing" });
-                    if continuous_button.clicked() {
-                        model.switch_computing();
-                    }
-                } else {
-                    model.set_computing(false);
-                    let one_step_button = ui.button("Dispatch");
-                    if one_step_button.clicked() {
-                        model.set_dispatching(true);
-                    }
-                }
-                egui::ScrollArea::vertical()
-                    // .always_show_scroll(true)
-                    .auto_shrink([false, false])
-                    .id_source("source")
-                    .show(ui, |_ui| {
-                        // ui.label("Inspector View");
-                        // lorem_ipsum(ui);
-                    });
+
+
+                        ui.horizontal(|ui| {
+                            ui.label("node.csv | edge.csv");
+                            ui.allocate_ui_with_layout(ui.available_size(), egui::Layout::right_to_left(), |ui| {
+                                let reimport_data_button = ui.button("⟲");
+                                if reimport_data_button.clicked() {
+                                    //
+                                }
+                                let remove_data_button = ui.button("🗑");
+                                if remove_data_button.clicked() {
+                                    //
+                                }
+                            });
+                        });
+
+                        ui.separator();
+
+
+                        ui.horizontal(|ui| {
+                            egui::ComboBox::from_id_source("Compute Method")
+                                .selected_text(model.compute_method.0)
+                                .show_ui(ui, |ui| {
+                                    ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                    ui.separator();
+                                    ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                                });
+                            if model.compute_method.1 == ComputeMethodType::Continuous {
+                                let continuous_button = ui.button(if !model.is_computing { "Start Computing" } else { "Pause Computing" });
+                                if continuous_button.clicked() {
+                                    model.switch_computing();
+                                }
+                            } else {
+                                model.set_computing(false);
+                                let one_step_button = ui.button("Dispatch");
+                                if one_step_button.clicked() {
+                                    model.set_dispatching(true);
+                                }
+                            }
+                        });
+
+                        ui.separator();
+
+                        egui::ScrollArea::vertical()
+                            .always_show_scroll(true)
+                            .auto_shrink([false, false])
+                            .id_source("source")
+                            .show(ui, |ui| {
+                                ui.label("Inspector View");
+                                // lorem_ipsum(ui);
+                            });
+
+                        ui.separator();
+                });
+
+
+
+
             });
     }
 }

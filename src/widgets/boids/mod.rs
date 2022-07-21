@@ -375,7 +375,6 @@ impl GraphicObject for BoidsResources {
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));
-        println!("{}", self.frame_num);
         self.frame_num += 1;
     }
 

@@ -91,7 +91,7 @@ impl AppView for MenuBarView {
                     ui.menu_button("Window", |ui| {
 
                         ui.add_enabled_ui(false, |ui| {
-                            ui.button("Toggle Window Fullscreen");
+                            ui.button("Fullscreen");
                         });
 
                         ui.separator();
