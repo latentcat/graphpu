@@ -37,22 +37,22 @@ impl AppView for MenuBarView {
                     ui.menu_button("File", |ui| {
 
                         ui.add_enabled_ui(false, |ui| {
-                            ui.button("New");
-                            ui.button("Open");
+                            let _ = ui.button("New");
+                            let _ = ui.button("Open");
                         });
 
                         ui.separator();
 
                         ui.add_enabled_ui(false, |ui| {
-                            ui.button("Close");
-                            ui.button("Save");
+                            let _ = ui.button("Close");
+                            let _ = ui.button("Save");
                         });
 
                         ui.separator();
 
-                        ui.button("Import");
+                        let _ = ui.button("Import Data");
                         ui.add_enabled_ui(false, |ui| {
-                            ui.button("Export");
+                            let _ = ui.button("Export Data");
                         });
 
                         ui.separator();
@@ -64,55 +64,55 @@ impl AppView for MenuBarView {
                     ui.menu_button("Edit", |ui| {
 
                         ui.add_enabled_ui(false, |ui| {
-                            ui.button("Undo");
-                            ui.button("Redo");
+                            let _ = ui.button("Undo");
+                            let _ = ui.button("Redo");
                         });
 
                         ui.separator();
 
                         ui.add_enabled_ui(false, |ui| {
-                            ui.button("Preference");
+                            let _ = ui.button("Preference");
                         });
 
                     });
                     ui.menu_button("Render", |ui| {
 
                         ui.add_enabled_ui(false, |ui| {
-                            ui.button("Render Image");
+                            let _ = ui.button("Render Image");
                         });
 
                         ui.separator();
 
                         ui.add_enabled_ui(false, |ui| {
-                            ui.button("Show Result");
+                            let _ = ui.button("Show Result");
                         });
 
                     });
                     ui.menu_button("Window", |ui| {
 
                         ui.add_enabled_ui(false, |ui| {
-                            ui.button("Fullscreen");
+                            let _ = ui.button("Fullscreen");
                         });
 
                         ui.separator();
 
                         ui.add_enabled_ui(false, |ui| {
-                            ui.button("Save Screenshot");
+                            let _ = ui.button("Save Screenshot");
                         });
 
                     });
                     ui.menu_button("Help", |ui| {
 
                         ui.add_enabled_ui(false, |ui| {
-                            ui.button("Official Website");
-                            ui.button("Manual");
-                            ui.button("Tutorial");
+                            let _ = ui.button("Official Website");
+                            let _ = ui.button("Manual");
+                            let _ = ui.button("Tutorial");
                         });
 
                         ui.separator();
 
                         ui.add_enabled_ui(false, |ui| {
-                            ui.button("Report a Bug");
+                            let _ = ui.button("Report a Bug");
                         });
 
                     });

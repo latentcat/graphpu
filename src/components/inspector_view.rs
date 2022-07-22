@@ -23,7 +23,7 @@ pub fn panel_style(style: &egui::Style) -> egui::Frame {
     }
 }
 
-pub fn inner_panel_style(style: &egui::Style) -> egui::Frame {
+pub fn inner_panel_style(_style: &egui::Style) -> egui::Frame {
     egui::Frame {
         inner_margin: egui::style::Margin::symmetric(8.0, 8.0),
         rounding: egui::Rounding::none(),
@@ -46,8 +46,7 @@ impl AppView for InspectorView {
                     .show_inside(ui, |ui| {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
-                        let layout = egui::Layout::top_down(egui::Align::Center).with_main_justify(true);
-                        ui.allocate_ui_with_layout(ui.available_size(), layout, |ui| {
+                        ui.vertical_centered_justified(|ui| {
                             let render_button = ui.button("📷 Render Image");
                             if render_button.clicked() {
                                 //
@@ -62,10 +61,12 @@ impl AppView for InspectorView {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
 
-                        let import_data_button = ui.button("⮋ Import Data");
-                        if import_data_button.clicked() {
-                            //
-                        }
+                        ui.vertical_centered_justified(|ui| {
+                            let import_data_button = ui.button("⮋ Import Data");
+                            if import_data_button.clicked() {
+                                //
+                            }
+                        });
 
                         ui.separator();
 

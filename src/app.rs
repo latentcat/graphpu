@@ -6,7 +6,6 @@ use crate::{
     models::{compute::ComputeModel, graphics::GraphicsModel},
     widgets::boids::Boids,
 };
-use egui::epaint;
 
 pub struct MainApp {
     pub compute_model: ComputeModel,
@@ -40,7 +39,7 @@ impl eframe::App for MainApp {
             });
         egui::CentralPanel::default()
             .frame(egui::Frame::none())
-            .show(ctx, |ui| {
+            .show(ctx, |_ui| {
 
             });
     }
