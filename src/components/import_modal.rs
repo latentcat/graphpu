@@ -1,8 +1,7 @@
 use egui::Context;
 
 use crate::{widgets::modal::Modal, MainApp};
-
-use super::inspector_view::inner_panel_style;
+use crate::widgets::frames::inner_panel_frame;
 
 pub struct ImportModal;
 
@@ -12,7 +11,7 @@ impl ImportModal {
             ui.set_width(400.0);
             ui.set_height(250.0);
             egui::TopBottomPanel::bottom("v")
-                .frame(inner_panel_style(ui.style()))
+                .frame(inner_panel_frame(ui.style()))
                 .show_inside(ui, |ui| {
                     ui.set_style(ui.ctx().style());
                     ui.spacing_mut().item_spacing = egui::vec2(8.0, 8.0);
@@ -36,7 +35,7 @@ impl ImportModal {
                 });
 
             egui::CentralPanel::default()
-                .frame(inner_panel_style(ui.style()))
+                .frame(inner_panel_frame(ui.style()))
                 .show_inside(ui, |ui| {
                     ui.spacing_mut().item_spacing = egui::vec2(8.0, 8.0);
 
