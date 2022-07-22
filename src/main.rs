@@ -12,6 +12,6 @@ fn main() {
     eframe::run_native(
         "GraphPU - Dev Demo",
         native_options, 
-        Box::new(|cc| Box::new(graphpu::MainApp::new(cc)))
+        Box::new(|cc| Box::new(GraphPU::MainApp::new(cc)))
     );
 }
