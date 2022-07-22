@@ -116,6 +116,10 @@ impl AppView for MenuBarView {
                         });
 
                     });
+                    ui.allocate_ui_with_layout(ui.available_size(), egui::Layout::right_to_left(), |ui| {
+                        ui.selectable_value(&mut 0, 1, "  Table  ");
+                        ui.selectable_value(&mut 0, 0, "  Graphics  ");
+                    });
                 });
             });
     }
