@@ -28,7 +28,7 @@ pub fn panel_style(style: &egui::Style) -> egui::Frame {
 }
 
 impl AppView for MenuBarView {
-    fn show(self, _: &mut MainApp, ui: &mut Ui) {
+    fn show(self, ctx: &mut MainApp, ui: &mut Ui) {
         egui::TopBottomPanel::top("menubar_view")
             .frame(panel_style(ui.style()))
             .show_inside(ui, |ui| {
@@ -50,7 +50,10 @@ impl AppView for MenuBarView {
 
                         ui.separator();
 
-                        let _ = ui.button("Import Data");
+                        if ui.button("Import Data").clicked() {
+                            ctx.app_model.import_visible = true;
+                            ui.close_menu();
+                        }
                         ui.add_enabled_ui(false, |ui| {
                             let _ = ui.button("Export Data");
                         });

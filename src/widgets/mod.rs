@@ -1,6 +1,8 @@
 use crate::MainApp;
 
 pub mod boids;
+pub mod modal;
+pub mod frames;
 
 pub trait GraphicDelegation {
 

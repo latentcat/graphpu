@@ -64,7 +64,7 @@ impl AppView for InspectorView {
                         ui.vertical_centered_justified(|ui| {
                             let import_data_button = ui.button("Import Data");
                             if import_data_button.clicked() {
-                                //
+                                ctx.app_model.import_visible = true;
                             }
                         });
 
