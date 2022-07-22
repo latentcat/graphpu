@@ -43,6 +43,7 @@ pub fn inner_panel_style(_style: &egui::Style) -> egui::Frame {
 impl MainApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let mut style = (*cc.egui_ctx.style()).clone();
+        style.visuals.widgets.active.fg_stroke.color = Color32::from_white_alpha(220);
         style.visuals.widgets.inactive.fg_stroke.color = Color32::from_white_alpha(190);
         style.visuals.widgets.noninteractive.fg_stroke.color = Color32::from_white_alpha(170);
         cc.egui_ctx.set_style(style);
@@ -60,12 +61,14 @@ impl eframe::App for MainApp {
             .frame(egui::Frame::none())
             .show(ctx, |ui| {
                 ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
-                ui.set_enabled(false);
+                // ui.set_enabled(false);
                 MenuBarView::default().show(self, ui);
                 DetailView::default().show(self, ui);
                 InspectorView::default().show(self, ui);
                 GraphicsView::default().show(self, ui);
             });
+
+        return;
         egui::Window::new("My Window")
             .anchor(egui::Align2::CENTER_CENTER, Vec2::new(0., 0.))
             .frame(window_frame(&ctx.style()))

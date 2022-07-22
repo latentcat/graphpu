@@ -112,6 +112,15 @@ impl AppView for InspectorView {
 
                         ui.separator();
 
+                        ui.columns(2, |columns| {
+                            columns[0].vertical_centered_justified(|ui| {
+                                ui.selectable_value(&mut 0, 0, "Node");
+                            });
+                            columns[1].vertical_centered_justified(|ui| {
+                                ui.selectable_value(&mut 0, 1, "Edge");
+                            });
+                        });
+
                         egui::ScrollArea::vertical()
                             .always_show_scroll(true)
                             .auto_shrink([false, false])
