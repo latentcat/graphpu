@@ -47,7 +47,7 @@ impl AppView for InspectorView {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
                         ui.vertical_centered_justified(|ui| {
-                            let render_button = ui.button("📷 Render Image");
+                            let render_button = ui.button("Render Image");
                             if render_button.clicked() {
                                 //
                             }
@@ -62,7 +62,7 @@ impl AppView for InspectorView {
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
 
                         ui.vertical_centered_justified(|ui| {
-                            let import_data_button = ui.button("⮋ Import Data");
+                            let import_data_button = ui.button("Import Data");
                             if import_data_button.clicked() {
                                 //
                             }
@@ -97,13 +97,13 @@ impl AppView for InspectorView {
                                     ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
                                 });
                             if model.compute_method.1 == ComputeMethodType::Continuous {
-                                let continuous_button = ui.button(if !model.is_computing { "▶ Start Computing" } else { "⏸ Pause Computing" });
+                                let continuous_button = ui.button(if !model.is_computing { "▶" } else { "⏸" });
                                 if continuous_button.clicked() {
                                     model.switch_computing();
                                 }
                             } else {
                                 model.set_computing(false);
-                                let one_step_button = ui.button("⏩ Dispatch");
+                                let one_step_button = ui.button("⏩");
                                 if one_step_button.clicked() {
                                     model.set_dispatching(true);
                                 }
