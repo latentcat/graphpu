@@ -1,4 +1,4 @@
-use egui::Ui;
+use egui::{Color32, Ui};
 
 use crate::MainApp;
 
@@ -23,6 +23,16 @@ pub fn panel_style(style: &egui::Style) -> egui::Frame {
         rounding: egui::Rounding::none(),
         fill: style.visuals.window_fill(),
         stroke: style.visuals.window_stroke(),
+        ..Default::default()
+    }
+}
+
+pub fn button_group_style(style: &egui::Style) -> egui::Frame {
+    egui::Frame {
+        inner_margin: egui::style::Margin::symmetric(0.0, 0.0),
+        rounding: egui::Rounding::same(2.0),
+        fill: Color32::from_white_alpha(10),
+        stroke: egui::Stroke::none(),
         ..Default::default()
     }
 }
@@ -119,6 +129,16 @@ impl AppView for MenuBarView {
                         });
 
                     });
+
+                    ui.add_space(12.0);
+
+                    button_group_style(ui.style())
+                        .show(ui, |ui| {
+                            ui.set_style(ui.ctx().style());
+                            ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
+                            ui.selectable_value(&mut 0, 0, "    Graphics    ");
+                            ui.selectable_value(&mut 0, 1, "    Table    ");
+                        });
                 });
             });
     }
