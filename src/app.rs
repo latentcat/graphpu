@@ -60,7 +60,7 @@ impl eframe::App for MainApp {
             .frame(egui::Frame::none())
             .show(ctx, |ui| {
                 ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
-                // ui.set_enabled(false);
+                ui.set_enabled(false);
                 MenuBarView::default().show(self, ui);
                 DetailView::default().show(self, ui);
                 InspectorView::default().show(self, ui);
