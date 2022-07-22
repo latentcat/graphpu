@@ -46,10 +46,14 @@ impl AppView for InspectorView {
                     .show_inside(ui, |ui| {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
-                        let render_button = ui.button("📷 Render Image");
-                        if render_button.clicked() {
-                            //
-                        }
+                        let layout = egui::Layout::top_down(egui::Align::Center).with_main_justify(true);
+                        ui.allocate_ui_with_layout(ui.available_size(), layout, |ui| {
+                            let render_button = ui.button("📷 Render Image");
+                            if render_button.clicked() {
+                                //
+                            }
+                        });
+
                 });
 
                 egui::CentralPanel::default()
@@ -69,12 +73,12 @@ impl AppView for InspectorView {
                         ui.horizontal(|ui| {
                             ui.label("node.csv | edge.csv");
                             ui.allocate_ui_with_layout(ui.available_size(), egui::Layout::right_to_left(), |ui| {
-                                let reimport_data_button = ui.button("⟲");
-                                if reimport_data_button.clicked() {
-                                    //
-                                }
                                 let remove_data_button = ui.button("🗑");
                                 if remove_data_button.clicked() {
+                                    //
+                                }
+                                let reimport_data_button = ui.button("⟲");
+                                if reimport_data_button.clicked() {
                                     //
                                 }
                             });
@@ -92,13 +96,13 @@ impl AppView for InspectorView {
                                     ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
                                 });
                             if model.compute_method.1 == ComputeMethodType::Continuous {
-                                let continuous_button = ui.button(if !model.is_computing { "Start Computing" } else { "Pause Computing" });
+                                let continuous_button = ui.button(if !model.is_computing { "▶ Start Computing" } else { "⏸ Pause Computing" });
                                 if continuous_button.clicked() {
                                     model.switch_computing();
                                 }
                             } else {
                                 model.set_computing(false);
-                                let one_step_button = ui.button("Dispatch");
+                                let one_step_button = ui.button("⏩ Dispatch");
                                 if one_step_button.clicked() {
                                     model.set_dispatching(true);
                                 }
