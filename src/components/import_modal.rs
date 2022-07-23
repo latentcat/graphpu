@@ -1,7 +1,7 @@
 use egui::Context;
 
-use crate::{widgets::modal::Modal, MainApp};
 use crate::widgets::frames::inner_panel_frame;
+use crate::{widgets::modal::Modal, MainApp};
 
 pub struct ImportModal;
 
@@ -22,12 +22,10 @@ impl ImportModal {
                             egui::Layout::right_to_left(),
                             |ui| {
                                 let remove_data_button = ui.button("   Import   ");
-                                if remove_data_button.clicked() {
-
-                                }
+                                if remove_data_button.clicked() {}
                                 let reimport_data_button = ui.button("   Cancel   ");
                                 if reimport_data_button.clicked() {
-                                  app_ctx.app_model.import_visible = false;
+                                    app_ctx.app_model.import_visible = false;
                                 }
                             },
                         );
@@ -49,8 +47,6 @@ impl ImportModal {
 
                     ui.separator();
 
-                    let mut text = String::from("");
-
                     egui::Grid::new("my_grid")
                         .num_columns(2)
                         .spacing([20.0, 8.0])
@@ -58,11 +54,25 @@ impl ImportModal {
                             ui.add(egui::Label::new("Node File"));
                             ui.horizontal(|ui| {
                                 ui.add(
-                                    egui::TextEdit::singleline(&mut text)
-                                        .hint_text("")
-                                        .desired_width(200.),
+                                    egui::TextEdit::singleline(
+                                        app_ctx
+                                            .app_model
+                                            .node_file_path
+                                            .as_mut()
+                                            .unwrap_or(&mut "".to_string()),
+                                    )
+                                    .hint_text("")
+                                    .desired_width(200.),
                                 );
-                                ui.button("•••");
+                                if ui.button("•••").clicked() {
+                                    if let Some(path) = rfd::FileDialog::new()
+                                        .add_filter("Text File", &["txt", "csv"])
+                                        .pick_file()
+                                    {
+                                        app_ctx.app_model.node_file_path =
+                                            Some(path.display().to_string())
+                                    }
+                                }
                             });
 
                             ui.end_row();
@@ -70,11 +80,25 @@ impl ImportModal {
                             ui.add(egui::Label::new("Edge File"));
                             ui.horizontal(|ui| {
                                 ui.add(
-                                    egui::TextEdit::singleline(&mut text)
-                                        .hint_text("")
-                                        .desired_width(200.),
+                                    egui::TextEdit::singleline(
+                                        app_ctx
+                                            .app_model
+                                            .edge_file_path
+                                            .as_mut()
+                                            .unwrap_or(&mut "".to_string()),
+                                    )
+                                    .hint_text("")
+                                    .desired_width(200.),
                                 );
-                                ui.button("•••");
+                                if ui.button("•••").clicked() {
+                                    if let Some(path) = rfd::FileDialog::new()
+                                        .add_filter("Text File", &["txt", "csv"])
+                                        .pick_file()
+                                    {
+                                        app_ctx.app_model.edge_file_path =
+                                            Some(path.display().to_string())
+                                    }
+                                }
                             });
 
                             ui.end_row();

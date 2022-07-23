@@ -15,3 +15,4 @@ wgpu = { version = "0.13", features = ["webgl"] }
 pollster = { version = "0.2.5" }
 
 nanorand = { version = "0.7", default-features = false, features = ["wyrand"] }
+rfd = "0.9.1"
