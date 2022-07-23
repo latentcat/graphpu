@@ -16,13 +16,22 @@ impl ImportModal {
                     ui.set_style(ui.ctx().style());
                     ui.spacing_mut().item_spacing = egui::vec2(8.0, 8.0);
                     ui.horizontal(|ui| {
-                        ui.label("");
+                        ui.label(&app_ctx.app_model.import_state);
                         ui.allocate_ui_with_layout(
                             ui.available_size(),
                             egui::Layout::right_to_left(),
                             |ui| {
                                 let remove_data_button = ui.button("   Import   ");
-                                if remove_data_button.clicked() {}
+                                if remove_data_button.clicked() {
+                                    let results = [app_ctx.graphic_model.read_nodes(&app_ctx.app_model.node_file_path),
+                                        app_ctx.graphic_model.read_edges(&app_ctx.app_model.edge_file_path)];
+                                    if results.iter().any(|result| result.is_err()) {
+                                        app_ctx.app_model.import_state = "Error".to_string();
+                                    } else {
+                                        app_ctx.app_model.import_state = "Success".to_string();
+                                        app_ctx.app_model.import_visible = false;
+                                    }
+                                }
                                 let reimport_data_button = ui.button("   Cancel   ");
                                 if reimport_data_button.clicked() {
                                     app_ctx.app_model.import_visible = false;

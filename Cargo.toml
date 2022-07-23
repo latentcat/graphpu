@@ -16,3 +16,5 @@ pollster = { version = "0.2.5" }
 
 nanorand = { version = "0.7", default-features = false, features = ["wyrand"] }
 rfd = "0.9.1"
+csv = "1.1.6"
+serde = { version = "1.0.140", features = ["derive"] }
