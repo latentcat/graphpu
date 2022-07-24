@@ -11,6 +11,7 @@ dependencies = [
  "eframe",
  "egui",
  "egui-wgpu",
+ "egui_extras",
  "nanorand",
  "pollster",
  "rfd",
@@ -760,6 +761,13 @@ dependencies = [
  "tracing",
  "webbrowser",
  "winit",
+]
+
+[[package]]
+name = "egui_extras"
+version = "0.18.0"
+dependencies = [
+ "egui",
 ]
 
 [[package]]

@@ -4,13 +4,8 @@ use crate::MainApp;
 
 use super::AppView;
 
+#[derive(Default)]
 pub struct GraphicsView;
-
-impl Default for GraphicsView {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 impl AppView for GraphicsView {
     fn show(self, ctx: &mut MainApp, ui: &mut Ui) {

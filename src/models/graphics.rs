@@ -46,6 +46,5 @@ pub fn read_from_csv(path: &Option<PathBuf>) -> Result<ExternalData, String> {
                 .collect()
         })
         .collect();
-    println!("{:?}, {:?}", data_headers, data);
     Ok(ExternalData { data_headers, data })
 }

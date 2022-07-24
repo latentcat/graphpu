@@ -1,16 +1,25 @@
 use std::path::PathBuf;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub enum ImportState {
+    #[default]
     Initial,
     Error,
     Success,
 }
 
-impl Default for ImportState {
-    fn default() -> Self {
-        Self::Initial
-    }
+#[derive(Default, PartialEq)]
+pub enum Stage {
+    #[default]
+    Graphics,
+    Table,
+}
+
+#[derive(Default, PartialEq)]
+pub enum NodeEdgeTab {
+    #[default]
+    Node,
+    Edge,
 }
 
 #[derive(Default)]
@@ -19,6 +28,8 @@ pub struct AppModel {
     pub import_state: ImportState,
     pub node_file_path: Option<PathBuf>,
     pub edge_file_path: Option<PathBuf>,
+    pub stage: Stage,
+    pub ne_tab: NodeEdgeTab,
 }
 
 impl AppModel {

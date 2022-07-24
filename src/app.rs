@@ -1,9 +1,9 @@
 use crate::{
     components::{
         detail_view::DetailView, graphics_view::GraphicsView, inspector_view::InspectorView,
-        menubar_view::MenuBarView, AppView, import_modal::ImportModal,
+        menubar_view::MenuBarView, AppView, import_modal::ImportModal, table_view::TableView,
     },
-    models::{app::AppModel, compute::ComputeModel, graphics::GraphicsModel},
+    models::{app::{AppModel, Stage}, compute::ComputeModel, graphics::GraphicsModel},
     widgets::boids::Boids,
 };
 use egui::Color32;
@@ -40,7 +40,10 @@ impl eframe::App for MainApp {
                 MenuBarView::default().show(self, ui);
                 DetailView::default().show(self, ui);
                 InspectorView::default().show(self, ui);
-                GraphicsView::default().show(self, ui);
+                match self.app_model.stage {
+                    Stage::Graphics => GraphicsView::default().show(self, ui),
+                    Stage::Table => TableView::default().show(self, ui),
+                };
             });
 
         if self.app_model.import_visible {

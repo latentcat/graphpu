@@ -1,6 +1,6 @@
 use egui::Ui;
 
-use crate::models::app::ImportState;
+use crate::models::app::{ImportState, NodeEdgeTab};
 use crate::{models::compute::ComputeMethod, MainApp};
 use crate::models::compute::ComputeMethodType;
 
@@ -115,10 +115,10 @@ impl AppView for InspectorView {
 
                         ui.columns(2, |columns| {
                             columns[0].vertical_centered_justified(|ui| {
-                                ui.selectable_value(&mut 0, 0, "Node");
+                                ui.selectable_value(&mut ctx.app_model.ne_tab, NodeEdgeTab::Node, "Node");
                             });
                             columns[1].vertical_centered_justified(|ui| {
-                                ui.selectable_value(&mut 0, 1, "Edge");
+                                ui.selectable_value(&mut ctx.app_model.ne_tab, NodeEdgeTab::Edge, "Edge");
                             });
                         });
 
