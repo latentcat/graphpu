@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
+use std::{collections::HashMap, rc::Rc, path::PathBuf};
 
 use crate::widgets::GraphicDelegation;
 
@@ -24,7 +24,7 @@ impl GraphicsModel {
     }
 }
 
-pub fn read_from_csv(path: &Option<String>) -> Result<ExternalData, String> {
+pub fn read_from_csv(path: &Option<PathBuf>) -> Result<ExternalData, String> {
     let path = path.as_deref().ok_or("Can't find file")?;
     let err_fomatter = |err| format!("{}", err);
 

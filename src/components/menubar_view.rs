@@ -27,7 +27,7 @@ pub fn panel_style(style: &egui::Style) -> egui::Frame {
     }
 }
 
-pub fn button_group_style(style: &egui::Style) -> egui::Frame {
+pub fn button_group_style(_: &egui::Style) -> egui::Frame {
     egui::Frame {
         inner_margin: egui::style::Margin::symmetric(0.0, 0.0),
         rounding: egui::Rounding::same(2.0),

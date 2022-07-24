@@ -1,5 +1,6 @@
 use egui::Ui;
 
+use crate::models::app::ImportState;
 use crate::{models::compute::ComputeMethod, MainApp};
 use crate::models::compute::ComputeMethodType;
 
@@ -61,32 +62,32 @@ impl AppView for InspectorView {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
 
-                        ui.vertical_centered_justified(|ui| {
-                            let import_data_button = ui.button("Import Data");
-                            if import_data_button.clicked() {
-                                ctx.app_model.import_visible = true;
-                            }
-                        });
-
-                        ui.separator();
-
-
-                        ui.horizontal(|ui| {
-                            ui.label("node.csv | edge.csv");
-                            ui.allocate_ui_with_layout(ui.available_size(), egui::Layout::right_to_left(), |ui| {
-                                let remove_data_button = ui.button("🗑");
-                                if remove_data_button.clicked() {
-                                    //
-                                }
-                                let reimport_data_button = ui.button("⟲");
-                                if reimport_data_button.clicked() {
-                                    //
+                        if matches!(ctx.app_model.import_state, ImportState::Success) {
+                            let node_file_name = ctx.app_model.node_file_name().unwrap();
+                            let edge_file_name = ctx.app_model.edge_file_name().unwrap();
+                                ui.horizontal(|ui| {
+                                    ui.label(format!("{} | {}", node_file_name, edge_file_name));
+                                    ui.allocate_ui_with_layout(ui.available_size(), egui::Layout::right_to_left(), |ui| {
+                                        let remove_data_button = ui.button("🗑");
+                                        if remove_data_button.clicked() {
+                                            //
+                                        }
+                                        let reimport_data_button = ui.button("⟲");
+                                        if reimport_data_button.clicked() {
+                                            //
+                                        }
+                                    });
+                                });
+                        } else {
+                            ui.vertical_centered_justified(|ui| {
+                                let import_data_button = ui.button("Import Data");
+                                if import_data_button.clicked() {
+                                    ctx.app_model.import_visible = true;
                                 }
                             });
-                        });
+                        }
 
                         ui.separator();
-
 
                         ui.horizontal(|ui| {
                             egui::ComboBox::from_id_source("Compute Method")
