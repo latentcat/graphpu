@@ -4,7 +4,7 @@ use crate::{
         menubar_view::MenuBarView, AppView, import_modal::ImportModal,
     },
     models::{app::AppModel, compute::ComputeModel, graphics::GraphicsModel},
-    widgets::{boids::Boids},
+    widgets::boids::Boids,
 };
 use egui::Color32;
 

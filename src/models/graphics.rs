@@ -1,65 +1,51 @@
-use std::rc::Rc;
-
-use csv::Error;
-use serde::Deserialize;
+use std::{collections::HashMap, rc::Rc};
 
 use crate::widgets::GraphicDelegation;
 
-#[derive(Debug, Deserialize)]
-pub struct Node {
-    id: String,
-    size: f32,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct Edge {
-    start_id: String,
-    end_id: String,
-    label: String,
+#[derive(Debug, Default)]
+pub struct ExternalData {
+    pub data_headers: Vec<Rc<String>>,
+    pub data: Vec<HashMap<Rc<String>, String>>,
 }
 
 pub struct GraphicsModel {
     pub graphic_delegation: Rc<dyn GraphicDelegation>,
-    pub nodes: Vec<Node>,
-    pub edges: Vec<Edge>,
+    pub node_data: ExternalData,
+    pub edge_data: ExternalData,
 }
 
 impl GraphicsModel {
     pub fn new(graphic_delegation: Rc<dyn GraphicDelegation>) -> Self {
         Self {
             graphic_delegation,
-            nodes: Vec::new(),
-            edges: Vec::new(),
+            node_data: ExternalData::default(),
+            edge_data: ExternalData::default(),
         }
     }
 }
 
-impl GraphicsModel {
-    pub fn read_nodes(&mut self, path: &Option<String>) -> Result<(), String> {
-        let path = path.as_deref().ok_or("Can't find file")?;
-        let err_fomatter = |err| format!("{}", err);
+pub fn read_from_csv(path: &Option<String>) -> Result<ExternalData, String> {
+    let path = path.as_deref().ok_or("Can't find file")?;
+    let err_fomatter = |err| format!("{}", err);
 
-        let mut rdr = csv::Reader::from_path(path).map_err(err_fomatter)?;
-        self.nodes.clear();
-        for result in rdr.deserialize().map(|result| result.map_err(err_fomatter)) {
-            let node: Node = result?;
-            self.nodes.push(node);
-        }
-        println!("{:?}", self.nodes);
-        Ok(())
-    }
-
-    pub fn read_edges(&mut self, path: &Option<String>) -> Result<(), String>  {
-        let path = path.as_deref().ok_or("Can't find file")?;
-        let err_fomatter = |err| format!("{}", err);
-
-        let mut rdr = csv::Reader::from_path(path).map_err(err_fomatter)?;
-        self.edges.clear();
-        for result in rdr.deserialize().map(|result| result.map_err(err_fomatter)) {
-            let node: Edge = result?;
-            self.edges.push(node);
-        }
-        println!("{:?}", self.edges);
-        Ok(())
-    }
+    let mut rdr = csv::Reader::from_path(path).map_err(err_fomatter)?;
+    let data_headers: Vec<_> = rdr
+        .headers()
+        .map_err(err_fomatter)?
+        .into_iter()
+        .map(|s| Rc::new(s.to_string()))
+        .collect();
+    let data: Vec<HashMap<_, _>> = rdr
+        .records()
+        .into_iter()
+        .map(|record| {
+            data_headers
+                .iter()
+                .map(|s| s.clone())
+                .zip(record.unwrap().into_iter().map(str::to_string))
+                .collect()
+        })
+        .collect();
+    println!("{:?}, {:?}", data_headers, data);
+    Ok(ExternalData { data_headers, data })
 }

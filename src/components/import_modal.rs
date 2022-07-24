@@ -1,5 +1,6 @@
 use egui::Context;
 
+use crate::models::graphics::read_from_csv;
 use crate::widgets::frames::inner_panel_frame;
 use crate::{widgets::modal::Modal, MainApp};
 
@@ -23,8 +24,16 @@ impl ImportModal {
                             |ui| {
                                 let remove_data_button = ui.button("   Import   ");
                                 if remove_data_button.clicked() {
-                                    let results = [app_ctx.graphic_model.read_nodes(&app_ctx.app_model.node_file_path),
-                                        app_ctx.graphic_model.read_edges(&app_ctx.app_model.edge_file_path)];
+                                    let results = [
+                                        read_from_csv(&app_ctx.app_model.node_file_path).and_then(|data| {
+                                            app_ctx.graphic_model.node_data = data;
+                                            Ok(())
+                                        }),
+                                        read_from_csv(&app_ctx.app_model.edge_file_path).and_then(|data| {
+                                            app_ctx.graphic_model.edge_data = data;
+                                            Ok(())
+                                        }),
+                                    ];
                                     if results.iter().any(|result| result.is_err()) {
                                         app_ctx.app_model.import_state = "Error".to_string();
                                     } else {
