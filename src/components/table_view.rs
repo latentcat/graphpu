@@ -37,6 +37,13 @@ impl AppView for TableView {
 
                 let text_height = egui::TextStyle::Body.resolve(ui.style()).size + 2.0;
 
+                if data_headers.len() == 0 {
+                    ui.centered_and_justified(|ui| {
+                        ui.label(egui::RichText::new("Import data to display.").weak());
+                    });
+                    return;
+                }
+
                 egui::ScrollArea::horizontal()
                     // .always_show_scroll(true)
                     .auto_shrink([false, false])

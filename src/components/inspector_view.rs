@@ -43,6 +43,8 @@ impl AppView for InspectorView {
             .resizable(false)
             .show_inside(ui, |ui| {
 
+
+                /// Render Section
                 egui::TopBottomPanel::bottom("render")
                     .frame(inner_panel_style(ui.style()))
                     .show_inside(ui, |ui| {
@@ -62,12 +64,14 @@ impl AppView for InspectorView {
 
                 });
 
+                /// Main Section
                 egui::CentralPanel::default()
                     .frame(inner_panel_style(ui.style()))
                     .show_inside(ui, |ui| {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
 
+                        /// Import Section / File Section
                         if matches!(ctx.app_model.import_state, ImportState::Success) {
                             let node_file_name = ctx.app_model.node_file_name().unwrap();
                             let edge_file_name = ctx.app_model.edge_file_name().unwrap();
@@ -99,9 +103,10 @@ impl AppView for InspectorView {
                             });
                         }
 
+
                         ui.separator();
 
-
+                        /// Compute Section
                         ui.horizontal(|ui| {
 
                             egui::ComboBox::from_id_source("Compute Method")
@@ -128,6 +133,7 @@ impl AppView for InspectorView {
 
                         ui.separator();
 
+                        /// Node Edge Inspector Switch
                         button_group_style(ui.style()).show(ui, |ui| {
                             ui.set_style(ui.ctx().style());
                             ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
@@ -141,23 +147,35 @@ impl AppView for InspectorView {
                             });
                         });
 
+                        ui.add_space(4.0);
+
+                        /// Node Edge Inspector
                         egui::ScrollArea::vertical()
                             .always_show_scroll(true)
                             .auto_shrink([false, false])
                             .id_source("source")
                             .show(ui, |ui| {
-                                ui.centered_and_justified(|ui| {
-                                    ui.label("Inspector View");
-                                });
+                                match ctx.app_model.ne_tab {
+                                    NodeEdgeTab::Node => {
+                                        ui.centered_and_justified(|ui| {
+                                            ui.label(egui::RichText::new("Node Inspector View").weak());
+                                        });
+                                    },
+                                    NodeEdgeTab::Edge => {
+                                        ui.centered_and_justified(|ui| {
+                                            ui.label(egui::RichText::new("Edge Inspector View").weak());
+                                        });
+                                    },
+                                };
                                 // lorem_ipsum(ui);
                             });
 
                         ui.separator();
                 });
 
-
-
-
             });
+
+
     }
+
 }
