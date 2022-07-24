@@ -10,6 +10,16 @@ pub fn window_frame(style: &egui::Style) -> egui::Frame {
   }
 }
 
+pub fn central_panel_frame(style: &egui::Style) -> egui::Frame {
+    egui::Frame {
+        inner_margin: egui::style::Margin::symmetric(8.0, 8.0),
+        rounding: egui::Rounding::none(),
+        fill: style.visuals.window_fill(),
+        stroke: style.visuals.window_stroke(),
+        ..Default::default()
+    }
+}
+
 pub fn inner_panel_frame(_: &egui::Style) -> egui::Frame {
   egui::Frame {
       inner_margin: egui::style::Margin::symmetric(16.0, 16.0),

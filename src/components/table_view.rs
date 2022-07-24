@@ -4,6 +4,7 @@ use crate::{
     models::{app::NodeEdgeTab, graphics::ExternalData},
     widgets::frames::button_group_style,
 };
+use crate::widgets::frames::central_panel_frame;
 
 use super::AppView;
 
@@ -12,24 +13,29 @@ pub struct TableView;
 
 impl AppView for TableView {
     fn show(self, ctx: &mut crate::MainApp, ui: &mut egui::Ui) {
+        let style = (*ui.style()).clone();
         egui::CentralPanel::default()
-            .frame(egui::Frame::none())
+            .frame(central_panel_frame(&style))
             .show_inside(ui, |ui| {
+                ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
+
                 ui.horizontal_top(|ui| {
                     button_group_style(ui.style()).show(ui, |ui| {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
-                        ui.selectable_value(&mut ctx.app_model.ne_tab, NodeEdgeTab::Node, "Node");
-                        ui.selectable_value(&mut ctx.app_model.ne_tab, NodeEdgeTab::Edge, "Edge");
+                        ui.selectable_value(&mut ctx.app_model.ne_tab, NodeEdgeTab::Node, "    Node    ");
+                        ui.selectable_value(&mut ctx.app_model.ne_tab, NodeEdgeTab::Edge, "    Edge    ");
                     });
                 });
+
+                ui.separator();
 
                 let ExternalData { data_headers, data } = match ctx.app_model.ne_tab {
                     NodeEdgeTab::Node => &ctx.graphic_model.node_data,
                     NodeEdgeTab::Edge => &ctx.graphic_model.edge_data,
                 };
 
-                let text_height = egui::TextStyle::Body.resolve(ui.style()).size;
+                let text_height = egui::TextStyle::Body.resolve(ui.style()).size + 5.0;
 
                 TableBuilder::new(ui)
                     .striped(true)
