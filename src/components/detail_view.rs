@@ -13,7 +13,7 @@ impl AppView for DetailView {
             ui.set_style(ui.ctx().style());
             let layout = egui::Layout::top_down(egui::Align::LEFT).with_main_justify(true);
             ui.allocate_ui_with_layout(ui.available_size(), layout, |ui| {
-                ui.label(format!("Node: {}  |  Edge: {}  |  CPU: 10%  |  Memory: 30MB", ctx.graphic_model.node_data.data.len(), ctx.graphic_model.edge_data.data.len()));
+                ui.label(format!("Node: {}  |  Edge: {}", ctx.graphic_model.node_data.data.len(), ctx.graphic_model.edge_data.data.len()));
             })
         });
     }
