@@ -3,6 +3,7 @@ use egui::Ui;
 use crate::models::app::{ImportState, NodeEdgeTab};
 use crate::{models::compute::ComputeMethod, MainApp};
 use crate::models::compute::ComputeMethodType;
+use crate::widgets::frames::button_group_style;
 
 use super::AppView;
 
@@ -47,11 +48,16 @@ impl AppView for InspectorView {
                     .show_inside(ui, |ui| {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
-                        ui.vertical_centered_justified(|ui| {
-                            let render_button = ui.button("Render Image");
-                            if render_button.clicked() {
-                                //
-                            }
+
+                        ui.with_layout(egui::Layout::right_to_left(), |ui| {
+                            ui.button("⛭");
+
+                            ui.vertical_centered_justified(|ui| {
+                                let render_button = ui.button("Render Image");
+                                if render_button.clicked() {
+                                    //
+                                }
+                            });
                         });
 
                 });
@@ -65,14 +71,8 @@ impl AppView for InspectorView {
                         if matches!(ctx.app_model.import_state, ImportState::Success) {
                             let node_file_name = ctx.app_model.node_file_name().unwrap();
                             let edge_file_name = ctx.app_model.edge_file_name().unwrap();
-                            ui.with_layout(
-                                egui::Layout::top_down(egui::Align::LEFT).with_cross_align(egui::Align::Min),
-                                |ui| {
-                                    ui.label(egui::RichText::new(format!("{}\n{}", node_file_name, edge_file_name)).strong());
-                                },
-                            );
                             ui.horizontal(|ui| {
-                                ui.allocate_ui_with_layout(ui.available_size(), egui::Layout::right_to_left(), |ui| {
+                                ui.with_layout(egui::Layout::right_to_left(), |ui| {
                                     let remove_data_button = ui.button("🗑");
                                     if remove_data_button.clicked() {
                                         //
@@ -81,6 +81,13 @@ impl AppView for InspectorView {
                                     if reimport_data_button.clicked() {
                                         //
                                     }
+
+                                    ui.with_layout(
+                                        egui::Layout::top_down(egui::Align::LEFT).with_cross_align(egui::Align::Min),
+                                        |ui| {
+                                            ui.label(egui::RichText::new(format!("{}\n{}", node_file_name, edge_file_name)).strong());
+                                        },
+                                    );
                                 });
                             });
                         } else {
@@ -94,7 +101,9 @@ impl AppView for InspectorView {
 
                         ui.separator();
 
+
                         ui.horizontal(|ui| {
+
                             egui::ComboBox::from_id_source("Compute Method")
                                 .selected_text(model.compute_method.0)
                                 .show_ui(ui, |ui| {
@@ -102,6 +111,7 @@ impl AppView for InspectorView {
                                     ui.separator();
                                     ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
                                 });
+
                             if model.compute_method.1 == ComputeMethodType::Continuous {
                                 let continuous_button = ui.button(if !model.is_computing { "▶" } else { "⏸" });
                                 if continuous_button.clicked() {
@@ -118,12 +128,16 @@ impl AppView for InspectorView {
 
                         ui.separator();
 
-                        ui.columns(2, |columns| {
-                            columns[0].vertical_centered_justified(|ui| {
-                                ui.selectable_value(&mut ctx.app_model.ne_tab, NodeEdgeTab::Node, "Node");
-                            });
-                            columns[1].vertical_centered_justified(|ui| {
-                                ui.selectable_value(&mut ctx.app_model.ne_tab, NodeEdgeTab::Edge, "Edge");
+                        button_group_style(ui.style()).show(ui, |ui| {
+                            ui.set_style(ui.ctx().style());
+                            ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
+                            ui.columns(2, |columns| {
+                                columns[0].vertical_centered_justified(|ui| {
+                                    ui.selectable_value(&mut ctx.app_model.ne_tab, NodeEdgeTab::Node, "Node");
+                                });
+                                columns[1].vertical_centered_justified(|ui| {
+                                    ui.selectable_value(&mut ctx.app_model.ne_tab, NodeEdgeTab::Edge, "Edge");
+                                });
                             });
                         });
 
@@ -132,7 +146,9 @@ impl AppView for InspectorView {
                             .auto_shrink([false, false])
                             .id_source("source")
                             .show(ui, |ui| {
-                                ui.label("Inspector View");
+                                ui.centered_and_justified(|ui| {
+                                    ui.label("Inspector View");
+                                });
                                 // lorem_ipsum(ui);
                             });
 
