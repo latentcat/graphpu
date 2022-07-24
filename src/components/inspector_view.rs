@@ -65,19 +65,24 @@ impl AppView for InspectorView {
                         if matches!(ctx.app_model.import_state, ImportState::Success) {
                             let node_file_name = ctx.app_model.node_file_name().unwrap();
                             let edge_file_name = ctx.app_model.edge_file_name().unwrap();
-                                ui.horizontal(|ui| {
-                                    ui.label(format!("{} | {}", node_file_name, edge_file_name));
-                                    ui.allocate_ui_with_layout(ui.available_size(), egui::Layout::right_to_left(), |ui| {
-                                        let remove_data_button = ui.button("🗑");
-                                        if remove_data_button.clicked() {
-                                            //
-                                        }
-                                        let reimport_data_button = ui.button("⟲");
-                                        if reimport_data_button.clicked() {
-                                            //
-                                        }
-                                    });
+                            ui.with_layout(
+                                egui::Layout::top_down(egui::Align::LEFT).with_cross_align(egui::Align::Min),
+                                |ui| {
+                                    ui.label(egui::RichText::new(format!("{}\n{}", node_file_name, edge_file_name)).strong());
+                                },
+                            );
+                            ui.horizontal(|ui| {
+                                ui.allocate_ui_with_layout(ui.available_size(), egui::Layout::right_to_left(), |ui| {
+                                    let remove_data_button = ui.button("🗑");
+                                    if remove_data_button.clicked() {
+                                        //
+                                    }
+                                    let reimport_data_button = ui.button("⟲");
+                                    if reimport_data_button.clicked() {
+                                        //
+                                    }
                                 });
+                            });
                         } else {
                             ui.vertical_centered_justified(|ui| {
                                 let import_data_button = ui.button("Import Data");
