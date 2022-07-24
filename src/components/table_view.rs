@@ -49,15 +49,14 @@ impl AppView for TableView {
                         }
                     })
                     .body(|mut body| {
-                        for data_row in data.iter() {
-                            body.row(text_height, |mut row| {
-                                for data_col in data_headers {
-                                    row.col(|ui| {
-                                        ui.label(data_row.get(data_col).unwrap_or(&"".to_string()));
-                                    });
-                                }
-                            })
-                        }
+                        body.rows(text_height, data.len(), |row_index, mut row| {
+                            let data_row = &data[row_index];
+                            for data_col in data_headers {
+                                row.col(|ui| {
+                                    ui.label(data_row.get(data_col).unwrap_or(&"".to_string()));
+                                });
+                            }
+                        })
                     });
             });
     }
