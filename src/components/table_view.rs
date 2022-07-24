@@ -35,29 +35,38 @@ impl AppView for TableView {
                     NodeEdgeTab::Edge => &ctx.graphic_model.edge_data,
                 };
 
-                let text_height = egui::TextStyle::Body.resolve(ui.style()).size + 5.0;
+                let text_height = egui::TextStyle::Body.resolve(ui.style()).size + 2.0;
 
-                TableBuilder::new(ui)
-                    .striped(true)
-                    .cell_layout(egui::Layout::left_to_right())
-                    .columns(Size::remainder().at_least(40.0), data_headers.len())
-                    .header(20.0, |mut header| {
-                        for col in data_headers.iter() {
-                            header.col(|ui| {
-                                ui.heading(&col[..]);
+                egui::ScrollArea::horizontal()
+                    // .always_show_scroll(true)
+                    .auto_shrink([false, false])
+                    .id_source("table_scroll")
+                    .show(ui, |ui| {
+                        TableBuilder::new(ui)
+                            .striped(true)
+                            .cell_layout(egui::Layout::left_to_right())
+                            .columns(Size::initial(100.0).at_least(60.0), if data_headers.len() > 0 { data_headers.len() - 1 } else { 0 })
+                            .columns(Size::remainder().at_least(60.0), if data_headers.len() > 0 { 1 } else { 0 })
+                            .resizable(true)
+                            .header(20.0, |mut header| {
+                                for col in data_headers.iter() {
+                                    header.col(|ui| {
+                                        ui.label(egui::RichText::new(&col[..]).strong());
+                                    });
+                                }
+                            })
+                            .body(|mut body| {
+                                body.rows(text_height, data.len(), |row_index, mut row| {
+                                    let data_row = &data[row_index];
+                                    for data_col in data_headers {
+                                        row.col(|ui| {
+                                            ui.label(data_row.get(data_col).unwrap_or(&"".to_string()));
+                                        });
+                                    }
+                                })
                             });
-                        }
-                    })
-                    .body(|mut body| {
-                        body.rows(text_height, data.len(), |row_index, mut row| {
-                            let data_row = &data[row_index];
-                            for data_col in data_headers {
-                                row.col(|ui| {
-                                    ui.label(data_row.get(data_col).unwrap_or(&"".to_string()));
-                                });
-                            }
-                        })
                     });
+
             });
     }
 }
