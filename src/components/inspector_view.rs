@@ -1,9 +1,10 @@
-use egui::Ui;
+use egui::{Ui};
+use egui::collapsing_header::HeaderResponse;
 
 use crate::models::app::{ImportState, NodeEdgeTab};
 use crate::{models::compute::ComputeMethod, MainApp};
 use crate::models::compute::ComputeMethodType;
-use crate::widgets::frames::button_group_style;
+use crate::widgets::frames::{button_group_style, inspector_frame, inspector_inner_frame};
 
 use super::AppView;
 
@@ -15,30 +16,12 @@ impl Default for InspectorView {
     }
 }
 
-pub fn panel_style(style: &egui::Style) -> egui::Frame {
-    egui::Frame {
-        inner_margin: egui::style::Margin::symmetric(0.0, 0.0),
-        rounding: egui::Rounding::none(),
-        fill: style.visuals.window_fill(),
-        stroke: style.visuals.window_stroke(),
-        ..Default::default()
-    }
-}
-
-pub fn inner_panel_style(_style: &egui::Style) -> egui::Frame {
-    egui::Frame {
-        inner_margin: egui::style::Margin::symmetric(8.0, 8.0),
-        rounding: egui::Rounding::none(),
-        ..Default::default()
-    }
-}
-
 impl AppView for InspectorView {
     fn show(self, ctx: &mut MainApp, ui: &mut Ui) {
         let MainApp { compute_model: model, .. } = ctx;
         egui::SidePanel::right("inspector_view")
-            .frame(panel_style(ui.style()))
-            .default_width(250.0)
+            .frame(inspector_frame(ui.style()))
+            .default_width(280.0)
             .width_range(150.0..=400.0)
             .resizable(false)
             .show_inside(ui, |ui| {
@@ -46,7 +29,7 @@ impl AppView for InspectorView {
 
                 /// Render Section
                 egui::TopBottomPanel::bottom("render")
-                    .frame(inner_panel_style(ui.style()))
+                    .frame(inspector_inner_frame(ui.style()))
                     .show_inside(ui, |ui| {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
@@ -66,7 +49,7 @@ impl AppView for InspectorView {
 
                 /// Main Section
                 egui::CentralPanel::default()
-                    .frame(inner_panel_style(ui.style()))
+                    .frame(inspector_inner_frame(ui.style()))
                     .show_inside(ui, |ui| {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
@@ -103,34 +86,6 @@ impl AppView for InspectorView {
                             });
                         }
 
-
-                        ui.separator();
-
-                        /// Compute Section
-                        ui.horizontal(|ui| {
-
-                            egui::ComboBox::from_id_source("Compute Method")
-                                .selected_text(model.compute_method.0)
-                                .show_ui(ui, |ui| {
-                                    ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
-                                    ui.separator();
-                                    ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
-                                });
-
-                            if model.compute_method.1 == ComputeMethodType::Continuous {
-                                let continuous_button = ui.button(if !model.is_computing { "▶" } else { "⏸" });
-                                if continuous_button.clicked() {
-                                    model.switch_computing();
-                                }
-                            } else {
-                                model.set_computing(false);
-                                let one_step_button = ui.button("⏩");
-                                if one_step_button.clicked() {
-                                    model.set_dispatching(true);
-                                }
-                            }
-                        });
-
                         ui.separator();
 
                         /// Node Edge Inspector Switch
@@ -151,23 +106,188 @@ impl AppView for InspectorView {
 
                         /// Node Edge Inspector
                         egui::ScrollArea::vertical()
-                            .always_show_scroll(true)
+                            // .always_show_scroll(true)
                             .auto_shrink([false, false])
                             .id_source("source")
                             .show(ui, |ui| {
                                 match ctx.app_model.ne_tab {
+
+                                    /// Node Inspector
                                     NodeEdgeTab::Node => {
-                                        ui.centered_and_justified(|ui| {
-                                            ui.label(egui::RichText::new("Node Inspector View").weak());
+
+                                        let (header, is_header_open) = grid_header(ui, true, "ID", "None");
+                                        header.body(|ui| {
+                                            inspector_grid("Node Inspector ID")
+                                                .show(ui, |ui| {
+
+                                                    grid_label(ui, "Source");
+                                                    egui::ComboBox::from_id_source("ID Source")
+                                                        .selected_text("None")
+                                                        .show_ui(ui, |ui| {
+                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                                            ui.separator();
+                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                                                        });
+
+                                                    ui.end_row();
+
+                                                    grid_label(ui, "");
+                                                    ui.button("Set ID");
+                                                    ui.end_row();
+
+                                                });
                                         });
+
+                                        let (header, is_header_open) = grid_header(ui, true, "Position", "Compute");
+                                        header.body(|ui| {
+                                            inspector_grid("Node Inspector ID")
+                                                .show(ui, |ui| {
+
+                                                    grid_label(ui, "Source");
+                                                    egui::ComboBox::from_id_source("ID Source 2")
+                                                        .selected_text("Compute")
+                                                        .show_ui(ui, |ui| {
+                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                                            ui.separator();
+                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                                                        });
+
+                                                    ui.end_row();
+
+                                                    grid_label(ui, "Method");
+                                                    ui.horizontal(|ui| {
+
+                                                        egui::ComboBox::from_id_source("Compute Method 2")
+                                                            .selected_text(model.compute_method.0)
+                                                            .show_ui(ui, |ui| {
+                                                                ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                                                ui.separator();
+                                                                ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                                                            });
+
+                                                    });
+
+                                                    ui.end_row();
+
+                                                    grid_label(ui, "");
+                                                    if model.compute_method.1 == ComputeMethodType::Continuous {
+                                                        let continuous_button = ui.button(if !model.is_computing { "▶ Start Computing" } else { "⏸ Pause Computing" });
+                                                        if continuous_button.clicked() {
+                                                            model.switch_computing();
+                                                        }
+                                                    } else {
+                                                        model.set_computing(false);
+                                                        let one_step_button = ui.button("⏩ Dispatch");
+                                                        if one_step_button.clicked() {
+                                                            model.set_dispatching(true);
+                                                        }
+                                                    }
+
+                                                    ui.end_row();
+
+                                                });
+                                        });
+
+                                        let (header, is_header_open) = grid_header(ui, false, "Color", "None");
+                                        header.body(|ui| {
+                                            inspector_grid("N Color")
+                                                .show(ui, |ui| {
+
+                                                    grid_label(ui, "Source");
+                                                    egui::ComboBox::from_id_source("Color Source")
+                                                        .selected_text("None")
+                                                        .show_ui(ui, |ui| {
+                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                                            ui.separator();
+                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                                                        });
+
+                                                    ui.end_row();
+
+                                                    grid_label(ui, "Ramp");
+                                                    egui::ComboBox::from_id_source("Ramp")
+                                                        .selected_text("None")
+                                                        .show_ui(ui, |ui| {
+                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                                            ui.separator();
+                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                                                        });
+
+                                                    ui.end_row();
+
+                                                    grid_label(ui, "");
+                                                    ui.button("Set Color");
+                                                    ui.end_row();
+
+                                                });
+                                        });
+
+
+                                        let (header, is_header_open) = grid_header(ui, false, "Size", "None");
+                                        header.body(|ui| {
+                                            inspector_grid("N Size")
+                                                .show(ui, |ui| {
+
+                                                    grid_label(ui, "Source");
+                                                    egui::ComboBox::from_id_source("Size Source")
+                                                        .selected_text("None")
+                                                        .show_ui(ui, |ui| {
+                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                                            ui.separator();
+                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                                                        });
+
+                                                    ui.end_row();
+
+                                                    grid_label(ui, "");
+                                                    ui.button("Set Size");
+                                                    ui.end_row();
+
+                                                });
+                                        });
+
                                     },
+
+                                    /// Edge Inspector
                                     NodeEdgeTab::Edge => {
-                                        ui.centered_and_justified(|ui| {
-                                            ui.label(egui::RichText::new("Edge Inspector View").weak());
+
+                                        let (header, is_header_open) = grid_header(ui, true, "Node ID", "None");
+                                        header.body(|ui| {
+                                            inspector_grid("Edge Inspector ID")
+                                                .show(ui, |ui| {
+                                                    grid_label(ui, "Start");
+                                                    egui::ComboBox::from_id_source("Start ID")
+                                                        .selected_text("None")
+                                                        .show_ui(ui, |ui| {
+                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                                            ui.separator();
+                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                                                        });
+
+                                                    ui.end_row();
+
+                                                    grid_label(ui, "End");
+                                                    egui::ComboBox::from_id_source("End ID")
+                                                        .selected_text("None")
+                                                        .show_ui(ui, |ui| {
+                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                                            ui.separator();
+                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                                                        });
+
+                                                    ui.end_row();
+
+                                                    grid_label(ui, "");
+                                                    let _ = ui.button("Build Index");
+
+                                                    ui.end_row();
+
+                                                });
                                         });
+
                                     },
                                 };
-                                // lorem_ipsum(ui);
+
                             });
 
                         ui.separator();
@@ -178,4 +298,51 @@ impl AppView for InspectorView {
 
     }
 
+}
+
+fn inspector_grid(id: &str) -> egui::Grid {
+    egui::Grid::new(id)
+        .num_columns(2)
+        .spacing([10.0, 4.0])
+        .min_col_width(65.)
+        .min_row_height(10.)
+}
+
+fn grid_label(ui: &mut egui::Ui, title: &str) {
+    let label = format!("{}", title);
+    ui.horizontal(|ui| {
+        ui.set_max_width(65.);
+        ui.add(
+            egui::Label::new(egui::RichText::new(label)).wrap(true)
+        )
+    });
+}
+
+fn grid_category(ui: &mut egui::Ui, title: &str) {
+    let label = format!("{}", title);
+    ui.horizontal(|ui| {
+        ui.set_height(20.);
+        ui.add(
+            egui::Label::new(egui::RichText::new(label).strong()).wrap(true)
+        )
+    });
+}
+
+fn grid_header<'a>(ui: &'a mut egui::Ui, default_open: bool, title: &str, hint: &str) -> (HeaderResponse<'a, ()>, bool) {
+    let id = ui.make_persistent_id(title);
+    let header = egui::collapsing_header::CollapsingState::load_with_default_open(ui.ctx(), id, default_open);
+    let is_header_open = header.is_open();
+    return (header
+        .show_header(ui, |ui| {
+            if is_header_open {
+                ui.strong(title);
+            } else {
+                ui.horizontal(|ui| {
+                    ui.strong(title);
+                    ui.with_layout(egui::Layout::right_to_left(), |ui| {
+                        ui.weak(hint);
+                    });
+                });
+            }
+        }), is_header_open)
 }

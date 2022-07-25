@@ -72,56 +72,66 @@ impl ImportModal {
                         .show(ui, |ui| {
                             ui.add(egui::Label::new("Node File"));
                             ui.horizontal(|ui| {
-                                ui.add(
-                                    egui::TextEdit::singleline(
-                                        app_ctx
-                                            .app_model
-                                            .node_file_path
-                                            .as_ref()
-                                            .map(|path| path.display().to_string())
-                                            .as_mut()
-                                            .unwrap_or(&mut "".to_string()),
-                                    )
-                                    .hint_text("")
-                                    .desired_width(200.),
-                                );
-                                if ui.button("•••").clicked() {
-                                    if let Some(path) = rfd::FileDialog::new()
-                                        .add_filter("Text File", &["txt", "csv"])
-                                        .pick_file()
-                                    {
-                                        app_ctx.app_model.node_file_path =
-                                            Some(path)
+                                ui.with_layout(egui::Layout::right_to_left(), |ui| {
+                                    if ui.button("•••").clicked() {
+                                        if let Some(path) = rfd::FileDialog::new()
+                                            .add_filter("Text File", &["txt", "csv"])
+                                            .pick_file()
+                                        {
+                                            app_ctx.app_model.node_file_path =
+                                                Some(path)
+                                        }
                                     }
-                                }
+
+                                    ui.vertical_centered_justified(|ui| {
+                                        ui.add(
+                                            egui::TextEdit::singleline(
+                                                app_ctx
+                                                    .app_model
+                                                    .node_file_path
+                                                    .as_ref()
+                                                    .map(|path| path.display().to_string())
+                                                    .as_mut()
+                                                    .unwrap_or(&mut "".to_string()),
+                                            )
+                                                .hint_text("")
+                                                .desired_width(200.),
+                                        );
+                                    });
+                                });
                             });
 
                             ui.end_row();
 
                             ui.add(egui::Label::new("Edge File"));
                             ui.horizontal(|ui| {
-                                ui.add(
-                                    egui::TextEdit::singleline(
-                                        app_ctx
-                                            .app_model
-                                            .edge_file_path
-                                            .as_ref()
-                                            .map(|path| path.display().to_string())
-                                            .as_mut()
-                                            .unwrap_or(&mut "".to_string()),
-                                    )
-                                    .hint_text("")
-                                    .desired_width(200.),
-                                );
-                                if ui.button("•••").clicked() {
-                                    if let Some(path) = rfd::FileDialog::new()
-                                        .add_filter("Text File", &["txt", "csv"])
-                                        .pick_file()
-                                    {
-                                        app_ctx.app_model.edge_file_path =
-                                            Some(path)
+                                ui.with_layout(egui::Layout::right_to_left(), |ui| {
+                                    if ui.button("•••").clicked() {
+                                        if let Some(path) = rfd::FileDialog::new()
+                                            .add_filter("Text File", &["txt", "csv"])
+                                            .pick_file()
+                                        {
+                                            app_ctx.app_model.edge_file_path =
+                                                Some(path)
+                                        }
                                     }
-                                }
+
+                                    ui.vertical_centered_justified(|ui| {
+                                        ui.add(
+                                            egui::TextEdit::singleline(
+                                                app_ctx
+                                                    .app_model
+                                                    .edge_file_path
+                                                    .as_ref()
+                                                    .map(|path| path.display().to_string())
+                                                    .as_mut()
+                                                    .unwrap_or(&mut "".to_string()),
+                                            )
+                                                .hint_text("")
+                                                .desired_width(200.),
+                                        );
+                                    });
+                                });
                             });
 
                             ui.end_row();

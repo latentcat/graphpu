@@ -37,3 +37,21 @@ pub fn button_group_style(_: &egui::Style) -> egui::Frame {
       ..Default::default()
   }
 }
+
+pub fn inspector_frame(style: &egui::Style) -> egui::Frame {
+    egui::Frame {
+        inner_margin: egui::style::Margin::symmetric(0.0, 0.0),
+        rounding: egui::Rounding::none(),
+        fill: style.visuals.window_fill(),
+        stroke: style.visuals.window_stroke(),
+        ..Default::default()
+    }
+}
+
+pub fn inspector_inner_frame(_style: &egui::Style) -> egui::Frame {
+    egui::Frame {
+        inner_margin: egui::style::Margin::symmetric(8.0, 8.0),
+        rounding: egui::Rounding::none(),
+        ..Default::default()
+    }
+}
