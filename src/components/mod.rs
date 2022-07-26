@@ -1,6 +1,6 @@
 use egui::Ui;
 
-use crate::MainApp;
+use crate::{MainApp, models::Models};
 
 pub mod menubar_view;
 pub mod inspector_view;
@@ -10,5 +10,5 @@ pub mod import_modal;
 pub mod table_view;
 
 pub trait AppView {
-  fn show(self, ctx: &mut MainApp, ui: &mut Ui);
+  fn show(&mut self, models: &mut Models, ui: &mut Ui);
 }

@@ -1,6 +1,6 @@
 use egui::Ui;
 
-use crate::{MainApp, models::app::Stage, widgets::frames::button_group_style};
+use crate::{models::{app::Stage, Models}, widgets::frames::button_group_style};
 
 use super::AppView;
 
@@ -28,7 +28,7 @@ pub fn panel_style(style: &egui::Style) -> egui::Frame {
 }
 
 impl AppView for MenuBarView {
-    fn show(self, ctx: &mut MainApp, ui: &mut Ui) {
+    fn show(&mut self, models: &mut Models, ui: &mut Ui) {
         egui::TopBottomPanel::top("menubar_view")
             .frame(panel_style(ui.style()))
             .show_inside(ui, |ui| {
@@ -51,7 +51,7 @@ impl AppView for MenuBarView {
                         ui.separator();
 
                         if ui.button("Import Data").clicked() {
-                            ctx.app_model.import_visible = true;
+                            models.app_model.import_visible = true;
                             ui.close_menu();
                         }
                         ui.add_enabled_ui(false, |ui| {
@@ -126,8 +126,8 @@ impl AppView for MenuBarView {
                         .show(ui, |ui| {
                             ui.set_style(ui.ctx().style());
                             ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
-                            ui.selectable_value(&mut ctx.app_model.stage, Stage::Graphics, "    Graphics    ");
-                            ui.selectable_value(&mut ctx.app_model.stage, Stage::Table, "    Table    ");
+                            ui.selectable_value(&mut models.app_model.stage, Stage::Graphics, "    Graphics    ");
+                            ui.selectable_value(&mut models.app_model.stage, Stage::Table, "    Table    ");
                         });
                 });
             });

@@ -1,31 +1,36 @@
 use egui::{Ui};
 use egui::collapsing_header::HeaderResponse;
 
+use crate::models::Models;
 use crate::models::app::{ImportState, NodeEdgeTab};
-use crate::{models::compute::ComputeMethod, MainApp};
+use crate::{models::compute::ComputeMethod};
 use crate::models::compute::ComputeMethodType;
 use crate::widgets::frames::{button_group_style, inspector_frame, inspector_inner_frame};
 
 use super::AppView;
 
-pub struct InspectorView;
+pub struct InspectorView {
+    test_text: String,
+}
 
 impl Default for InspectorView {
     fn default() -> Self {
-        Self {}
+        Self {
+            test_text: String::default(),
+        }
     }
 }
 
 impl AppView for InspectorView {
-    fn show(self, ctx: &mut MainApp, ui: &mut Ui) {
-        let MainApp { compute_model: model, .. } = ctx;
+    fn show(&mut self, models: &mut Models, ui: &mut Ui) {
+        let Models { compute_model: model, .. } = models;
         egui::SidePanel::right("inspector_view")
             .frame(inspector_frame(ui.style()))
             .default_width(280.0)
             .width_range(150.0..=400.0)
             .resizable(false)
             .show_inside(ui, |ui| {
-
+                ui.text_edit_singleline(&mut self.test_text);
 
                 /// Render Section
                 egui::TopBottomPanel::bottom("render")
@@ -55,9 +60,9 @@ impl AppView for InspectorView {
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
 
                         /// Import Section / File Section
-                        if matches!(ctx.app_model.import_state, ImportState::Success) {
-                            let node_file_name = ctx.app_model.node_file_name().unwrap();
-                            let edge_file_name = ctx.app_model.edge_file_name().unwrap();
+                        if matches!(models.app_model.import_state, ImportState::Success) {
+                            let node_file_name = models.app_model.node_file_name().unwrap();
+                            let edge_file_name = models.app_model.edge_file_name().unwrap();
                             ui.horizontal(|ui| {
                                 ui.with_layout(egui::Layout::right_to_left(), |ui| {
                                     let remove_data_button = ui.button("🗑");
@@ -81,7 +86,7 @@ impl AppView for InspectorView {
                             ui.vertical_centered_justified(|ui| {
                                 let import_data_button = ui.button("Import Data");
                                 if import_data_button.clicked() {
-                                    ctx.app_model.import_visible = true;
+                                    models.app_model.import_visible = true;
                                 }
                             });
                         }
@@ -94,10 +99,10 @@ impl AppView for InspectorView {
                             ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
                             ui.columns(2, |columns| {
                                 columns[0].vertical_centered_justified(|ui| {
-                                    ui.selectable_value(&mut ctx.app_model.ne_tab, NodeEdgeTab::Node, "Node");
+                                    ui.selectable_value(&mut models.app_model.ne_tab, NodeEdgeTab::Node, "Node");
                                 });
                                 columns[1].vertical_centered_justified(|ui| {
-                                    ui.selectable_value(&mut ctx.app_model.ne_tab, NodeEdgeTab::Edge, "Edge");
+                                    ui.selectable_value(&mut models.app_model.ne_tab, NodeEdgeTab::Edge, "Edge");
                                 });
                             });
                         });
@@ -110,7 +115,7 @@ impl AppView for InspectorView {
                             .auto_shrink([false, false])
                             .id_source("source")
                             .show(ui, |ui| {
-                                match ctx.app_model.ne_tab {
+                                match models.app_model.ne_tab {
 
                                     /// Node Inspector
                                     NodeEdgeTab::Node => {

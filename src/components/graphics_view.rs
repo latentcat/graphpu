@@ -1,6 +1,6 @@
 use egui::Ui;
 
-use crate::MainApp;
+use crate::models::Models;
 
 use super::AppView;
 
@@ -8,7 +8,7 @@ use super::AppView;
 pub struct GraphicsView;
 
 impl AppView for GraphicsView {
-    fn show(self, ctx: &mut MainApp, ui: &mut Ui) {
+    fn show(&mut self, models: &mut Models, ui: &mut Ui) {
         let style = (*ui.style()).clone();
         egui::CentralPanel::default()
             .frame(egui::Frame::none())
@@ -18,8 +18,8 @@ impl AppView for GraphicsView {
                     .fill(style.visuals.extreme_bg_color)
                     .stroke(style.visuals.window_stroke())
                     .show(ui, |ui| {
-                        let graphic_delegation = ctx.graphic_model.graphic_delegation.clone();
-                        graphic_delegation.custom_painting(ctx, ui);
+                        let graphic_delegation = models.graphic_model.graphic_delegation.clone();
+                        graphic_delegation.custom_painting(models, ui);
                     });
             });
     }

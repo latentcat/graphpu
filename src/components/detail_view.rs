@@ -1,6 +1,6 @@
 use egui::Ui;
 
-use crate::MainApp;
+use crate::models::Models;
 
 use super::AppView;
 
@@ -8,11 +8,11 @@ use super::AppView;
 pub struct DetailView;
 
 impl AppView for DetailView {
-    fn show(self, ctx: &mut MainApp, ui: &mut Ui) {
+    fn show(&mut self, models: &mut Models, ui: &mut Ui) {
         egui::TopBottomPanel::bottom("detail").show_inside(ui, |ui| {
 
             ui.horizontal(|ui| {
-                ui.label(egui::RichText::new(&ctx.app_model.message).weak());
+                ui.label(egui::RichText::new(&models.app_model.message).weak());
                 ui.allocate_ui_with_layout(
                     ui.available_size(),
                     egui::Layout::right_to_left(),
@@ -21,8 +21,8 @@ impl AppView for DetailView {
                             egui::RichText::new(
                                 format!(
                                     "Nodes: {}  |  Edges: {}",
-                                    ctx.graphic_model.node_data.data.len(),
-                                    ctx.graphic_model.edge_data.data.len()
+                                    models.graphic_model.node_data.data.len(),
+                                    models.graphic_model.edge_data.data.len()
                                 )
                             ).weak()
                         );

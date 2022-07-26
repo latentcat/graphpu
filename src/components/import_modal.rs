@@ -1,14 +1,15 @@
 use egui::Context;
 
+use crate::models::Models;
 use crate::models::app::ImportState;
 use crate::models::graphics::read_from_csv;
 use crate::widgets::frames::inner_panel_frame;
-use crate::{widgets::modal::Modal, MainApp};
+use crate::widgets::modal::Modal;
 
 pub struct ImportModal;
 
 impl ImportModal {
-    pub fn show(ctx: &Context, app_ctx: &mut MainApp) {
+    pub fn show(ctx: &Context, models: &mut Models) {
         Modal::new(String::from("import_modal")).show(ctx, |ui| {
             ui.set_width(400.0);
             ui.set_height(250.0);
@@ -18,7 +19,7 @@ impl ImportModal {
                     ui.set_style(ui.ctx().style());
                     ui.spacing_mut().item_spacing = egui::vec2(8.0, 8.0);
                     ui.horizontal(|ui| {
-                        ui.label(format!("{:?}", app_ctx.app_model.import_state));
+                        ui.label(format!("{:?}", models.app_model.import_state));
                         ui.allocate_ui_with_layout(
                             ui.available_size(),
                             egui::Layout::right_to_left(),
@@ -26,25 +27,25 @@ impl ImportModal {
                                 let remove_data_button = ui.button("   Import   ");
                                 if remove_data_button.clicked() {
                                     let results = [
-                                        read_from_csv(&app_ctx.app_model.node_file_path).and_then(|data| {
-                                            app_ctx.graphic_model.node_data = data;
+                                        read_from_csv(&models.app_model.node_file_path).and_then(|data| {
+                                            models.graphic_model.node_data = data;
                                             Ok(())
                                         }),
-                                        read_from_csv(&app_ctx.app_model.edge_file_path).and_then(|data| {
-                                            app_ctx.graphic_model.edge_data = data;
+                                        read_from_csv(&models.app_model.edge_file_path).and_then(|data| {
+                                            models.graphic_model.edge_data = data;
                                             Ok(())
                                         }),
                                     ];
                                     if results.iter().any(|result| result.is_err()) {
-                                        app_ctx.app_model.import_state = ImportState::Error;
+                                        models.app_model.import_state = ImportState::Error;
                                     } else {
-                                        app_ctx.app_model.import_state = ImportState::Success;
-                                        app_ctx.app_model.import_visible = false;
+                                        models.app_model.import_state = ImportState::Success;
+                                        models.app_model.import_visible = false;
                                     }
                                 }
                                 let reimport_data_button = ui.button("   Cancel   ");
                                 if reimport_data_button.clicked() {
-                                    app_ctx.app_model.import_visible = false;
+                                    models.app_model.import_visible = false;
                                 }
                             },
                         );
@@ -78,7 +79,7 @@ impl ImportModal {
                                             .add_filter("Text File", &["txt", "csv"])
                                             .pick_file()
                                         {
-                                            app_ctx.app_model.node_file_path =
+                                            models.app_model.node_file_path =
                                                 Some(path)
                                         }
                                     }
@@ -86,7 +87,7 @@ impl ImportModal {
                                     ui.vertical_centered_justified(|ui| {
                                         ui.add(
                                             egui::TextEdit::singleline(
-                                                app_ctx
+                                                models
                                                     .app_model
                                                     .node_file_path
                                                     .as_ref()
@@ -111,7 +112,7 @@ impl ImportModal {
                                             .add_filter("Text File", &["txt", "csv"])
                                             .pick_file()
                                         {
-                                            app_ctx.app_model.edge_file_path =
+                                            models.app_model.edge_file_path =
                                                 Some(path)
                                         }
                                     }
@@ -119,7 +120,7 @@ impl ImportModal {
                                     ui.vertical_centered_justified(|ui| {
                                         ui.add(
                                             egui::TextEdit::singleline(
-                                                app_ctx
+                                                models
                                                     .app_model
                                                     .edge_file_path
                                                     .as_ref()

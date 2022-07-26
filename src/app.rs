@@ -3,18 +3,14 @@ use crate::{
         detail_view::DetailView, graphics_view::GraphicsView, inspector_view::InspectorView,
         menubar_view::MenuBarView, AppView, import_modal::ImportModal, table_view::TableView,
     },
-    models::{app::{AppModel, Stage}, compute::ComputeModel, graphics::GraphicsModel},
+    models::{app::{AppModel, Stage}, compute::ComputeModel, graphics::GraphicsModel, Models},
     widgets::boids::Boids,
 };
 use egui::Color32;
 
 pub struct MainApp {
-    // Models
-    pub compute_model: ComputeModel,
-    pub graphic_model: GraphicsModel,
-    pub app_model: AppModel,
-    // Components
-    
+    pub models: Models,
+    inspector_view: InspectorView,
 }
 
 impl MainApp {
@@ -26,9 +22,12 @@ impl MainApp {
         cc.egui_ctx.set_style(style);
 
         Self {
-            compute_model: ComputeModel::default(),
-            graphic_model: GraphicsModel::new(std::rc::Rc::new(Boids::new(cc))),
-            app_model: AppModel::default(),
+            models: Models { 
+                compute_model: ComputeModel::default(),
+                graphic_model: GraphicsModel::new(std::rc::Rc::new(Boids::new(cc))),
+                app_model: AppModel::default(),
+            },
+            inspector_view: InspectorView::default(),
         }
     }
 }
@@ -40,17 +39,17 @@ impl eframe::App for MainApp {
             .show(ctx, |ui| {
                 ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
                 // ui.set_enabled(false);
-                MenuBarView::default().show(self, ui);
-                DetailView::default().show(self, ui);
-                InspectorView::default().show(self, ui);
-                match self.app_model.stage {
-                    Stage::Graphics => GraphicsView::default().show(self, ui),
-                    Stage::Table => TableView::default().show(self, ui),
+                MenuBarView::default().show(&mut self.models, ui);
+                DetailView::default().show(&mut self.models, ui);
+                self.inspector_view.show(&mut self.models, ui);
+                match self.models.app_model.stage {
+                    Stage::Graphics => GraphicsView::default().show(&mut self.models, ui),
+                    Stage::Table => TableView::default().show(&mut self.models, ui),
                 };
             });
 
-        if self.app_model.import_visible {
-            ImportModal::show(ctx, self);
+        if self.models.app_model.import_visible {
+            ImportModal::show(ctx, &mut self.models);
         }
     }
 }

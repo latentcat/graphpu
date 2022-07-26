@@ -1,4 +1,4 @@
-use crate::MainApp;
+use crate::models::Models;
 
 pub mod boids;
 pub mod modal;
@@ -7,7 +7,7 @@ pub mod frames;
 pub trait GraphicDelegation {
 
   /// Graphics View Render View
-  fn custom_painting(&self, ctx: &mut MainApp, ui: &mut egui::Ui);
+  fn custom_painting(&self, models: &mut Models, ui: &mut egui::Ui);
 
 }
 
