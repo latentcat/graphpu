@@ -22,7 +22,6 @@ pub enum NodeEdgeTab {
     Edge,
 }
 
-#[derive(Default)]
 pub struct AppModel {
     pub import_visible: bool,
     pub import_state: ImportState,
@@ -30,6 +29,21 @@ pub struct AppModel {
     pub edge_file_path: Option<PathBuf>,
     pub stage: Stage,
     pub ne_tab: NodeEdgeTab,
+    pub message: String, 
+}
+
+impl Default for AppModel {
+    fn default() -> Self {
+        Self { 
+            import_visible: false,
+            import_state: ImportState::default(),
+            node_file_path: None,
+            edge_file_path: None,
+            stage: Stage::default(),
+            ne_tab: NodeEdgeTab::default(),
+            message: String::from("Message"),
+        }
+    }
 }
 
 impl AppModel {

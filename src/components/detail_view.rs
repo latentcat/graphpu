@@ -12,7 +12,7 @@ impl AppView for DetailView {
         egui::TopBottomPanel::bottom("detail").show_inside(ui, |ui| {
 
             ui.horizontal(|ui| {
-                ui.label(egui::RichText::new("Messages").weak());
+                ui.label(egui::RichText::new(&ctx.app_model.message).weak());
                 ui.allocate_ui_with_layout(
                     ui.available_size(),
                     egui::Layout::right_to_left(),

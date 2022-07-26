@@ -9,9 +9,12 @@ use crate::{
 use egui::Color32;
 
 pub struct MainApp {
+    // Models
     pub compute_model: ComputeModel,
     pub graphic_model: GraphicsModel,
     pub app_model: AppModel,
+    // Components
+    
 }
 
 impl MainApp {
