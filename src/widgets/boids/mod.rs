@@ -207,7 +207,22 @@ impl GraphicObject for BoidsResources {
             fragment: Some(wgpu::FragmentState {
                 module: &draw_shader,
                 entry_point: "main_fs",
-                targets: &[Some(render_state.target_format.into())],
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: render_state.target_format.into(),
+                    blend: Some(wgpu::BlendState {
+                        color: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::One,
+                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                        alpha: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::OneMinusDstAlpha,
+                            dst_factor: wgpu::BlendFactor::One,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                    }),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
             }),
             primitive: wgpu::PrimitiveState::default(),
             depth_stencil: None,
@@ -253,7 +268,26 @@ impl GraphicObject for BoidsResources {
 
         // buffer for the three 2d triangle vertices of each instance
 
-        let vertex_buffer_data = [-0.01f32, -0.02, 0.01, -0.02, 0.00, 0.02];
+        let vertex_buffer_data =
+            [
+                // 0
+                -1.0f32, -1.0,
+
+                // 1
+                1.0, -1.0,
+
+                // 2
+                1.0, 1.0,
+
+                // 2
+                1.0, 1.0,
+
+                // 3
+                -1.0, 1.0,
+
+                // 0
+                -1.0, -1.0,
+            ];
         let vertices_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
             contents: bytemuck::bytes_of(&vertex_buffer_data),
@@ -382,6 +416,6 @@ impl GraphicObject for BoidsResources {
         rpass.set_pipeline(&self.render_pipeline);
         rpass.set_vertex_buffer(0, self.particle_buffers[(self.frame_num + 1) % 2].slice(..));
         rpass.set_vertex_buffer(1, self.vertices_buffer.slice(..));
-        rpass.draw(0..3, 0..NUM_PARTICLES);
+        rpass.draw(0..6, 0..NUM_PARTICLES);
     }
 }

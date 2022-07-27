@@ -1,18 +1,27 @@
+struct Varing {
+    @location(0) tex_coords: vec2<f32>,
+    @builtin(position) position: vec4<f32>,
+};
+
 @vertex
 fn main_vs(
     @location(0) particle_pos: vec2<f32>,
     @location(1) particle_vel: vec2<f32>,
-    @location(2) position: vec2<f32>,
-) -> @builtin(position) vec4<f32> {
-    let angle = -atan2(particle_vel.x, particle_vel.y);
-    let pos = vec2<f32>(
-        position.x * cos(angle) - position.y * sin(angle),
-        position.x * sin(angle) + position.y * cos(angle)
-    );
-    return vec4<f32>(pos + particle_pos, 0.0, 1.0);
+    @location(2) quad_pos: vec2<f32>,
+) -> Varing {
+    var v: Varing;
+    v.position = vec4<f32>(particle_pos + quad_pos * 0.01, 0.0, 1.0);
+    v.tex_coords = quad_pos;
+    return v;
 }
 
 @fragment
-fn main_fs() -> @location(0) vec4<f32> {
-    return vec4<f32>(0.5, 0.5, 0.5, 1.0);
+fn main_fs(v: Varing) -> @location(0) vec4<f32> {
+
+    let sdf = dot(v.tex_coords, v.tex_coords);
+    let alpha = step(sdf, 1.0);
+
+    var out_color = vec4<f32>(alpha * 0.5);
+
+    return out_color;
 }
