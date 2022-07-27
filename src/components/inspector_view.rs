@@ -168,7 +168,7 @@ impl AppView for InspectorView {
                                                                 ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
                                                                 ui.separator();
                                                                 ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
-                                                            });
+                                                            })
 
                                                     });
 

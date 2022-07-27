@@ -1,10 +1,10 @@
 use std::path::PathBuf;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, PartialEq)]
 pub enum ImportState {
     #[default]
     Initial,
-    Error,
+    Error(String),
     Success,
 }
 
