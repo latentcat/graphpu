@@ -61,8 +61,8 @@ impl AppView for InspectorView {
 
                         /// Import Section / File Section
                         if matches!(models.app_model.import_state, ImportState::Success) {
-                            let node_file_name = models.app_model.node_file_name().unwrap();
-                            let edge_file_name = models.app_model.edge_file_name().unwrap();
+                            let node_file_name = models.app_model.node_file_name().unwrap_or("");
+                            let edge_file_name = models.app_model.edge_file_name().unwrap_or("");
                             ui.horizontal(|ui| {
                                 ui.with_layout(egui::Layout::right_to_left(), |ui| {
                                     let remove_data_button = ui.button("🗑");

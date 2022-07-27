@@ -47,18 +47,6 @@ impl Default for AppModel {
 }
 
 impl AppModel {
-    pub fn node_file_path(&self) -> Option<String> {
-        self.node_file_path
-            .as_ref()
-            .map(|path| path.display().to_string())
-    }
-
-    pub fn edge_file_path(&self) -> Option<String> {
-        self.edge_file_path
-            .as_ref()
-            .map(|path| path.display().to_string())
-    }
-
     pub fn node_file_name(&self) -> Option<&str> {
         self.node_file_path.as_ref()?.file_name().and_then(|s| s.to_str())
     }

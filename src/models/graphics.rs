@@ -2,7 +2,7 @@ use std::{collections::HashMap, rc::Rc, path::PathBuf};
 
 use crate::widgets::GraphicDelegation;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct ExternalData {
     pub data_headers: Vec<Rc<String>>,
     pub data: Vec<HashMap<Rc<String>, String>>,
@@ -12,6 +12,7 @@ pub struct GraphicsModel {
     pub graphic_delegation: Rc<dyn GraphicDelegation>,
     pub node_data: ExternalData,
     pub edge_data: ExternalData,
+    pub max_id: usize,
 }
 
 impl GraphicsModel {
@@ -20,19 +21,24 @@ impl GraphicsModel {
             graphic_delegation,
             node_data: ExternalData::default(),
             edge_data: ExternalData::default(),
+            max_id: 0,
         }
     }
 
-    pub fn load_data(&mut self, node_path: &Option<PathBuf>, edge_path: &Option<PathBuf>) -> Result<(), String> {
-        self.node_data = read_from_csv(node_path).unwrap_or(ExternalData::default());
-        self.edge_data = read_from_csv(edge_path)?;
+    pub fn node_count(&self) -> usize {
+        std::cmp::max(self.node_data.data.len(), self.max_id + 1)
+    }
 
-        // validate edge data
-        if self.edge_data.data_headers.len() < 2 {
-            Err("The edge file must contain source and target node IDs".to_owned())
-        } else {
-            Ok(())
-        }
+    pub fn edge_count(&self) -> usize {
+        self.edge_data.data.len()
+    }
+
+    pub fn node_data_length(&self) -> usize {
+        self.node_data.data.len()
+    }
+
+    pub fn edge_data_len(&self) -> usize {
+        self.edge_data.data.len()
     }
 }
 

@@ -1,10 +1,16 @@
+use std::path::PathBuf;
+
 use egui::Ui;
 
-use crate::models::{Models, graphics::pick_csv};
+use crate::models::{graphics::pick_csv, Models};
 
 use super::ImportModal;
 
-pub fn show(parent: &mut ImportModal, models: &mut Models, ui: &mut Ui) {
+fn path_to_string(path: &Option<PathBuf>) -> Option<String> {
+    path.as_ref().map(|path| path.display().to_string())
+}
+
+pub fn show(parent: &mut ImportModal, _: &mut Models, ui: &mut Ui) {
     ui.heading("Import Data");
 
     ui.horizontal(|ui| {
@@ -23,12 +29,15 @@ pub fn show(parent: &mut ImportModal, models: &mut Models, ui: &mut Ui) {
             ui.horizontal(|ui| {
                 ui.with_layout(egui::Layout::right_to_left(), |ui| {
                     if ui.button("•••").clicked() {
-                      models.app_model.node_file_path = pick_csv();
+                        parent.node_file_path = pick_csv();
                     }
 
                     ui.vertical_centered_justified(|ui| {
                         ui.add(
-                          egui::TextEdit::singleline(&mut models.app_model.node_file_path().unwrap_or("".to_owned()))
+                            egui::TextEdit::singleline(
+                                &mut path_to_string(&parent.node_file_path)
+                                    .unwrap_or("".to_owned()),
+                            )
                             .hint_text("")
                             .desired_width(200.),
                         );
@@ -42,14 +51,17 @@ pub fn show(parent: &mut ImportModal, models: &mut Models, ui: &mut Ui) {
             ui.horizontal(|ui| {
                 ui.with_layout(egui::Layout::right_to_left(), |ui| {
                     if ui.button("•••").clicked() {
-                      models.app_model.edge_file_path = pick_csv();
+                        parent.edge_file_path = pick_csv();
                     }
 
                     ui.vertical_centered_justified(|ui| {
                         ui.add(
-                            egui::TextEdit::singleline( &mut models.app_model.edge_file_path().unwrap_or("".to_owned()))
-                              .hint_text("")
-                              .desired_width(200.),
+                            egui::TextEdit::singleline(
+                                &mut path_to_string(&parent.edge_file_path)
+                                    .unwrap_or("".to_owned()),
+                            )
+                            .hint_text("")
+                            .desired_width(200.),
                         );
                     });
                 });
