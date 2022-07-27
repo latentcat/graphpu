@@ -224,7 +224,12 @@ impl GraphicObject for BoidsResources {
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
-            primitive: wgpu::PrimitiveState::default(),
+            // primitive: wgpu::PrimitiveState::default(),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleStrip,
+                front_face: wgpu::FrontFace::Ccw,
+                ..Default::default()
+            },
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
@@ -277,16 +282,11 @@ impl GraphicObject for BoidsResources {
                 1.0, -1.0,
 
                 // 2
-                1.0, 1.0,
-
-                // 2
-                1.0, 1.0,
-
-                // 3
                 -1.0, 1.0,
 
-                // 0
-                -1.0, -1.0,
+                // 3
+                1.0, 1.0,
+
             ];
         let vertices_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
@@ -416,6 +416,6 @@ impl GraphicObject for BoidsResources {
         rpass.set_pipeline(&self.render_pipeline);
         rpass.set_vertex_buffer(0, self.particle_buffers[(self.frame_num + 1) % 2].slice(..));
         rpass.set_vertex_buffer(1, self.vertices_buffer.slice(..));
-        rpass.draw(0..6, 0..NUM_PARTICLES);
+        rpass.draw(0..4, 0..NUM_PARTICLES);
     }
 }
