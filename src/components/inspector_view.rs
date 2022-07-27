@@ -30,7 +30,6 @@ impl AppView for InspectorView {
             .width_range(150.0..=400.0)
             .resizable(false)
             .show_inside(ui, |ui| {
-                ui.text_edit_singleline(&mut self.test_text);
 
                 /// Render Section
                 egui::TopBottomPanel::bottom("render")

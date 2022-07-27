@@ -5,6 +5,8 @@ use crate::models::Models;
 use super::ImportModal;
 
 pub fn show(parent: &mut ImportModal, _: &mut Models, ui: &mut Ui) {
+
+    ui.set_style(ui.ctx().style());
     ui.spacing_mut().item_spacing = egui::vec2(8.0, 8.0);
 
     ui.heading("Configuration");

@@ -11,6 +11,10 @@ fn path_to_string(path: &Option<PathBuf>) -> Option<String> {
 }
 
 pub fn show(parent: &mut ImportModal, _: &mut Models, ui: &mut Ui) {
+
+    ui.set_style(ui.ctx().style());
+    ui.spacing_mut().item_spacing = egui::vec2(8.0, 8.0);
+
     ui.heading("Import Data");
 
     ui.horizontal(|ui| {
