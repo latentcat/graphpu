@@ -1,6 +1,6 @@
 use egui::Ui;
 
-use crate::{MainApp, models::Models};
+use crate::models::Models;
 
 pub mod menubar_view;
 pub mod inspector_view;

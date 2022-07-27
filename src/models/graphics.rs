@@ -24,6 +24,12 @@ impl GraphicsModel {
     }
 }
 
+pub fn pick_csv() -> Option<PathBuf> {
+    rfd::FileDialog::new()
+        .add_filter("Text File", &["txt", "csv"])
+        .pick_file()
+}
+
 pub fn read_from_csv(path: &Option<PathBuf>) -> Result<ExternalData, String> {
     let path = path.as_deref().ok_or("Can't find file")?;
     let err_fomatter = |err| format!("{}", err);

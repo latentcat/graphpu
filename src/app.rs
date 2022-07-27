@@ -11,6 +11,7 @@ use egui::Color32;
 pub struct MainApp {
     pub models: Models,
     inspector_view: InspectorView,
+    import_modal: ImportModal,
 }
 
 impl MainApp {
@@ -28,6 +29,7 @@ impl MainApp {
                 app_model: AppModel::default(),
             },
             inspector_view: InspectorView::default(),
+            import_modal: ImportModal::default(),
         }
     }
 }
@@ -49,7 +51,7 @@ impl eframe::App for MainApp {
             });
 
         if self.models.app_model.import_visible {
-            ImportModal::show(ctx, &mut self.models);
+            self.import_modal.show(ctx, &mut self.models);
         }
     }
 }
