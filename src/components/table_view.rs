@@ -23,8 +23,8 @@ impl AppView for TableView {
                     button_group_style(ui.style()).show(ui, |ui| {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
-                        ui.selectable_value(&mut models.app_model.ne_tab, NodeEdgeTab::Node, "    Node    ");
-                        ui.selectable_value(&mut models.app_model.ne_tab, NodeEdgeTab::Edge, "    Edge    ");
+                        ui.selectable_value(&mut models.app_model.ne_tab, NodeEdgeTab::Node, "    Node Data    ");
+                        ui.selectable_value(&mut models.app_model.ne_tab, NodeEdgeTab::Edge, "    Edge Data    ");
                     });
                 });
 
@@ -35,14 +35,18 @@ impl AppView for TableView {
                     NodeEdgeTab::Edge => &models.graphic_model.edge_data,
                 };
 
-                let text_height = egui::TextStyle::Body.resolve(ui.style()).size + 2.0;
-
                 if data_headers.len() == 0 {
                     ui.centered_and_justified(|ui| {
-                        ui.label(egui::RichText::new("Import data to display.").weak());
+                        let empty_hint_text = match models.app_model.ne_tab {
+                            NodeEdgeTab::Node => "Import node data to display.",
+                            NodeEdgeTab::Edge => "Import edge data to display.",
+                        };
+                        ui.label(egui::RichText::new(empty_hint_text).weak());
                     });
                     return;
                 }
+
+                let text_height = egui::TextStyle::Body.resolve(ui.style()).size + 2.0;
 
                 egui::ScrollArea::horizontal()
                     // .always_show_scroll(true)

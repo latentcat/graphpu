@@ -99,10 +99,10 @@ impl AppView for InspectorView {
                             ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
                             ui.columns(2, |columns| {
                                 columns[0].vertical_centered_justified(|ui| {
-                                    ui.selectable_value(&mut models.app_model.ne_tab, NodeEdgeTab::Node, "Node");
+                                    ui.selectable_value(&mut models.app_model.ne_tab, NodeEdgeTab::Node, "Node Style");
                                 });
                                 columns[1].vertical_centered_justified(|ui| {
-                                    ui.selectable_value(&mut models.app_model.ne_tab, NodeEdgeTab::Edge, "Edge");
+                                    ui.selectable_value(&mut models.app_model.ne_tab, NodeEdgeTab::Edge, "Edge Style");
                                 });
                             });
                         });
