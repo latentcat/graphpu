@@ -22,6 +22,18 @@ impl GraphicsModel {
             edge_data: ExternalData::default(),
         }
     }
+
+    pub fn load_data(&mut self, node_path: &Option<PathBuf>, edge_path: &Option<PathBuf>) -> Result<(), String> {
+        self.node_data = read_from_csv(node_path).unwrap_or(ExternalData::default());
+        self.edge_data = read_from_csv(edge_path)?;
+
+        // validate edge data
+        if self.edge_data.data_headers.len() < 2 {
+            Err("The edge file must contain source and target node IDs".to_owned())
+        } else {
+            Ok(())
+        }
+    }
 }
 
 pub fn pick_csv() -> Option<PathBuf> {
