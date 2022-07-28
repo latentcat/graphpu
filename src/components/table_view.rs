@@ -1,4 +1,5 @@
 use egui_extras::{TableBuilder, Size};
+use serde::__private::de::Content::String;
 
 use crate::{
     models::{app::NodeEdgeTab, graphics::ExternalData, Models},
@@ -56,10 +57,14 @@ impl AppView for TableView {
                         TableBuilder::new(ui)
                             .striped(true)
                             .cell_layout(egui::Layout::left_to_right())
+                            .column(Size::initial(70.0).at_least(70.0).at_most(100.))
                             .columns(Size::initial(100.0).at_least(60.0), if data_headers.len() > 0 { data_headers.len() - 1 } else { 0 })
                             .columns(Size::remainder().at_least(60.0), if data_headers.len() > 0 { 1 } else { 0 })
                             .resizable(true)
                             .header(20.0, |mut header| {
+                                header.col(|ui| {
+                                    ui.label(egui::RichText::new("Index").weak());
+                                });
                                 for col in data_headers.iter() {
                                     header.col(|ui| {
                                         ui.label(egui::RichText::new(&col[..]).strong());
@@ -68,6 +73,10 @@ impl AppView for TableView {
                             })
                             .body(|mut body| {
                                 body.rows(text_height, data.len(), |row_index, mut row| {
+                                    row.col(|ui| {
+                                        ui.label(egui::RichText::new(row_index.to_string()).weak());
+                                        // ui.with_layout(egui::Layout::right_to_left(), |ui| {});
+                                    });
                                     let data_row = &data[row_index];
                                     for data_col in data_headers {
                                         row.col(|ui| {

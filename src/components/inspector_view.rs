@@ -70,7 +70,7 @@ impl AppView for InspectorView {
                                         |ui| {
                                             let node_file_name = models.app_model.node_file_name().unwrap_or("");
                                             let edge_file_name = models.app_model.edge_file_name().unwrap_or("");
-                                            ui.label(egui::RichText::new(format!("{}\n{}", node_file_name, edge_file_name)).strong());
+                                            ui.label(egui::RichText::new(format!("Node File: {}\nEdge File: {}", node_file_name, edge_file_name)).strong());
                                         },
                                     );
                                 });
