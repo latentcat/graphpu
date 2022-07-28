@@ -33,17 +33,14 @@ pub fn show(parent: &mut ImportModal, _: &mut Models, ui: &mut Ui) {
             ui.horizontal(|ui| {
                 ui.with_layout(egui::Layout::right_to_left(), |ui| {
                     if ui.button("•••").clicked() {
-                        parent.node_file_path = pick_csv();
+                        parent.node_file_path = path_to_string(&pick_csv()).unwrap_or("".to_owned());
                     }
 
                     ui.vertical_centered_justified(|ui| {
                         ui.add(
-                            egui::TextEdit::singleline(
-                                &mut path_to_string(&parent.node_file_path)
-                                    .unwrap_or("".to_owned()),
-                            )
+                            egui::TextEdit::singleline(&mut parent.node_file_path)
                             .hint_text("")
-                            .desired_width(200.),
+                            .desired_width(200.)
                         );
                     });
                 });
@@ -55,15 +52,11 @@ pub fn show(parent: &mut ImportModal, _: &mut Models, ui: &mut Ui) {
             ui.horizontal(|ui| {
                 ui.with_layout(egui::Layout::right_to_left(), |ui| {
                     if ui.button("•••").clicked() {
-                        parent.edge_file_path = pick_csv();
+                        parent.edge_file_path = path_to_string(&pick_csv()).unwrap_or("".to_owned());
                     }
 
                     ui.vertical_centered_justified(|ui| {
-                        ui.add(
-                            egui::TextEdit::singleline(
-                                &mut path_to_string(&parent.edge_file_path)
-                                    .unwrap_or("".to_owned()),
-                            )
+                        ui.add(egui::TextEdit::singleline(&mut parent.edge_file_path)
                             .hint_text("")
                             .desired_width(200.),
                         );

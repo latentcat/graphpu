@@ -1,6 +1,7 @@
 mod config_page;
 mod file_picker_page;
 
+use std::ffi::OsString;
 use std::path::PathBuf;
 
 use egui::Context;
@@ -21,8 +22,8 @@ enum Page {
 #[derive(Default)]
 pub struct ImportModal {
     page_index: Page,
-    node_file_path: Option<PathBuf>,
-    edge_file_path: Option<PathBuf>,
+    node_file_path: String,
+    edge_file_path: String,
     edge_source: usize,
     edge_target: usize,
 }
@@ -55,7 +56,7 @@ impl ImportModal {
                             egui::Layout::right_to_left(),
                             |ui| match self.page_index {
                                 Page::FilePicker => {
-                                    ui.add_enabled_ui(self.edge_file_path.is_some(), |ui| {
+                                    ui.add_enabled_ui(!self.edge_file_path.is_empty(), |ui| {
                                         let next_button = ui.button("   Next   ");
                                         if next_button.clicked() {
                                             self.on_click_next(models);
@@ -113,8 +114,8 @@ impl ImportModal {
             });
         
         if valid {
-            models.app_model.node_file_path = self.node_file_path.clone();
-            models.app_model.edge_file_path = self.edge_file_path.clone();
+            models.app_model.node_file_path = Option::Some(PathBuf::from(self.node_file_path.clone()));
+            models.app_model.edge_file_path = Option::Some(PathBuf::from(self.edge_file_path.clone()));
             models.app_model.import_state = ImportState::Success;
             models.app_model.import_visible = false;
         } else {
@@ -128,7 +129,7 @@ impl ImportModal {
     }
 
     fn load_edge_headers(&mut self, models: &mut Models) -> Result<(), String> {
-        models.graphic_model.edge_data.data_headers = read_headers_from_csv(&self.edge_file_path)?;
+        models.graphic_model.edge_data.data_headers = read_headers_from_csv(&Some(PathBuf::from(self.edge_file_path.clone())))?;
 
         // validate edge data
         if models.graphic_model.edge_data.data_headers.len() < 2 {
@@ -139,8 +140,8 @@ impl ImportModal {
     }
 
     fn load_data(&mut self, models: &mut Models) -> Result<(), String> {
-        models.graphic_model.node_data = read_from_csv(&self.node_file_path).unwrap_or(ExternalData::default());
-        models.graphic_model.edge_data = read_from_csv(&self.edge_file_path)?;
+        models.graphic_model.node_data = read_from_csv(&Some(PathBuf::from(self.node_file_path.clone()))).unwrap_or(ExternalData::default());
+        models.graphic_model.edge_data = read_from_csv(&Some(PathBuf::from(self.edge_file_path.clone())))?;
         Ok(())
     }
 }
