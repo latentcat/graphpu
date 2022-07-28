@@ -57,9 +57,14 @@ impl ImportModal {
                             egui::Layout::right_to_left(),
                             |ui| match self.page_index {
                                 Page::FilePicker => {
-                                    let next_button = ui.button("   Next   ");
-                                    if next_button.clicked() {
-                                        self.on_click_next(models);
+                                    ui.add_enabled_ui(self.edge_file_path.is_some(), |ui| {
+                                        let next_button = ui.button("   Next   ");
+                                        if next_button.clicked() {
+                                            self.on_click_next(models);
+                                        }
+                                    });
+                                    if ui.button("   Cancel   ").clicked() {
+                                        models.app_model.import_visible = false;
                                     }
                                 }
                                 Page::Config => {
@@ -86,6 +91,7 @@ impl ImportModal {
                 self.edge_source = edge_data_headers.iter().position(|s| s.as_ref() == "source").unwrap_or(0);
                 self.edge_target = edge_data_headers.iter().position(|s| s.as_ref() == "target").unwrap_or(1);
                 self.page_index = Page::Config;
+                models.app_model.import_state = ImportState::Initial;
             }
             Err(s) => {
                 models.app_model.import_state =
