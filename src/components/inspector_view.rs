@@ -23,7 +23,6 @@ impl Default for InspectorView {
 
 impl AppView for InspectorView {
     fn show(&mut self, models: &mut Models, ui: &mut Ui) {
-        let Models { compute_model: model, .. } = models;
         egui::SidePanel::right("inspector_view")
             .frame(inspector_frame(ui.style()))
             .default_width(280.0)
@@ -60,22 +59,17 @@ impl AppView for InspectorView {
 
                         /// Import Section / File Section
                         if matches!(models.app_model.import_state, ImportState::Success) {
-                            let node_file_name = models.app_model.node_file_name().unwrap_or("");
-                            let edge_file_name = models.app_model.edge_file_name().unwrap_or("");
                             ui.horizontal(|ui| {
                                 ui.with_layout(egui::Layout::right_to_left(), |ui| {
                                     let remove_data_button = ui.button("🗑");
                                     if remove_data_button.clicked() {
-                                        //
+                                        models.clear_data();
                                     }
-                                    let reimport_data_button = ui.button("⟲");
-                                    if reimport_data_button.clicked() {
-                                        //
-                                    }
-
                                     ui.with_layout(
                                         egui::Layout::top_down(egui::Align::LEFT).with_cross_align(egui::Align::Min),
                                         |ui| {
+                                            let node_file_name = models.app_model.node_file_name().unwrap_or("");
+                                            let edge_file_name = models.app_model.edge_file_name().unwrap_or("");
                                             ui.label(egui::RichText::new(format!("{}\n{}", node_file_name, edge_file_name)).strong());
                                         },
                                     );
@@ -128,9 +122,9 @@ impl AppView for InspectorView {
                                                     egui::ComboBox::from_id_source("ID Source")
                                                         .selected_text("None")
                                                         .show_ui(ui, |ui| {
-                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
                                                             ui.separator();
-                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
                                                         });
 
                                                     ui.end_row();
@@ -151,9 +145,9 @@ impl AppView for InspectorView {
                                                     egui::ComboBox::from_id_source("ID Source 2")
                                                         .selected_text("Compute")
                                                         .show_ui(ui, |ui| {
-                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
                                                             ui.separator();
-                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
                                                         });
 
                                                     ui.end_row();
@@ -162,11 +156,11 @@ impl AppView for InspectorView {
                                                     ui.horizontal(|ui| {
 
                                                         egui::ComboBox::from_id_source("Compute Method 2")
-                                                            .selected_text(model.compute_method.0)
+                                                            .selected_text(models.compute_model.compute_method.0)
                                                             .show_ui(ui, |ui| {
-                                                                ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                                                ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
                                                                 ui.separator();
-                                                                ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                                                                ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
                                                             })
 
                                                     });
@@ -174,16 +168,16 @@ impl AppView for InspectorView {
                                                     ui.end_row();
 
                                                     grid_label(ui, "");
-                                                    if model.compute_method.1 == ComputeMethodType::Continuous {
-                                                        let continuous_button = ui.button(if !model.is_computing { "▶ Start Computing" } else { "⏸ Pause Computing" });
+                                                    if models.compute_model.compute_method.1 == ComputeMethodType::Continuous {
+                                                        let continuous_button = ui.button(if !models.compute_model.is_computing { "▶ Start Computing" } else { "⏸ Pause Computing" });
                                                         if continuous_button.clicked() {
-                                                            model.switch_computing();
+                                                            models.compute_model.switch_computing();
                                                         }
                                                     } else {
-                                                        model.set_computing(false);
+                                                        models.compute_model.set_computing(false);
                                                         let one_step_button = ui.button("⏩ Dispatch");
                                                         if one_step_button.clicked() {
-                                                            model.set_dispatching(true);
+                                                            models.compute_model.set_dispatching(true);
                                                         }
                                                     }
 
@@ -201,9 +195,9 @@ impl AppView for InspectorView {
                                                     egui::ComboBox::from_id_source("Color Source")
                                                         .selected_text("None")
                                                         .show_ui(ui, |ui| {
-                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
                                                             ui.separator();
-                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
                                                         });
 
                                                     ui.end_row();
@@ -212,9 +206,9 @@ impl AppView for InspectorView {
                                                     egui::ComboBox::from_id_source("Ramp")
                                                         .selected_text("None")
                                                         .show_ui(ui, |ui| {
-                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
                                                             ui.separator();
-                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
                                                         });
 
                                                     ui.end_row();
@@ -236,9 +230,9 @@ impl AppView for InspectorView {
                                                     egui::ComboBox::from_id_source("Size Source")
                                                         .selected_text("None")
                                                         .show_ui(ui, |ui| {
-                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
                                                             ui.separator();
-                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
                                                         });
 
                                                     ui.end_row();
@@ -263,9 +257,9 @@ impl AppView for InspectorView {
                                                     egui::ComboBox::from_id_source("Start ID")
                                                         .selected_text("None")
                                                         .show_ui(ui, |ui| {
-                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
                                                             ui.separator();
-                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
                                                         });
 
                                                     ui.end_row();
@@ -274,9 +268,9 @@ impl AppView for InspectorView {
                                                     egui::ComboBox::from_id_source("End ID")
                                                         .selected_text("None")
                                                         .show_ui(ui, |ui| {
-                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
                                                             ui.separator();
-                                                            ui.selectable_value(&mut model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
                                                         });
 
                                                     ui.end_row();
