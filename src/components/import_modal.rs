@@ -7,7 +7,7 @@ use egui::Context;
 
 use crate::models::app::ImportState;
 use crate::models::Models;
-use crate::models::graphics::{read_from_csv, ExternalData};
+use crate::models::graphics::{read_from_csv, ExternalData, read_headers_from_csv};
 use crate::widgets::frames::inner_panel_frame;
 use crate::widgets::modal::Modal;
 
@@ -21,8 +21,6 @@ enum Page {
 #[derive(Default)]
 pub struct ImportModal {
     page_index: Page,
-    node_data: ExternalData,
-    edge_data: ExternalData,
     node_file_path: Option<PathBuf>,
     edge_file_path: Option<PathBuf>,
     edge_source: usize,
@@ -85,7 +83,7 @@ impl ImportModal {
     }
 
     fn on_click_next(&mut self, models: &mut Models) {
-        match self.load_data() {
+        match self.load_edge_headers(models) {
             Ok(_) => {
                 let edge_data_headers = &models.graphic_model.edge_data.data_headers;
                 self.edge_source = edge_data_headers.iter().position(|s| s.as_ref() == "source").unwrap_or(0);
@@ -101,35 +99,48 @@ impl ImportModal {
     }
 
     fn on_click_done(&mut self, models: &mut Models) {
-        let source_key = &self.edge_data.data_headers[self.edge_source];
-        let target_key = &self.edge_data.data_headers[self.edge_target];
-        let valid = self.edge_data.data.iter()
+        if let Err(s) = self.load_data(models) {
+            models.app_model.import_state = ImportState::Error(s);
+            return;
+        }
+
+        let source_key = &models.graphic_model.edge_data.data_headers[self.edge_source];
+        let target_key = &models.graphic_model.edge_data.data_headers[self.edge_target];
+        let valid = models.graphic_model.edge_data.data.iter()
             .all(|item| {
                 item.get(source_key).unwrap().parse::<usize>().is_ok()
                     && item.get(target_key).unwrap().parse::<usize>().is_ok()
             });
         
         if valid {
-            models.graphic_model.node_data = self.node_data.clone();
-            models.graphic_model.edge_data = self.edge_data.clone();
             models.app_model.node_file_path = self.node_file_path.clone();
             models.app_model.edge_file_path = self.edge_file_path.clone();
             models.app_model.import_state = ImportState::Success;
             models.app_model.import_visible = false;
         } else {
+            models.graphic_model.node_data = ExternalData::default();
+            models.graphic_model.edge_data = ExternalData {
+                data_headers: models.graphic_model.edge_data.data_headers.clone(),
+                data: Vec::default(),
+            };
             models.app_model.import_state = ImportState::Error("source and target isn't uint".to_owned());
         }
     }
 
-    fn load_data(&mut self) -> Result<(), String> {
-        self.node_data = read_from_csv(&self.node_file_path).unwrap_or(ExternalData::default());
-        self.edge_data = read_from_csv(&self.edge_file_path)?;
+    fn load_edge_headers(&mut self, models: &mut Models) -> Result<(), String> {
+        models.graphic_model.edge_data.data_headers = read_headers_from_csv(&self.edge_file_path)?;
 
         // validate edge data
-        if self.edge_data.data_headers.len() < 2 {
+        if models.graphic_model.edge_data.data_headers.len() < 2 {
             Err("The edge file must contain source and target node IDs".to_owned())
         } else {
             Ok(())
         }
+    }
+
+    fn load_data(&mut self, models: &mut Models) -> Result<(), String> {
+        models.graphic_model.node_data = read_from_csv(&self.node_file_path).unwrap_or(ExternalData::default());
+        models.graphic_model.edge_data = read_from_csv(&self.edge_file_path)?;
+        Ok(())
     }
 }

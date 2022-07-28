@@ -4,7 +4,7 @@ use crate::models::Models;
 
 use super::ImportModal;
 
-pub fn show(parent: &mut ImportModal, _: &mut Models, ui: &mut Ui) {
+pub fn show(parent: &mut ImportModal, models: &mut Models, ui: &mut Ui) {
 
     ui.set_style(ui.ctx().style());
     ui.spacing_mut().item_spacing = egui::vec2(8.0, 8.0);
@@ -17,7 +17,7 @@ pub fn show(parent: &mut ImportModal, _: &mut Models, ui: &mut Ui) {
         .num_columns(2)
         .spacing([20.0, 8.0])
         .show(ui, |ui| {
-            let edge_data_headers = &parent.edge_data.data_headers;
+            let edge_data_headers = &models.graphic_model.edge_data.data_headers;
             ui.add(egui::Label::new("Edge Source*"));
             ui.horizontal(|ui| {
                 egui::ComboBox::from_id_source("Edge Source")
