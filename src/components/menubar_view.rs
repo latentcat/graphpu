@@ -1,6 +1,6 @@
 use egui::Ui;
 
-use crate::{models::{app::Stage, Models}, widgets::frames::button_group_style};
+use crate::{models::{app::{Stage, ImportState}, Models}, widgets::frames::button_group_style};
 
 use super::AppView;
 
@@ -50,10 +50,23 @@ impl AppView for MenuBarView {
 
                         ui.separator();
 
-                        if ui.button("Import Data").clicked() {
-                            models.app_model.import_visible = true;
-                            ui.close_menu();
+                        match models.app_model.import_state {
+                            ImportState::Initial => {
+                                if ui.button("Import Data").clicked() {
+                                    models.app_model.import_visible = true;
+                                    ui.close_menu();
+                                }
+                            },
+                            ImportState::Success => {
+                                if ui.button("Reimport Data").clicked() {
+                                    models.clear_data();
+                                    models.app_model.import_visible = true;
+                                    ui.close_menu();
+                                }
+                            },
+                            _ => {},
                         }
+
                         ui.add_enabled_ui(false, |ui| {
                             let _ = ui.button("Export Data");
                         });

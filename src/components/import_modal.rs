@@ -118,6 +118,7 @@ impl ImportModal {
             models.app_model.edge_file_path = Option::Some(PathBuf::from(self.edge_file_path.clone()));
             models.app_model.import_state = ImportState::Success;
             models.app_model.import_visible = false;
+            self.page_index = Page::FilePicker;
         } else {
             models.graphic_model.node_data = ExternalData::default();
             models.graphic_model.edge_data = ExternalData {
