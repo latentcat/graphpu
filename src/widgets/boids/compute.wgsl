@@ -44,7 +44,7 @@ fn random_xy(seed_x: u32, seed_y: u32) -> f32 {
 
 // https://github.com/austinEng/Project6-Vulkan-Flocking/blob/master/data/shaders/computeparticles/particle.comp
 @compute
-@workgroup_size(64)
+@workgroup_size(128)
 fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
   let total = arrayLength(&particlesSrc);
   let index = global_invocation_id.x;
@@ -126,7 +126,7 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 
 
 @compute
-@workgroup_size(64)
+@workgroup_size(128)
 fn randomize(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
   let total = arrayLength(&particlesSrc);
   let index = global_invocation_id.x;
@@ -140,12 +140,14 @@ fn randomize(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
   vPos.x = random_xy(index, 0u + 3u * uniforms.frame_num) * 2.0 - 1.0;
   vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
 
+  vVel = vec2<f32>(0.0);
+
   // Write back
   particlesDst[index] = Particle(vPos, vVel);
 }
 
 @compute
-@workgroup_size(64)
+@workgroup_size(128)
 fn copy(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
   let total = arrayLength(&particlesSrc);
   let index = global_invocation_id.x;

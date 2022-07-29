@@ -14,11 +14,11 @@ use super::{GraphicDelegation, GraphicObject};
 
 // number of boid particles to simulate
 
-const NUM_PARTICLES: u32 = 1500;
+const NUM_PARTICLES: u32 = 5000;
 
 // number of single-particle calculations (invocations) in each gpu work group
 
-const PARTICLES_PER_GROUP: u32 = 64;
+const PARTICLES_PER_GROUP: u32 = 128;
 
 pub struct Boids;
 
