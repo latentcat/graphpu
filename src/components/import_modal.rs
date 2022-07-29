@@ -109,13 +109,26 @@ impl ImportModal {
         let target_key = &models.graphic_model.edge_data.data_headers[self.edge_target];
         let valid = models.graphic_model.edge_data.data.iter()
             .all(|item| {
-                item.get(source_key).unwrap().parse::<usize>().is_ok()
-                    && item.get(target_key).unwrap().parse::<usize>().is_ok()
+                let source = item.get(source_key).unwrap().parse::<usize>();
+                let target = item.get(target_key).unwrap().parse::<usize>();
+                let item_valid = source.is_ok() && target.is_ok();
+                if item_valid {
+                    let source_id = source.unwrap();
+                    let target_id = target.unwrap();
+                    if source_id > models.graphic_model.max_id {
+                        models.graphic_model.max_id = source_id;
+                    }
+                    if target_id > models.graphic_model.max_id {
+                        models.graphic_model.max_id = target_id;
+                    }
+                };
+                item_valid
             });
         
         if valid {
             models.app_model.node_file_path = Option::Some(PathBuf::from(self.node_file_path.clone()));
             models.app_model.edge_file_path = Option::Some(PathBuf::from(self.edge_file_path.clone()));
+            models.graphic_model.set_status();
             models.app_model.import_state = ImportState::Success;
             models.app_model.import_visible = false;
             self.page_index = Page::FilePicker;
@@ -125,7 +138,7 @@ impl ImportModal {
                 data_headers: models.graphic_model.edge_data.data_headers.clone(),
                 data: Vec::default(),
             };
-            models.app_model.import_state = ImportState::Error("source and target isn't uint".to_owned());
+            models.app_model.import_state = ImportState::Error("Source and target isn't uint".to_owned());
         }
     }
 

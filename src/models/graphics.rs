@@ -8,11 +8,20 @@ pub struct ExternalData {
     pub data: Vec<HashMap<Rc<String>, String>>,
 }
 
+#[derive(Debug, Default, Clone)]
+pub struct GraphicsStatus {
+    pub node_count: usize,
+    pub edge_count: usize,
+    pub node_data_length: usize,
+    pub edge_data_length: usize,
+}
+
 pub struct GraphicsModel {
     pub graphic_delegation: Rc<dyn GraphicDelegation>,
     pub node_data: ExternalData,
     pub edge_data: ExternalData,
     pub max_id: usize,
+    pub status: GraphicsStatus,
 }
 
 impl GraphicsModel {
@@ -22,7 +31,19 @@ impl GraphicsModel {
             node_data: ExternalData::default(),
             edge_data: ExternalData::default(),
             max_id: 0,
+            status: GraphicsStatus::default(),
         }
+    }
+
+    pub fn set_status(&mut self) {
+        self.status.node_count =
+            std::cmp::max(
+                self.node_data.data.len(),
+                if self.edge_data.data.len() > 0 { self.max_id + 1 } else { 0 }
+            );
+        self.status.edge_count = self.edge_data.data.len();
+        self.status.node_data_length = self.node_data.data.len();
+        self.status.edge_data_length = self.edge_data.data.len();
     }
 
     pub fn node_count(&self) -> usize {
@@ -37,7 +58,7 @@ impl GraphicsModel {
         self.node_data.data.len()
     }
 
-    pub fn edge_data_len(&self) -> usize {
+    pub fn edge_data_length(&self) -> usize {
         self.edge_data.data.len()
     }
 }
