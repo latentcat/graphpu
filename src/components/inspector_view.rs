@@ -22,7 +22,7 @@ impl Default for InspectorView {
 }
 
 impl AppView for InspectorView {
-    fn show(&mut self, models: &mut Models, ui: &mut Ui) {
+    fn show(&mut self, models: &mut Models, ui: &mut Ui, frame: &mut eframe::Frame) {
         egui::SidePanel::right("inspector_view")
             .frame(inspector_frame(ui.style()))
             .default_width(280.0)

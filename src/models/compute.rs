@@ -1,7 +1,8 @@
 use std::borrow::Cow;
 use std::mem;
+use egui::Vec2;
 use nanorand::{Rng, WyRand};
-use wgpu::Label;
+use wgpu::{Label};
 use wgpu::util::DeviceExt;
 
 
@@ -57,8 +58,11 @@ impl ComputeModel {
 
 pub struct ComputeResources {
     render_state: egui_wgpu::RenderState,
-    texture_view: wgpu::TextureView,
+    texture_view: Option<wgpu::TextureView>,
     pub texture_id: egui::TextureId,
+
+    viewport_size: egui::Vec2,
+    pub is_viewport_update: bool,
 
     render_pipeline: wgpu::RenderPipeline,
     compute_pipeline: wgpu::ComputePipeline,
@@ -174,28 +178,6 @@ impl ComputeResources {
                 bind_group_layouts: &[],
                 push_constant_ranges: &[],
             });
-
-        let texture_extent = wgpu::Extent3d {
-            width: 1000 as u32,
-            height: 1000 as u32,
-            depth_or_array_layers: 1,
-        };
-
-        let texture = device.create_texture(&wgpu::TextureDescriptor {
-            size: texture_extent,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Bgra8UnormSrgb,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                | wgpu::TextureUsages::COPY_SRC
-                | wgpu::TextureUsages::TEXTURE_BINDING,
-            label: None,
-        });
-
-        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-
-        let texture_id = render_state.egui_rpass.write().register_native_texture(device, &texture_view, wgpu::FilterMode::Linear);
 
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
@@ -370,8 +352,10 @@ impl ComputeResources {
 
         let mut boids_resources = ComputeResources {
             render_state,
-            texture_view,
-            texture_id,
+            texture_view: None,
+            texture_id: Default::default(),
+            viewport_size: Default::default(),
+            is_viewport_update: true,
             render_pipeline,
             compute_pipeline,
             randomize_pipeline,
@@ -385,6 +369,7 @@ impl ComputeResources {
         };
 
         boids_resources.randomize();
+        boids_resources.update_viewport(Vec2::from([100., 100.]));
         boids_resources.render();
 
         boids_resources
@@ -443,7 +428,8 @@ impl ComputeResources {
         let device = &self.render_state.device;
         let queue = &self.render_state.queue;
 
-        let view = &self.texture_view;
+        let view = &self.texture_view.as_ref().unwrap();
+
 
         // create render pass descriptor and its color attachments
         let color_attachments = [Some(wgpu::RenderPassColorAttachment {
@@ -476,5 +462,41 @@ impl ComputeResources {
 
         queue.submit(Some(command_encoder.finish()));
 
+    }
+
+    pub fn update_viewport(&mut self, new_size: Vec2) {
+
+        let device = &self.render_state.device;
+        let queue = &self.render_state.queue;
+
+        if self.viewport_size != new_size {
+            self.viewport_size = new_size;
+            self.is_viewport_update = true;
+
+            let texture_extent = wgpu::Extent3d {
+                width: self.viewport_size.x as u32,
+                height: self.viewport_size.y as u32,
+                depth_or_array_layers: 1,
+            };
+
+            let texture = device.create_texture(&wgpu::TextureDescriptor {
+                size: texture_extent,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Bgra8UnormSrgb,
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                    | wgpu::TextureUsages::COPY_SRC
+                    | wgpu::TextureUsages::TEXTURE_BINDING,
+                label: None,
+            });
+
+            let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+            let texture_id = self.render_state.egui_rpass.write().register_native_texture(device, &texture_view, wgpu::FilterMode::Linear);
+
+            self.texture_view = Option::from(texture_view);
+            self.texture_id = texture_id;
+        }
     }
 }

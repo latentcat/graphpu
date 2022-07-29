@@ -28,7 +28,7 @@ pub fn panel_style(style: &egui::Style) -> egui::Frame {
 }
 
 impl AppView for MenuBarView {
-    fn show(&mut self, models: &mut Models, ui: &mut Ui) {
+    fn show(&mut self, models: &mut Models, ui: &mut Ui, frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("menubar_view")
             .frame(panel_style(ui.style()))
             .show_inside(ui, |ui| {

@@ -21,7 +21,7 @@ impl MainApp {
         style.visuals.widgets.noninteractive.fg_stroke.color = Color32::from_white_alpha(170);
         cc.egui_ctx.set_style(style);
 
-        Self {
+        let mut main_app = MainApp {
             models: Models { 
                 compute_model: ComputeModel::init(cc),
                 graphic_model: GraphicsModel::default(),
@@ -29,23 +29,29 @@ impl MainApp {
             },
             inspector_view: InspectorView::default(),
             import_modal: ImportModal::default(),
+        };
+
+        if let Some(pixels_per_point) = cc.integration_info.native_pixels_per_point {
+            main_app.models.app_model.pixels_per_point = pixels_per_point;
         }
+
+        main_app
     }
 }
 
 impl eframe::App for MainApp {
-    fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         egui::CentralPanel::default()
             .frame(egui::Frame::none())
             .show(ctx, |ui| {
                 ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
                 // ui.set_enabled(false);
-                MenuBarView::default().show(&mut self.models, ui);
-                DetailView::default().show(&mut self.models, ui);
-                self.inspector_view.show(&mut self.models, ui);
+                MenuBarView::default().show(&mut self.models, ui, frame);
+                DetailView::default().show(&mut self.models, ui, frame);
+                self.inspector_view.show(&mut self.models, ui, frame);
                 match self.models.app_model.stage {
-                    Stage::Graphics => GraphicsView::default().show(&mut self.models, ui),
-                    Stage::Table => TableView::default().show(&mut self.models, ui),
+                    Stage::Graphics => GraphicsView::default().show(&mut self.models, ui, frame),
+                    Stage::Table => TableView::default().show(&mut self.models, ui, frame),
                 };
             });
 

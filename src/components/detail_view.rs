@@ -8,7 +8,7 @@ use super::AppView;
 pub struct DetailView;
 
 impl AppView for DetailView {
-    fn show(&mut self, models: &mut Models, ui: &mut Ui) {
+    fn show(&mut self, models: &mut Models, ui: &mut Ui, frame: &mut eframe::Frame) {
         egui::TopBottomPanel::bottom("detail").show_inside(ui, |ui| {
 
             ui.horizontal(|ui| {

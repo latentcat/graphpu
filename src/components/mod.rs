@@ -10,5 +10,5 @@ pub mod import_modal;
 pub mod table_view;
 
 pub trait AppView {
-  fn show(&mut self, models: &mut Models, ui: &mut Ui);
+  fn show(&mut self, models: &mut Models, ui: &mut Ui, frame: &mut eframe::Frame);
 }

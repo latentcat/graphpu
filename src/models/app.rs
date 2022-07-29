@@ -29,11 +29,13 @@ pub struct AppModel {
     pub edge_file_path: Option<PathBuf>,
     pub stage: Stage,
     pub ne_tab: NodeEdgeTab,
-    pub message: String, 
+    pub message: String,
+    pub pixels_per_point: f32,
 }
 
 impl Default for AppModel {
     fn default() -> Self {
+
         Self { 
             import_visible: false,
             import_state: ImportState::default(),
@@ -42,6 +44,7 @@ impl Default for AppModel {
             stage: Stage::default(),
             ne_tab: NodeEdgeTab::default(),
             message: String::from("Message"),
+            pixels_per_point: 1.0
         }
     }
 }

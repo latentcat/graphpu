@@ -13,7 +13,7 @@ use super::AppView;
 pub struct TableView;
 
 impl AppView for TableView {
-    fn show(&mut self, models: &mut Models, ui: &mut egui::Ui) {
+    fn show(&mut self, models: &mut Models, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         let style = (*ui.style()).clone();
         egui::CentralPanel::default()
             .frame(central_panel_frame(&style))
