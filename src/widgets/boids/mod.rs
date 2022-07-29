@@ -91,6 +91,7 @@ impl GraphicObject for BoidsResources {
     fn init<'a>(cc: &'a eframe::CreationContext<'a>) {
         let render_state = cc.render_state.as_ref().expect("WGPU enabled");
         let device = &render_state.device;
+        let queue = &render_state.queue;
 
         let compute_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
@@ -277,16 +278,12 @@ impl GraphicObject for BoidsResources {
             [
                 // 0
                 -1.0f32, -1.0,
-
                 // 1
                 1.0, -1.0,
-
                 // 2
                 -1.0, 1.0,
-
                 // 3
                 1.0, 1.0,
-
             ];
         let vertices_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
@@ -311,14 +308,19 @@ impl GraphicObject for BoidsResources {
 
         let mut particle_buffers = Vec::<wgpu::Buffer>::new();
         let mut particle_bind_groups = Vec::<wgpu::BindGroup>::new();
+        let unpadded_size = 4 * (4 * NUM_PARTICLES) as wgpu::BufferAddress;
+        let align_mask = wgpu::COPY_BUFFER_ALIGNMENT - 1;
+        let padded_size =
+            ((unpadded_size + align_mask) & !align_mask).max(wgpu::COPY_BUFFER_ALIGNMENT);
         for i in 0..2 {
             particle_buffers.push(
-                device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                device.create_buffer(&wgpu::BufferDescriptor {
                     label: Some(&format!("Particle Buffer {}", i)),
-                    contents: bytemuck::cast_slice(&initial_particle_data),
+                    size: padded_size,
                     usage: wgpu::BufferUsages::VERTEX
                         | wgpu::BufferUsages::STORAGE
                         | wgpu::BufferUsages::COPY_DST,
+                    mapped_at_creation: false
                 }),
             );
         }
@@ -355,22 +357,28 @@ impl GraphicObject for BoidsResources {
         let work_group_count =
             ((NUM_PARTICLES as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
 
+        let mut boids_resources = BoidsResources {
+            render_pipeline,
+            compute_pipeline,
+            randomize_pipeline,
+            copy_pipeline,
+            uniform_buffer,
+            particle_bind_groups,
+            vertices_buffer,
+            particle_buffers,
+            work_group_count,
+            frame_num: 0,
+        };
+
+        boids_resources.randomize(device, queue);
+
         render_state
             .egui_rpass
             .write()
             .paint_callback_resources
-            .insert(BoidsResources {
-                render_pipeline,
-                compute_pipeline,
-                randomize_pipeline,
-                copy_pipeline,
-                uniform_buffer,
-                particle_bind_groups,
-                vertices_buffer,
-                particle_buffers,
-                work_group_count,
-                frame_num: 0,
-            });
+            .insert(boids_resources);
+
+
     }
 
     fn compute(&mut self, device: &wgpu::Device, queue: &wgpu::Queue) {
