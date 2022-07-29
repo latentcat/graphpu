@@ -55,3 +55,13 @@ pub fn inspector_inner_frame(_style: &egui::Style) -> egui::Frame {
         ..Default::default()
     }
 }
+
+pub fn graphics_frame(style: &egui::Style) -> egui::Frame {
+    egui::Frame {
+        inner_margin: egui::style::Margin::symmetric(1.0, 1.0),
+        rounding: egui::Rounding::none(),
+        fill: style.visuals.window_fill(),
+        stroke: style.visuals.window_stroke(),
+        ..Default::default()
+    }
+}

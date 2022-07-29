@@ -4,7 +4,6 @@ use crate::{
         menubar_view::MenuBarView, AppView, import_modal::ImportModal, table_view::TableView,
     },
     models::{app::{AppModel, Stage}, compute::ComputeModel, graphics::GraphicsModel, Models},
-    widgets::boids::Boids,
 };
 use egui::Color32;
 
@@ -24,8 +23,8 @@ impl MainApp {
 
         Self {
             models: Models { 
-                compute_model: ComputeModel::default(),
-                graphic_model: GraphicsModel::new(std::rc::Rc::new(Boids::new(cc))),
+                compute_model: ComputeModel::init(cc),
+                graphic_model: GraphicsModel::default(),
                 app_model: AppModel::default(),
             },
             inspector_view: InspectorView::default(),

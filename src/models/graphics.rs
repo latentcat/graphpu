@@ -1,7 +1,5 @@
 use std::{collections::HashMap, rc::Rc, path::PathBuf};
 
-use crate::widgets::GraphicDelegation;
-
 #[derive(Debug, Default, Clone)]
 pub struct ExternalData {
     pub data_headers: Vec<Rc<String>>,
@@ -17,23 +15,24 @@ pub struct GraphicsStatus {
 }
 
 pub struct GraphicsModel {
-    pub graphic_delegation: Rc<dyn GraphicDelegation>,
     pub node_data: ExternalData,
     pub edge_data: ExternalData,
     pub max_id: usize,
     pub status: GraphicsStatus,
 }
 
-impl GraphicsModel {
-    pub fn new(graphic_delegation: Rc<dyn GraphicDelegation>) -> Self {
+impl Default for GraphicsModel {
+    fn default() -> Self {
         Self {
-            graphic_delegation,
             node_data: ExternalData::default(),
             edge_data: ExternalData::default(),
             max_id: 0,
             status: GraphicsStatus::default(),
         }
     }
+}
+
+impl GraphicsModel {
 
     pub fn set_status(&mut self) {
         self.status.node_count =
@@ -46,21 +45,6 @@ impl GraphicsModel {
         self.status.edge_data_length = self.edge_data.data.len();
     }
 
-    pub fn node_count(&self) -> usize {
-        std::cmp::max(self.node_data.data.len(), self.max_id + 1)
-    }
-
-    pub fn edge_count(&self) -> usize {
-        self.edge_data.data.len()
-    }
-
-    pub fn node_data_length(&self) -> usize {
-        self.node_data.data.len()
-    }
-
-    pub fn edge_data_length(&self) -> usize {
-        self.edge_data.data.len()
-    }
 }
 
 pub fn pick_csv() -> Option<PathBuf> {

@@ -1,6 +1,7 @@
 use egui::Ui;
 
 use crate::models::Models;
+use crate::widgets::frames::graphics_frame;
 
 use super::AppView;
 
@@ -9,17 +10,33 @@ pub struct GraphicsView;
 
 impl AppView for GraphicsView {
     fn show(&mut self, models: &mut Models, ui: &mut Ui) {
-        let style = (*ui.style()).clone();
+
+
+        let is_computing = models.compute_model.is_computing;
+        let is_dispatching = models.compute_model.is_dispatching;
+        models.compute_model.set_dispatching(false);
+
+        if is_computing {
+            models.compute_model.compute_resources.compute();
+        }
+
+        if is_dispatching {
+            models.compute_model.compute_resources.randomize();
+        }
+
+        if is_computing || is_dispatching {
+            models.compute_model.compute_resources.render();
+            ui.ctx().request_repaint();
+        }
+
         egui::CentralPanel::default()
             .frame(egui::Frame::none())
             .show_inside(ui, |ui| {
                 ui.set_style(ui.ctx().style());
-                egui::Frame::none()
-                    .fill(style.visuals.extreme_bg_color)
-                    .stroke(style.visuals.window_stroke())
+                graphics_frame(ui.style())
                     .show(ui, |ui| {
-                        let graphic_delegation = models.graphic_model.graphic_delegation.clone();
-                        graphic_delegation.custom_painting(models, ui);
+                        let texture_id = models.compute_model.compute_resources.texture_id;
+                        ui.image(texture_id, ui.max_rect().size());
                     });
             });
     }
