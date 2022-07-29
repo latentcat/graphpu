@@ -493,6 +493,9 @@ impl ComputeResources {
 
             let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
 
+            drop(texture);
+
+            self.render_state.egui_rpass.write().free_texture(&self.texture_id);
             let texture_id = self.render_state.egui_rpass.write().register_native_texture(device, &texture_view, wgpu::FilterMode::Linear);
 
             self.texture_view = Option::from(texture_view);
