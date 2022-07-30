@@ -1,8 +1,9 @@
 use std::borrow::Cow;
 use std::mem;
-use egui::Vec2;
+use egui::{TextureId, Vec2};
 use nanorand::{Rng, WyRand};
 use wgpu::{Label};
+use wgpu::BindingType::Texture;
 use wgpu::util::DeviceExt;
 
 
@@ -495,7 +496,9 @@ impl ComputeResources {
 
             drop(texture);
 
-            self.render_state.egui_rpass.write().free_texture(&self.texture_id);
+            if self.texture_view.is_some() {
+                self.render_state.egui_rpass.write().free_texture(&self.texture_id);
+            }
             let texture_id = self.render_state.egui_rpass.write().register_native_texture(device, &texture_view, wgpu::FilterMode::Linear);
 
             self.texture_view = Option::from(texture_view);
