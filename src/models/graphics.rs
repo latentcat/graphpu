@@ -1,6 +1,6 @@
-use std::{collections::HashMap, rc::Rc, path::PathBuf};
+use std::{collections::HashMap, rc::Rc, path::PathBuf, fmt::Display};
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default)]
 pub struct ExternalData {
     pub data_headers: Vec<Rc<String>>,
     pub data: Vec<HashMap<Rc<String>, String>>,
@@ -12,6 +12,24 @@ pub struct GraphicsStatus {
     pub edge_count: usize,
     pub node_data_length: usize,
     pub edge_data_length: usize,
+}
+
+#[derive(Debug, Default, PartialEq)]
+pub enum DataSource<T> {
+    #[default]
+    None,
+    Const(T),
+    Data(Rc<String>),
+}
+
+impl<T> Display for DataSource<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::None => f.write_str("None"),
+            Self::Const(_) => f.write_str("Constant"),
+            Self::Data(s) => f.write_str(&s),
+        }
+    }
 }
 
 pub struct GraphicsModel {
