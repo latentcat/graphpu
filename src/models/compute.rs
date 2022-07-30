@@ -43,6 +43,13 @@ impl ComputeModel {
             compute_resources: None,
         }
     }
+
+    pub fn reset(&mut self) {
+        if let Some(compute_resources) = &mut self.compute_resources {
+            compute_resources.dispose();
+        }
+        self.compute_resources = None;
+    }
 }
 
 impl ComputeModel {
@@ -437,7 +444,7 @@ impl ComputeResources {
             view,
             resolve_target: None,
             ops: wgpu::Operations {
-                load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
+                load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                 store: true,
             },
         })];
@@ -505,4 +512,11 @@ impl ComputeResources {
             self.texture_id = texture_id;
         }
     }
+
+    pub fn dispose(&mut self) {
+        self.particle_buffers[0].destroy();
+        self.particle_buffers[1].destroy();
+    }
+
+
 }

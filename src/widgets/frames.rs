@@ -58,9 +58,9 @@ pub fn inspector_inner_frame(_style: &egui::Style) -> egui::Frame {
 
 pub fn graphics_frame(style: &egui::Style) -> egui::Frame {
     egui::Frame {
-        inner_margin: egui::style::Margin::symmetric(1.0, 1.0),
+        inner_margin: egui::style::Margin::symmetric(0.5, 0.5),
         rounding: egui::Rounding::none(),
-        fill: style.visuals.window_fill(),
+        fill: Color32::from_gray(20),
         stroke: style.visuals.window_stroke(),
         ..Default::default()
     }

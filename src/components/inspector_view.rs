@@ -64,6 +64,7 @@ impl AppView for InspectorView {
                                     let remove_data_button = ui.button("🗑");
                                     if remove_data_button.clicked() {
                                         models.clear_data();
+                                        models.compute_model.reset();
                                     }
                                     ui.with_layout(
                                         egui::Layout::top_down(egui::Align::LEFT).with_cross_align(egui::Align::Min),
