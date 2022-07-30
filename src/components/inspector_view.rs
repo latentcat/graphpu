@@ -6,20 +6,15 @@ use egui::collapsing_header::HeaderResponse;
 
 use crate::models::Models;
 use crate::models::app::{ImportState, NodeEdgeTab};
-use crate::models::graphics::DataSource;
 use crate::models::compute::ComputeMethod;
 use crate::models::compute::ComputeMethodType;
+use crate::models::graphics::{PositionType, ColorType, ColorRamp, ColorPalette, SizeType};
 use crate::widgets::frames::{button_group_style, inspector_frame, inspector_inner_frame};
 
 use super::AppView;
 
 #[derive(Default)]
-pub struct InspectorView {
-    id_source: DataSource<()>,
-    position_source: DataSource<String>,
-    color_source: DataSource<String>,
-    size_source: DataSource<String>,
-}
+pub struct InspectorView;
 
 impl AppView for InspectorView {
     fn show(&mut self, models: &mut Models, ui: &mut Ui, frame: &mut eframe::Frame) {
@@ -125,147 +120,173 @@ impl AppView for InspectorView {
 
 impl InspectorView {
     fn node_inspector(&mut self, models: &mut Models, ui: &mut Ui) {
-        let (header, _) = grid_header(ui, true, "ID", &self.id_source.to_string());
-        header.body(|ui| {
-            inspector_grid("Node Inspector ID")
-                .show(ui, |ui| {
-                    source_combox("ID Source", &models.graphic_model.node_data.data_headers, &mut self.id_source, ui);
+        let node_settings = &mut models.graphic_model.node_settings;
+        // TODO: constant editor
 
-                    grid_label(ui, "");
-                    ui.button("Set ID");
-                    ui.end_row();
-                });
-        });
-
-        let (header, _) = grid_header(ui, true, "Position", "Compute");
+        let (header, _) = grid_header(ui, true, "Position", &node_settings.position_type.to_string());
         header.body(|ui| {
-            inspector_grid("Node Inspector ID")
+            inspector_grid("Node Position")
                 .show(ui, |ui| {
-                    grid_label(ui, "Source");
-                    egui::ComboBox::from_id_source("ID Source 2")
-                        .selected_text("Compute")
+                    grid_label(ui, "Type");
+                    egui::ComboBox::from_id_source("Position Type")
+                        .selected_text(&node_settings.position_type.to_string())
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
-                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                            ui.selectable_value(&mut node_settings.position_type, PositionType::Compute, "Compute");
+                            ui.selectable_value(&mut node_settings.position_type, PositionType::Set, "Set");
                         });
-
                     ui.end_row();
 
-                    grid_label(ui, "Method");
-                    ui.horizontal(|ui| {
+                    match node_settings.position_type {
+                        PositionType::Compute => {
+                            grid_label(ui, "Compute");
+                            egui::ComboBox::from_id_source("Position Compute")
+                                .selected_text(node_settings.position_compute.0)
+                                .show_ui(ui, |ui| {
+                                    ui.selectable_value(&mut node_settings.position_compute, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                    ui.selectable_value(&mut node_settings.position_compute, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                                });
+                            ui.end_row();
 
-                        egui::ComboBox::from_id_source("Compute Method 2")
-                            .selected_text(models.compute_model.compute_method.0)
-                            .show_ui(ui, |ui| {
-                                ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
-                                ui.separator();
-                                ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
-                            })
+                            grid_label(ui, "");
+                            if node_settings.position_compute.1 == ComputeMethodType::Continuous {
+                                let continuous_button = ui.button(if !models.compute_model.is_computing { "▶ Start Computing" } else { "⏸ Pause Computing" });
+                                if continuous_button.clicked() {
+                                    models.compute_model.switch_computing();
+                                }
+                            } else {
+                                models.compute_model.set_computing(false);
+                                let one_step_button = ui.button("⏩ Dispatch");
+                                if one_step_button.clicked() {
+                                    models.compute_model.set_dispatching(true);
+                                }
+                            }
+                            ui.end_row();
+                        },
+                        PositionType::Set => {
+                            grid_label(ui, "Set");
+                            ui.text_edit_singleline(&mut "".to_owned());
+                            ui.text_edit_singleline(&mut "".to_owned());
+                            ui.text_edit_singleline(&mut "".to_owned());
+                            ui.end_row();
+                            grid_label(ui, "");
+                            if ui.button("Set").clicked() {
 
-                    });
-
-                    ui.end_row();
-
-                    grid_label(ui, "");
-                    if models.compute_model.compute_method.1 == ComputeMethodType::Continuous {
-                        let continuous_button = ui.button(if !models.compute_model.is_computing { "▶ Start Computing" } else { "⏸ Pause Computing" });
-                        if continuous_button.clicked() {
-                            models.compute_model.switch_computing();
-                        }
-                    } else {
-                        models.compute_model.set_computing(false);
-                        let one_step_button = ui.button("⏩ Dispatch");
-                        if one_step_button.clicked() {
-                            models.compute_model.set_dispatching(true);
+                            }
+                            ui.end_row();
                         }
                     }
-
-                    ui.end_row();
-
                 });
         });
 
-        let (header, _) = grid_header(ui, false, "Color", &self.color_source.to_string());
+        let (header, _) = grid_header(ui, false, "Color", &node_settings.color_type.to_string());
         header.body(|ui| {
-            inspector_grid("N Color")
+            inspector_grid("Node Color")
                 .show(ui, |ui| {
-                    source_combox("Color Source", &models.graphic_model.node_data.data_headers, &mut self.color_source, ui);
-
-                    grid_label(ui, "Ramp");
-                    egui::ComboBox::from_id_source("Ramp")
-                        .selected_text("None")
+                    grid_label(ui, "Type");
+                    egui::ComboBox::from_id_source("Color Type")
+                        .selected_text(&node_settings.color_type.to_string())
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
-                            ui.separator();
-                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                            ui.selectable_value(&mut node_settings.color_type, ColorType::Constant, "Constant");
+                            ui.selectable_value(&mut node_settings.color_type, ColorType::Ramp, "Ramp");
+                            ui.selectable_value(&mut node_settings.color_type, ColorType::Partition, "Partition");
                         });
                     ui.end_row();
 
-                    grid_label(ui, "");
-                    ui.button("Set Color");
-                    ui.end_row();
+                    match node_settings.color_type {
+                        ColorType::Constant => {
+                            grid_label(ui, "Constant");
+                            ui.text_edit_singleline(&mut "".to_owned());
+                            ui.text_edit_singleline(&mut "".to_owned());
+                            ui.text_edit_singleline(&mut "".to_owned());
+                            ui.end_row();
+                            grid_label(ui, "");
+                            if ui.button("Set").clicked() {
+
+                            }
+                            ui.end_row();
+                        },
+                        ColorType::Ramp => {
+                            let (source, ramp) = &mut node_settings.color_ramp;
+                            source_combox("Color Ramp Source", &models.graphic_model.node_data.data_headers, source, ui);
+                            grid_label(ui, "Picker");
+                            egui::ComboBox::from_id_source("Color Ramp")
+                                .selected_text(&ramp.to_string())
+                                .show_ui(ui, |ui| {
+                                    ui.selectable_value(ramp, ColorRamp::Ramp1, "Ramp1");
+                                    ui.selectable_value(ramp, ColorRamp::Ramp2, "Ramp2");
+                                });
+                            ui.end_row();
+                        },
+                        ColorType::Partition => {
+                            let (source, platte) = &mut node_settings.color_partition;
+                            source_combox("Color Partition Source", &models.graphic_model.node_data.data_headers, source, ui);
+                            grid_label(ui, "Platte");
+                            egui::ComboBox::from_id_source("Color Partition")
+                                .selected_text(&platte.to_string())
+                                .show_ui(ui, |ui| {
+                                    ui.selectable_value(platte, ColorPalette::Palette1, "Palette1");
+                                    ui.selectable_value(platte, ColorPalette::Palette2, "Palette2");
+                                });
+                            ui.end_row();
+                        },
+                    }
                 });
         });
 
 
-        let (header, _) = grid_header(ui, false, "Size", &self.size_source.to_string());
+        let (header, _) = grid_header(ui, false, "Size", &node_settings.size_type.to_string());
         header.body(|ui| {
-            inspector_grid("N Size")
+            inspector_grid("Node Size")
                 .show(ui, |ui| {
-                    source_combox("Size Source", &models.graphic_model.node_data.data_headers, &mut self.size_source, ui);
-                    grid_label(ui, "");
-                    ui.button("Set Size");
+                    grid_label(ui, "Type");
+                    egui::ComboBox::from_id_source("Size Type")
+                        .selected_text(&node_settings.size_type.to_string())
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut node_settings.size_type, SizeType::Constant, "Constant");
+                            ui.selectable_value(&mut node_settings.size_type, SizeType::Ramp, "Ramp");
+                        });
                     ui.end_row();
+
+                    match node_settings.size_type {
+                        SizeType::Constant => {
+                            grid_label(ui, "Constant");
+                            ui.text_edit_singleline(&mut "".to_owned());
+                            ui.end_row();
+                            grid_label(ui, "");
+                            if ui.button("Set").clicked() {
+
+                            }
+                            ui.end_row();
+                        },
+                        SizeType::Ramp => {
+                            let (source, _) = &mut node_settings.size_ramp;
+                            source_combox("Size Ramp Source", &models.graphic_model.node_data.data_headers, source, ui);
+                            grid_label(ui, "Range");
+                            ui.text_edit_singleline(&mut "".to_owned());
+                            ui.text_edit_singleline(&mut "".to_owned());
+                            ui.end_row();
+                            grid_label(ui, "");
+                            if ui.button("Set").clicked() {
+
+                            }
+                            ui.end_row();
+                        }
+                    }
                 });
         });
     }
 
     fn edge_inspector(&mut self, models: &mut Models, ui: &mut Ui) {
-        let (header, _) = grid_header(ui, true, "Node ID", "None");
-        header.body(|ui| {
-            inspector_grid("Edge Inspector ID")
-                .show(ui, |ui| {
-                    grid_label(ui, "Start");
-                    egui::ComboBox::from_id_source("Start ID")
-                        .selected_text("None")
-                        .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
-                            ui.separator();
-                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
-                        });
-
-                    ui.end_row();
-
-                    grid_label(ui, "End");
-                    egui::ComboBox::from_id_source("End ID")
-                        .selected_text("None")
-                        .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
-                            ui.separator();
-                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
-                        });
-
-                    ui.end_row();
-
-                    grid_label(ui, "");
-                    let _ = ui.button("Build Index");
-
-                    ui.end_row();
-
-                });
-        });
     }
 }
 
-fn source_combox<T>(id_source: impl Hash, data_hearders: &Vec<Rc<String>>, current_value: &mut DataSource<T>, ui: &mut Ui)
-    where T: std::cmp::PartialEq + Default {
+fn source_combox(id_source: impl Hash, data_hearders: &Vec<Rc<String>>, current_value: &mut Rc<String>, ui: &mut Ui) {
     grid_label(ui, "Source");
     egui::ComboBox::from_id_source(id_source)
         .selected_text(current_value.to_string())
         .show_ui(ui, |ui| {
-            ui.selectable_value(current_value, DataSource::Const(T::default()), "Constant");
             for col in data_hearders {
-                ui.selectable_value(current_value, DataSource::Data(col.clone()), &*col.clone());
+                ui.selectable_value(current_value, col.clone(), &*col.clone());
             }
         });
     ui.end_row();

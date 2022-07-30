@@ -1,11 +1,9 @@
 use std::borrow::Cow;
 use std::mem;
-use egui::{TextureId, Vec2};
+use egui::Vec2;
 use nanorand::{Rng, WyRand};
-use wgpu::{Label};
-use wgpu::BindingType::Texture;
+use wgpu::Label;
 use wgpu::util::DeviceExt;
-
 
 const NUM_PARTICLES: u32 = 2000;
 const PARTICLES_PER_GROUP: u32 = 128;
@@ -26,7 +24,6 @@ impl ComputeMethod {
 }
 
 pub struct ComputeModel {
-    pub compute_method: ComputeMethod,
     pub is_computing: bool,
     pub is_dispatching: bool,
     pub compute_render_state: Option<egui_wgpu::RenderState>,
@@ -36,7 +33,6 @@ pub struct ComputeModel {
 impl ComputeModel {
     pub fn init(cc: &eframe::CreationContext) -> Self {
         Self {
-            compute_method: ComputeMethod::FORCE_ATLAS2,
             is_computing: false,
             is_dispatching: false,
             compute_render_state: Some(cc.render_state.as_ref().unwrap().clone()),
