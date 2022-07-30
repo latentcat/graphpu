@@ -1,4 +1,5 @@
 use std::{collections::HashMap, rc::Rc, path::PathBuf};
+use eframe::epaint::Color32;
 
 use strum::Display;
 
@@ -55,7 +56,7 @@ pub struct NodeSettings {
     pub posititon_set: (f32, f32, f32),
     
     pub color_type: ColorType,
-    pub color_constant: (f32, f32, f32),
+    pub color_constant: Color32,
     pub color_ramp: (Rc<String>, ColorRamp),
     pub color_partition: (Rc<String>, ColorPalette),
     
@@ -71,12 +72,12 @@ impl Default for NodeSettings {
             position_compute: ComputeMethod::FORCE_ATLAS2,
             posititon_set: (0.0, 0.0, 0.0),
             color_type: ColorType::Constant,
-            color_constant: (0.0, 0.0, 0.0),
+            color_constant: Color32::WHITE,
             color_ramp: (Rc::new(String::from("None")), ColorRamp::Ramp1),
             color_partition: (Rc::new(String::from("None")), ColorPalette::Palette1),
             size_type: SizeType::Constant,
             size_constant: 0.0,
-            size_ramp: (Rc::new(String::from("None")), [0.0, 0.0]),
+            size_ramp: (Rc::new(String::from("None")), [0.5, 2.0]),
         }
     }
 }

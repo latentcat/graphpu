@@ -143,6 +143,7 @@ impl InspectorView {
                                 .selected_text(node_settings.position_compute.0)
                                 .show_ui(ui, |ui| {
                                     ui.selectable_value(&mut node_settings.position_compute, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                    ui.separator();
                                     ui.selectable_value(&mut node_settings.position_compute, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
                                 });
                             ui.end_row();
@@ -195,9 +196,7 @@ impl InspectorView {
                     match node_settings.color_type {
                         ColorType::Constant => {
                             grid_label(ui, "Constant");
-                            ui.text_edit_singleline(&mut "".to_owned());
-                            ui.text_edit_singleline(&mut "".to_owned());
-                            ui.text_edit_singleline(&mut "".to_owned());
+                            ui.color_edit_button_srgba(&mut node_settings.color_constant);
                             ui.end_row();
                             grid_label(ui, "");
                             if ui.button("Set").clicked() {
@@ -250,8 +249,9 @@ impl InspectorView {
                     match node_settings.size_type {
                         SizeType::Constant => {
                             grid_label(ui, "Constant");
-                            ui.text_edit_singleline(&mut "".to_owned());
+                            ui.add(egui::Slider::new(&mut node_settings.size_constant, 0.1..=10.0));
                             ui.end_row();
+
                             grid_label(ui, "");
                             if ui.button("Set").clicked() {
 
@@ -262,8 +262,11 @@ impl InspectorView {
                             let (source, _) = &mut node_settings.size_ramp;
                             source_combox("Size Ramp Source", &models.graphic_model.node_data.data_headers, source, ui);
                             grid_label(ui, "Range");
-                            ui.text_edit_singleline(&mut "".to_owned());
-                            ui.text_edit_singleline(&mut "".to_owned());
+                            ui.horizontal(|ui| {
+                                ui.add(egui::DragValue::new(&mut node_settings.size_ramp.1[0]).speed(0.1));
+                                ui.label("—");
+                                ui.add(egui::DragValue::new(&mut node_settings.size_ramp.1[1]).speed(0.1));
+                            });
                             ui.end_row();
                             grid_label(ui, "");
                             if ui.button("Set").clicked() {
