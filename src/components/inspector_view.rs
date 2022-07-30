@@ -1,24 +1,24 @@
+use std::hash::Hash;
+use std::rc::Rc;
+
 use egui::{Ui};
 use egui::collapsing_header::HeaderResponse;
 
 use crate::models::Models;
 use crate::models::app::{ImportState, NodeEdgeTab};
-use crate::{models::compute::ComputeMethod};
+use crate::models::graphics::DataSource;
+use crate::models::compute::ComputeMethod;
 use crate::models::compute::ComputeMethodType;
 use crate::widgets::frames::{button_group_style, inspector_frame, inspector_inner_frame};
 
 use super::AppView;
 
+#[derive(Default)]
 pub struct InspectorView {
-    test_text: String,
-}
-
-impl Default for InspectorView {
-    fn default() -> Self {
-        Self {
-            test_text: String::default(),
-        }
-    }
+    id_source: DataSource<()>,
+    position_source: DataSource<String>,
+    color_source: DataSource<String>,
+    size_source: DataSource<String>,
 }
 
 impl AppView for InspectorView {
@@ -110,181 +110,8 @@ impl AppView for InspectorView {
                             .id_source("source")
                             .show(ui, |ui| {
                                 match models.app_model.ne_tab {
-
-                                    /// Node Inspector
-                                    NodeEdgeTab::Node => {
-
-                                        let (header, is_header_open) = grid_header(ui, true, "ID", "None");
-                                        header.body(|ui| {
-                                            inspector_grid("Node Inspector ID")
-                                                .show(ui, |ui| {
-
-                                                    grid_label(ui, "Source");
-                                                    egui::ComboBox::from_id_source("ID Source")
-                                                        .selected_text("None")
-                                                        .show_ui(ui, |ui| {
-                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
-                                                            ui.separator();
-                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
-                                                        });
-
-                                                    ui.end_row();
-
-                                                    grid_label(ui, "");
-                                                    ui.button("Set ID");
-                                                    ui.end_row();
-
-                                                });
-                                        });
-
-                                        let (header, is_header_open) = grid_header(ui, true, "Position", "Compute");
-                                        header.body(|ui| {
-                                            inspector_grid("Node Inspector ID")
-                                                .show(ui, |ui| {
-
-                                                    grid_label(ui, "Source");
-                                                    egui::ComboBox::from_id_source("ID Source 2")
-                                                        .selected_text("Compute")
-                                                        .show_ui(ui, |ui| {
-                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
-                                                            ui.separator();
-                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
-                                                        });
-
-                                                    ui.end_row();
-
-                                                    grid_label(ui, "Method");
-                                                    ui.horizontal(|ui| {
-
-                                                        egui::ComboBox::from_id_source("Compute Method 2")
-                                                            .selected_text(models.compute_model.compute_method.0)
-                                                            .show_ui(ui, |ui| {
-                                                                ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
-                                                                ui.separator();
-                                                                ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
-                                                            })
-
-                                                    });
-
-                                                    ui.end_row();
-
-                                                    grid_label(ui, "");
-                                                    if models.compute_model.compute_method.1 == ComputeMethodType::Continuous {
-                                                        let continuous_button = ui.button(if !models.compute_model.is_computing { "▶ Start Computing" } else { "⏸ Pause Computing" });
-                                                        if continuous_button.clicked() {
-                                                            models.compute_model.switch_computing();
-                                                        }
-                                                    } else {
-                                                        models.compute_model.set_computing(false);
-                                                        let one_step_button = ui.button("⏩ Dispatch");
-                                                        if one_step_button.clicked() {
-                                                            models.compute_model.set_dispatching(true);
-                                                        }
-                                                    }
-
-                                                    ui.end_row();
-
-                                                });
-                                        });
-
-                                        let (header, is_header_open) = grid_header(ui, false, "Color", "None");
-                                        header.body(|ui| {
-                                            inspector_grid("N Color")
-                                                .show(ui, |ui| {
-
-                                                    grid_label(ui, "Source");
-                                                    egui::ComboBox::from_id_source("Color Source")
-                                                        .selected_text("None")
-                                                        .show_ui(ui, |ui| {
-                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
-                                                            ui.separator();
-                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
-                                                        });
-
-                                                    ui.end_row();
-
-                                                    grid_label(ui, "Ramp");
-                                                    egui::ComboBox::from_id_source("Ramp")
-                                                        .selected_text("None")
-                                                        .show_ui(ui, |ui| {
-                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
-                                                            ui.separator();
-                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
-                                                        });
-
-                                                    ui.end_row();
-
-                                                    grid_label(ui, "");
-                                                    ui.button("Set Color");
-                                                    ui.end_row();
-
-                                                });
-                                        });
-
-
-                                        let (header, is_header_open) = grid_header(ui, false, "Size", "None");
-                                        header.body(|ui| {
-                                            inspector_grid("N Size")
-                                                .show(ui, |ui| {
-
-                                                    grid_label(ui, "Source");
-                                                    egui::ComboBox::from_id_source("Size Source")
-                                                        .selected_text("None")
-                                                        .show_ui(ui, |ui| {
-                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
-                                                            ui.separator();
-                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
-                                                        });
-
-                                                    ui.end_row();
-
-                                                    grid_label(ui, "");
-                                                    ui.button("Set Size");
-                                                    ui.end_row();
-
-                                                });
-                                        });
-
-                                    },
-
-                                    /// Edge Inspector
-                                    NodeEdgeTab::Edge => {
-
-                                        let (header, is_header_open) = grid_header(ui, true, "Node ID", "None");
-                                        header.body(|ui| {
-                                            inspector_grid("Edge Inspector ID")
-                                                .show(ui, |ui| {
-                                                    grid_label(ui, "Start");
-                                                    egui::ComboBox::from_id_source("Start ID")
-                                                        .selected_text("None")
-                                                        .show_ui(ui, |ui| {
-                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
-                                                            ui.separator();
-                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
-                                                        });
-
-                                                    ui.end_row();
-
-                                                    grid_label(ui, "End");
-                                                    egui::ComboBox::from_id_source("End ID")
-                                                        .selected_text("None")
-                                                        .show_ui(ui, |ui| {
-                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
-                                                            ui.separator();
-                                                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
-                                                        });
-
-                                                    ui.end_row();
-
-                                                    grid_label(ui, "");
-                                                    let _ = ui.button("Build Index");
-
-                                                    ui.end_row();
-
-                                                });
-                                        });
-
-                                    },
+                                    NodeEdgeTab::Node => self.node_inspector(models, ui),
+                                    NodeEdgeTab::Edge => self.edge_inspector(models, ui),
                                 };
 
                             });
@@ -293,10 +120,155 @@ impl AppView for InspectorView {
                 });
 
             });
+    }
+}
+
+impl InspectorView {
+    fn node_inspector(&mut self, models: &mut Models, ui: &mut Ui) {
+        let (header, _) = grid_header(ui, true, "ID", &self.id_source.to_string());
+        header.body(|ui| {
+            inspector_grid("Node Inspector ID")
+                .show(ui, |ui| {
+                    source_combox("ID Source", &models.graphic_model.node_data.data_headers, &mut self.id_source, ui);
+
+                    grid_label(ui, "");
+                    ui.button("Set ID");
+                    ui.end_row();
+                });
+        });
+
+        let (header, _) = grid_header(ui, true, "Position", "Compute");
+        header.body(|ui| {
+            inspector_grid("Node Inspector ID")
+                .show(ui, |ui| {
+                    grid_label(ui, "Source");
+                    egui::ComboBox::from_id_source("ID Source 2")
+                        .selected_text("Compute")
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                        });
+
+                    ui.end_row();
+
+                    grid_label(ui, "Method");
+                    ui.horizontal(|ui| {
+
+                        egui::ComboBox::from_id_source("Compute Method 2")
+                            .selected_text(models.compute_model.compute_method.0)
+                            .show_ui(ui, |ui| {
+                                ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                                ui.separator();
+                                ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                            })
+
+                    });
+
+                    ui.end_row();
+
+                    grid_label(ui, "");
+                    if models.compute_model.compute_method.1 == ComputeMethodType::Continuous {
+                        let continuous_button = ui.button(if !models.compute_model.is_computing { "▶ Start Computing" } else { "⏸ Pause Computing" });
+                        if continuous_button.clicked() {
+                            models.compute_model.switch_computing();
+                        }
+                    } else {
+                        models.compute_model.set_computing(false);
+                        let one_step_button = ui.button("⏩ Dispatch");
+                        if one_step_button.clicked() {
+                            models.compute_model.set_dispatching(true);
+                        }
+                    }
+
+                    ui.end_row();
+
+                });
+        });
+
+        let (header, _) = grid_header(ui, false, "Color", &self.color_source.to_string());
+        header.body(|ui| {
+            inspector_grid("N Color")
+                .show(ui, |ui| {
+                    source_combox("Color Source", &models.graphic_model.node_data.data_headers, &mut self.color_source, ui);
+
+                    grid_label(ui, "Ramp");
+                    egui::ComboBox::from_id_source("Ramp")
+                        .selected_text("None")
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                            ui.separator();
+                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                        });
+                    ui.end_row();
+
+                    grid_label(ui, "");
+                    ui.button("Set Color");
+                    ui.end_row();
+                });
+        });
 
 
+        let (header, _) = grid_header(ui, false, "Size", &self.size_source.to_string());
+        header.body(|ui| {
+            inspector_grid("N Size")
+                .show(ui, |ui| {
+                    source_combox("Size Source", &models.graphic_model.node_data.data_headers, &mut self.size_source, ui);
+                    grid_label(ui, "");
+                    ui.button("Set Size");
+                    ui.end_row();
+                });
+        });
     }
 
+    fn edge_inspector(&mut self, models: &mut Models, ui: &mut Ui) {
+        let (header, _) = grid_header(ui, true, "Node ID", "None");
+        header.body(|ui| {
+            inspector_grid("Edge Inspector ID")
+                .show(ui, |ui| {
+                    grid_label(ui, "Start");
+                    egui::ComboBox::from_id_source("Start ID")
+                        .selected_text("None")
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                            ui.separator();
+                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                        });
+
+                    ui.end_row();
+
+                    grid_label(ui, "End");
+                    egui::ComboBox::from_id_source("End ID")
+                        .selected_text("None")
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                            ui.separator();
+                            ui.selectable_value(&mut models.compute_model.compute_method, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                        });
+
+                    ui.end_row();
+
+                    grid_label(ui, "");
+                    let _ = ui.button("Build Index");
+
+                    ui.end_row();
+
+                });
+        });
+    }
+}
+
+fn source_combox<T>(id_source: impl Hash, data_hearders: &Vec<Rc<String>>, current_value: &mut DataSource<T>, ui: &mut Ui)
+    where T: std::cmp::PartialEq + Default {
+    grid_label(ui, "Source");
+    egui::ComboBox::from_id_source(id_source)
+        .selected_text(current_value.to_string())
+        .show_ui(ui, |ui| {
+            ui.selectable_value(current_value, DataSource::Const(T::default()), "Constant");
+            for col in data_hearders {
+                ui.selectable_value(current_value, DataSource::Data(col.clone()), &*col.clone());
+            }
+        });
+    ui.end_row();
 }
 
 fn inspector_grid(id: &str) -> egui::Grid {
