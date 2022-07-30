@@ -20,8 +20,8 @@ impl Models {
     self.app_model.import_state = ImportState::Success;
     self.app_model.import_visible = false;
 
-    if let Some(render_state) = self.compute_model.compute_render_state.take() {
-      self.compute_model.compute_resources = Some(ComputeResources::new(render_state));
+    if let Some(render_state) = &self.compute_model.compute_render_state {
+      self.compute_model.compute_resources = Some(ComputeResources::new(render_state.clone()));
     }
   }
 
@@ -32,5 +32,6 @@ impl Models {
     self.graphic_model.node_data = ExternalData::default();
     self.graphic_model.edge_data = ExternalData::default();
     self.graphic_model.max_id = 0;
+    self.compute_model.compute_resources = None;
   }
 }
