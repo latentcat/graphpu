@@ -1,7 +1,6 @@
 mod config_page;
 mod file_picker_page;
 
-use std::ffi::OsString;
 use std::path::PathBuf;
 
 use egui::Context;
@@ -126,11 +125,7 @@ impl ImportModal {
             });
         
         if valid {
-            models.app_model.node_file_path = Option::Some(PathBuf::from(self.node_file_path.clone()));
-            models.app_model.edge_file_path = Option::Some(PathBuf::from(self.edge_file_path.clone()));
-            models.graphic_model.set_status();
-            models.app_model.import_state = ImportState::Success;
-            models.app_model.import_visible = false;
+            models.import_data(self.node_file_path.clone(), self.edge_file_path.clone());
             self.page_index = Page::FilePicker;
         } else {
             models.graphic_model.node_data = ExternalData::default();

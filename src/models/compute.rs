@@ -28,16 +28,18 @@ pub struct ComputeModel {
     pub compute_method: ComputeMethod,
     pub is_computing: bool,
     pub is_dispatching: bool,
-    pub compute_resources: ComputeResources,
+    pub compute_render_state: Option<egui_wgpu::RenderState>,
+    pub compute_resources: Option<ComputeResources>,
 }
 
 impl ComputeModel {
-    pub fn init<'a>(cc: &'a eframe::CreationContext<'a>) -> Self {
+    pub fn init(cc: &eframe::CreationContext) -> Self {
         Self {
             compute_method: ComputeMethod::FORCE_ATLAS2,
             is_computing: false,
             is_dispatching: false,
-            compute_resources: ComputeResources::init(cc)
+            compute_render_state: Some(cc.render_state.as_ref().unwrap().clone()),
+            compute_resources: None,
         }
     }
 }
@@ -80,11 +82,9 @@ pub struct ComputeResources {
 }
 
 impl ComputeResources {
-    fn init<'a>(cc: &'a eframe::CreationContext<'a>) -> Self {
-        let render_state = cc.render_state.as_ref().expect("WGPU enabled");
+    pub fn new(render_state: egui_wgpu::RenderState) -> Self {
         let device = &render_state.device;
         let queue = &render_state.queue;
-        let render_state = render_state.clone();
 
         let compute_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
