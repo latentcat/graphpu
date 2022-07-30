@@ -74,7 +74,7 @@ impl AppView for MenuBarView {
                         ui.separator();
 
                         if ui.button("Quit").clicked() {
-                            // frame.quit();
+                            frame.quit();
                         }
                     });
                     ui.menu_button("Edit", |ui| {
