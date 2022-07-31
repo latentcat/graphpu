@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use crate::models::graphics::GraphicsStatus;
 
 use self::{app::ImportState, graphics::ExternalData, compute::ComputeResources};
 
@@ -32,6 +33,8 @@ impl Models {
     self.graphic_model.node_data = ExternalData::default();
     self.graphic_model.edge_data = ExternalData::default();
     self.graphic_model.max_id = 0;
+    self.compute_model.reset();
     self.compute_model.compute_resources = None;
+    self.graphic_model.status = GraphicsStatus::default();
   }
 }

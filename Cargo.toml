@@ -1,7 +1,14 @@
 [package]
 name = "graphpu"
-version = "0.1.0"
+version = "0.2.0"
+authors = ["Troy Ni <1272777550@qq.com>", "CPunisher <1343316114@qq.com>"]
 edition = "2021"
+description = "Next-Gen 3D GPU Graph-Vis App"
+documentation = "https://docs.graphpu.com/"
+readme = "README.md"
+homepage = "https://graphpu.com/"
+repository = "https://github.com/TO_BE_PUBLISHED"
+license-file = "LICENSE_TO_BE_WRITE.txt"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
