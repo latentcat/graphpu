@@ -75,8 +75,8 @@ pub struct ComputeResources {
 
     // UI 视口相关
     viewport_size: egui::Vec2,                      // 视口大小
-    pub is_viewport_update: bool,                   // 视口是否更新（在 compute.rs 中设置 true，在 graphics_view.rs
-                                                    // 中设置 false）
+    pub is_viewport_update: bool,                   // 视口是否更新（在 compute.rs 中设置 true，在
+                                                    // graphics_view.rs 中设置 false）
 
     // Buffers
     uniform_buffer: wgpu::Buffer,                   // 用于存放 Boids 参数
