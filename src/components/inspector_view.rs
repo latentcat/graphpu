@@ -17,7 +17,7 @@ use super::AppView;
 pub struct InspectorView;
 
 impl AppView for InspectorView {
-    fn show(&mut self, models: &mut Models, ui: &mut Ui, frame: &mut eframe::Frame) {
+    fn show(&mut self, models: &mut Models, ui: &mut Ui, _frame: &mut eframe::Frame) {
         egui::SidePanel::right("inspector_view")
             .frame(inspector_frame(ui.style()))
             .default_width(280.0)
@@ -25,7 +25,7 @@ impl AppView for InspectorView {
             .resizable(false)
             .show_inside(ui, |ui| {
 
-                /// Render Section
+                // Render Section
                 egui::TopBottomPanel::bottom("render")
                     .frame(inspector_inner_frame(ui.style()))
                     .show_inside(ui, |ui| {
@@ -33,7 +33,7 @@ impl AppView for InspectorView {
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
 
                         ui.with_layout(egui::Layout::right_to_left(), |ui| {
-                            ui.button("⛭");
+                            let _ = ui.button("⛭");
 
                             ui.vertical_centered_justified(|ui| {
                                 let render_button = ui.button("Render Image");
@@ -45,14 +45,14 @@ impl AppView for InspectorView {
 
                 });
 
-                /// Main Section
+                // Main Section
                 egui::CentralPanel::default()
                     .frame(inspector_inner_frame(ui.style()))
                     .show_inside(ui, |ui| {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
 
-                        /// Import Section / File Section
+                        // Import Section / File Section
                         if matches!(models.app_model.import_state, ImportState::Success) {
                             ui.horizontal(|ui| {
                                 ui.with_layout(egui::Layout::right_to_left(), |ui| {
@@ -82,7 +82,7 @@ impl AppView for InspectorView {
 
                         ui.separator();
 
-                        /// Node Edge Inspector Switch
+                        // Node Edge Inspector Switch
                         button_group_style(ui.style()).show(ui, |ui| {
                             ui.set_style(ui.ctx().style());
                             ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
@@ -98,7 +98,7 @@ impl AppView for InspectorView {
 
                         ui.add_space(4.0);
 
-                        /// Node Edge Inspector
+                        // Node Edge Inspector
                         egui::ScrollArea::vertical()
                             // .always_show_scroll(true)
                             .auto_shrink([false, false])
@@ -279,7 +279,7 @@ impl InspectorView {
         });
     }
 
-    fn edge_inspector(&mut self, models: &mut Models, ui: &mut Ui) {
+    fn edge_inspector(&mut self, _models: &mut Models, _ui: &mut Ui) {
     }
 }
 
@@ -309,16 +309,6 @@ fn grid_label(ui: &mut egui::Ui, title: &str) {
         ui.set_max_width(65.);
         ui.add(
             egui::Label::new(egui::RichText::new(label)).wrap(true)
-        )
-    });
-}
-
-fn grid_category(ui: &mut egui::Ui, title: &str) {
-    let label = format!("{}", title);
-    ui.horizontal(|ui| {
-        ui.set_height(20.);
-        ui.add(
-            egui::Label::new(egui::RichText::new(label).strong()).wrap(true)
         )
     });
 }

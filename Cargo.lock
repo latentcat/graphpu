@@ -3,24 +3,6 @@
 version = 3
 
 [[package]]
-name = "GraphPU"
-version = "0.1.0"
-dependencies = [
- "bytemuck",
- "csv",
- "eframe",
- "egui",
- "egui-wgpu",
- "egui_extras",
- "nanorand",
- "pollster",
- "rfd",
- "serde",
- "strum",
- "wgpu",
-]
-
-[[package]]
 name = "ab_glyph"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1173,6 +1155,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "363e3677e55ad168fef68cf9de3a4a310b53124c5e784c53a1d70e92d23f2126"
 dependencies = [
  "bitflags",
+]
+
+[[package]]
+name = "graphpu"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "csv",
+ "eframe",
+ "egui",
+ "egui-wgpu",
+ "egui_extras",
+ "nanorand",
+ "pollster",
+ "rfd",
+ "serde",
+ "strum",
+ "wgpu",
 ]
 
 [[package]]

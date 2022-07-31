@@ -1,5 +1,4 @@
 use egui_extras::{TableBuilder, Size};
-use serde::__private::de::Content::String;
 
 use crate::{
     models::{app::NodeEdgeTab, graphics::ExternalData, Models},
@@ -13,7 +12,7 @@ use super::AppView;
 pub struct TableView;
 
 impl AppView for TableView {
-    fn show(&mut self, models: &mut Models, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
+    fn show(&mut self, models: &mut Models, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let style = (*ui.style()).clone();
         egui::CentralPanel::default()
             .frame(central_panel_frame(&style))
@@ -71,7 +70,7 @@ impl AppView for TableView {
                                     });
                                 }
                             })
-                            .body(|mut body| {
+                            .body(|body| {
                                 body.rows(text_height, data.len(), |row_index, mut row| {
                                     row.col(|ui| {
                                         ui.label(egui::RichText::new(row_index.to_string()).weak());

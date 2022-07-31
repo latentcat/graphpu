@@ -10,7 +10,7 @@ use super::AppView;
 pub struct GraphicsView;
 
 impl AppView for GraphicsView {
-    fn show(&mut self, models: &mut Models, ui: &mut Ui, frame: &mut eframe::Frame) {
+    fn show(&mut self, models: &mut Models, ui: &mut Ui, _frame: &mut eframe::Frame) {
         let is_computing = models.compute_model.is_computing;
         let is_dispatching = models.compute_model.is_dispatching;
         models.compute_model.set_dispatching(false);

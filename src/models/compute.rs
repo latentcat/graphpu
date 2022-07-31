@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::mem;
 use egui::Vec2;
-use nanorand::{Rng, WyRand};
 use wgpu::Label;
 use wgpu::util::DeviceExt;
 use crate::models::graphics::GraphicsStatus;
@@ -63,29 +62,41 @@ impl ComputeModel {
 }
 
 pub struct ComputeResources {
+
+    // 包含 Node / Edge Count
     status: GraphicsStatus,
 
+    // 包含 Device、Queue、target_format 和 egui_rpass
     render_state: egui_wgpu::RenderState,
+
+    // 用于呈现渲染结果的 Texture View，在 egui 中注册后用 Texture ID 在 Image 组件显示
     texture_view: Option<wgpu::TextureView>,
     pub texture_id: egui::TextureId,
 
-    viewport_size: egui::Vec2,
-    pub is_viewport_update: bool,
+    // UI 视口相关
+    viewport_size: egui::Vec2,                      // 视口大小
+    pub is_viewport_update: bool,                   // 视口是否更新（在 compute.rs 中设置 true，在 graphics_view.rs
+                                                    // 中设置 false）
 
-    render_pipeline: wgpu::RenderPipeline,
-    compute_pipeline: wgpu::ComputePipeline,
-    randomize_pipeline: wgpu::ComputePipeline,
-    copy_pipeline: wgpu::ComputePipeline,
+    // Buffers
+    uniform_buffer: wgpu::Buffer,                   // 用于存放 Boids 参数
+    vertices_buffer: wgpu::Buffer,                  // Quad 四个顶点数据
+    particle_buffers: Vec<wgpu::Buffer>,            // 粒子数据（两个 Buffer，用于交替读写、渲染）
 
-    uniform_buffer: wgpu::Buffer,
-    particle_compute_bind_groups: Vec<wgpu::BindGroup>,
-    particle_render_bind_groups: Vec<wgpu::BindGroup>,
+    // Bind Groups（绑定 Buffer 和 Pipeline 中的 Shader）
+    compute_bind_groups: Vec<wgpu::BindGroup>,
+    render_bind_groups: Vec<wgpu::BindGroup>,
 
-    vertices_buffer: wgpu::Buffer,
-    particle_buffers: Vec<wgpu::Buffer>,
+    // 渲染管线
+    render_pipeline: wgpu::RenderPipeline,          // 渲染管线
 
-    work_group_count: u32,
-    frame_num: usize,
+    // 计算管线
+    compute_pipeline: wgpu::ComputePipeline,        // 计算
+    randomize_pipeline: wgpu::ComputePipeline,      // 随机位置
+    copy_pipeline: wgpu::ComputePipeline,           // 拷贝
+
+    work_group_count: u32,                          // 线程组数 = 线程数 / 每组线程数
+    frame_num: usize,                               // 帧计数器
 }
 
 impl ComputeResources {
@@ -96,7 +107,7 @@ impl ComputeResources {
         let num_particles: u32 = status.node_count as u32;
 
         let device = &render_state.device;
-        let queue = &render_state.queue;
+        let _queue = &render_state.queue;
 
         let compute_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
@@ -311,8 +322,8 @@ impl ComputeResources {
         // the two buffers alternate as dst and src for each frame
 
         let mut particle_buffers = Vec::<wgpu::Buffer>::new();
-        let mut particle_compute_bind_groups = Vec::<wgpu::BindGroup>::new();
-        let mut particle_render_bind_groups = Vec::<wgpu::BindGroup>::new();
+        let mut compute_bind_groups = Vec::<wgpu::BindGroup>::new();
+        let mut render_bind_groups = Vec::<wgpu::BindGroup>::new();
 
         let unpadded_size = 4 * (4 * num_particles) as wgpu::BufferAddress;
         let align_mask = wgpu::COPY_BUFFER_ALIGNMENT - 1;
@@ -335,7 +346,7 @@ impl ComputeResources {
         // where the alternate buffer is used as the dst
 
         for i in 0..2 {
-            particle_compute_bind_groups.push(device.create_bind_group(&wgpu::BindGroupDescriptor {
+            compute_bind_groups.push(device.create_bind_group(&wgpu::BindGroupDescriptor {
                 layout: &compute_bind_group_layout,
                 entries: &[
                     wgpu::BindGroupEntry {
@@ -360,7 +371,7 @@ impl ComputeResources {
         }
 
         for i in 0..2 {
-            particle_render_bind_groups.push(device.create_bind_group(&wgpu::BindGroupDescriptor {
+            render_bind_groups.push(device.create_bind_group(&wgpu::BindGroupDescriptor {
                 layout: &render_bind_group_layout,
                 entries: &[
                     wgpu::BindGroupEntry {
@@ -383,15 +394,15 @@ impl ComputeResources {
             texture_id: Default::default(),
             viewport_size: Default::default(),
             is_viewport_update: true,
+            uniform_buffer,
+            vertices_buffer,
+            particle_buffers,
+            compute_bind_groups,
+            render_bind_groups,
             render_pipeline,
             compute_pipeline,
             randomize_pipeline,
             copy_pipeline,
-            uniform_buffer,
-            particle_compute_bind_groups,
-            particle_render_bind_groups,
-            vertices_buffer,
-            particle_buffers,
             work_group_count,
             frame_num: 0,
         };
@@ -417,7 +428,7 @@ impl ComputeResources {
             let mut cpass =
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
             cpass.set_pipeline(&self.compute_pipeline);
-            cpass.set_bind_group(0, &self.particle_compute_bind_groups[self.frame_num % 2], &[]);
+            cpass.set_bind_group(0, &self.compute_bind_groups[self.frame_num % 2], &[]);
             cpass.dispatch_workgroups(self.work_group_count, 1, 1);
         }
         command_encoder.pop_debug_group();
@@ -440,10 +451,10 @@ impl ComputeResources {
             let mut cpass =
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
             cpass.set_pipeline(&self.randomize_pipeline);
-            cpass.set_bind_group(0, &self.particle_compute_bind_groups[self.frame_num % 2], &[]);
+            cpass.set_bind_group(0, &self.compute_bind_groups[self.frame_num % 2], &[]);
             cpass.dispatch_workgroups(self.work_group_count, 1, 1);
             cpass.set_pipeline(&self.copy_pipeline);
-            cpass.set_bind_group(0, &self.particle_compute_bind_groups[(self.frame_num + 1) % 2], &[]);
+            cpass.set_bind_group(0, &self.compute_bind_groups[(self.frame_num + 1) % 2], &[]);
             cpass.dispatch_workgroups(self.work_group_count, 1, 1);
         }
         command_encoder.pop_debug_group();
@@ -482,7 +493,7 @@ impl ComputeResources {
             // render pass
             let mut rpass = command_encoder.begin_render_pass(&render_pass_descriptor);
             rpass.set_pipeline(&self.render_pipeline);
-            rpass.set_bind_group(0, &self.particle_render_bind_groups[self.frame_num % 2], &[]);
+            rpass.set_bind_group(0, &self.render_bind_groups[self.frame_num % 2], &[]);
             rpass.set_vertex_buffer(0, self.vertices_buffer.slice(..));
             rpass.draw(0..4, 0..self.status.node_count as u32);
         }
@@ -495,7 +506,7 @@ impl ComputeResources {
     pub fn update_viewport(&mut self, new_size: Vec2) {
 
         let device = &self.render_state.device;
-        let queue = &self.render_state.queue;
+        let _queue = &self.render_state.queue;
 
         if self.viewport_size != new_size {
             self.viewport_size = new_size;
