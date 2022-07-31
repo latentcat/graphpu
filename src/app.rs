@@ -16,9 +16,14 @@ pub struct MainApp {
 impl MainApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let mut style = (*cc.egui_ctx.style()).clone();
+
         style.visuals.widgets.active.fg_stroke.color = Color32::from_white_alpha(220);
         style.visuals.widgets.inactive.fg_stroke.color = Color32::from_white_alpha(190);
         style.visuals.widgets.noninteractive.fg_stroke.color = Color32::from_white_alpha(170);
+
+        style.spacing.icon_width = 12.0;
+        style.spacing.indent = 16.0;
+
         cc.egui_ctx.set_style(style);
 
         let mut fonts = egui::FontDefinitions::default();

@@ -1,3 +1,4 @@
+use egui::style::Margin;
 use egui::Ui;
 
 use crate::{models::{app::{Stage, ImportState}, Models}, widgets::frames::button_group_style};
@@ -17,8 +18,8 @@ pub fn panel_style(style: &egui::Style) -> egui::Frame {
         inner_margin: egui::style::Margin {
             left: 8.0,
             right: 8.0,
-            top: 3.0,
-            bottom: 1.0
+            top: 4.0,
+            bottom: 2.0
         },
         rounding: egui::Rounding::none(),
         fill: style.visuals.window_fill(),
@@ -34,8 +35,9 @@ impl AppView for MenuBarView {
             .show_inside(ui, |ui| {
                 ui.set_style(ui.ctx().style());
                 egui::menu::bar(ui, |ui| {
+                    spacing_ui(ui);
                     ui.menu_button("File", |ui| {
-
+                        spacing_ui_start(ui);
                         ui.add_enabled_ui(false, |ui| {
                             let _ = ui.button("New");
                             let _ = ui.button("Open");
@@ -76,8 +78,10 @@ impl AppView for MenuBarView {
                         if ui.button("Quit").clicked() {
                             frame.quit();
                         }
+                        spacing_ui_end(ui);
                     });
                     ui.menu_button("Edit", |ui| {
+                        spacing_ui_start(ui);
 
                         ui.add_enabled_ui(false, |ui| {
                             let _ = ui.button("Undo");
@@ -90,8 +94,12 @@ impl AppView for MenuBarView {
                             let _ = ui.button("Preference");
                         });
 
+
+                        spacing_ui_end(ui);
+
                     });
                     ui.menu_button("Render", |ui| {
+                        spacing_ui_start(ui);
 
                         ui.add_enabled_ui(false, |ui| {
                             let _ = ui.button("Render Image");
@@ -102,9 +110,10 @@ impl AppView for MenuBarView {
                         ui.add_enabled_ui(false, |ui| {
                             let _ = ui.button("Show Result");
                         });
-
+                        spacing_ui_end(ui);
                     });
                     ui.menu_button("Window", |ui| {
+                        spacing_ui_start(ui);
 
                         ui.add_enabled_ui(false, |ui| {
                             let _ = ui.button("Fullscreen");
@@ -115,9 +124,10 @@ impl AppView for MenuBarView {
                         ui.add_enabled_ui(false, |ui| {
                             let _ = ui.button("Save Screenshot");
                         });
-
+                        spacing_ui_end(ui);
                     });
                     ui.menu_button("Help", |ui| {
+                        spacing_ui_start(ui);
 
                         ui.add_enabled_ui(false, |ui| {
                             let _ = ui.button("Official Website");
@@ -130,7 +140,7 @@ impl AppView for MenuBarView {
                         ui.add_enabled_ui(false, |ui| {
                             let _ = ui.button("Report a Bug");
                         });
-
+                        spacing_ui_end(ui);
                     });
 
                     ui.add_space(12.0);
@@ -145,4 +155,18 @@ impl AppView for MenuBarView {
                 });
             });
     }
+}
+
+fn spacing_ui (mut ui: &mut Ui) {
+    ui.spacing_mut().item_spacing = egui::vec2(0.0, 2.0);
+    ui.spacing_mut().button_padding = egui::vec2(8.0, 1.0);
+}
+
+fn spacing_ui_start (mut ui: &mut Ui) {
+    spacing_ui(ui);
+    ui.add_space(4.0);
+}
+
+fn spacing_ui_end (mut ui: &mut Ui) {
+    ui.add_space(2.0);
 }
