@@ -43,7 +43,7 @@ impl Default for AppModel {
             edge_file_path: None,
             stage: Stage::default(),
             ne_tab: NodeEdgeTab::default(),
-            message: String::from("Message"),
+            message: String::from("中文消息测试"),
             pixels_per_point: 1.0
         }
     }
