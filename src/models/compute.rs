@@ -295,18 +295,6 @@ impl ComputeResources {
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
-        // buffer for all particles data of type [(posx,posy,velx,vely),...]
-
-        let mut initial_particle_data = vec![0.0f32; (4 * num_particles) as usize];
-        let mut rng = WyRand::new_seed(42);
-        let mut unif = || rng.generate::<f32>() * 2f32 - 1f32; // Generate a num (-1, 1)
-        for particle_instance_chunk in initial_particle_data.chunks_mut(4) {
-            particle_instance_chunk[0] = unif(); // posx
-            particle_instance_chunk[1] = unif(); // posy
-            particle_instance_chunk[2] = unif() * 0.1; // velx
-            particle_instance_chunk[3] = unif() * 0.1; // vely
-        }
-
         // creates two buffers of particle data each of size num_particles
         // the two buffers alternate as dst and src for each frame
 
