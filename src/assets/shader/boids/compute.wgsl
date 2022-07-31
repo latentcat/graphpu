@@ -101,7 +101,9 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
       (cVel * params.rule3Scale);
 
   // clamp velocity for a more pleasing simulation
-  vVel = normalize(vVel) * clamp(length(vVel), 0.0, 0.1);
+  if (dot(vVel, vVel) > 0.0) {
+    vVel = normalize(vVel) * clamp(length(vVel), 0.0, 0.1);
+  }
 
   // kinematic update
   vPos += vVel * params.deltaT;

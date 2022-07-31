@@ -21,7 +21,7 @@ impl Models {
     self.app_model.import_visible = false;
 
     if let Some(render_state) = &self.compute_model.compute_render_state {
-      self.compute_model.compute_resources = Some(ComputeResources::new(render_state.clone()));
+      self.compute_model.compute_resources = Some(ComputeResources::new(render_state.clone(), self.graphic_model.status.clone()));
     }
   }
 

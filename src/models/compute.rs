@@ -4,8 +4,8 @@ use egui::Vec2;
 use nanorand::{Rng, WyRand};
 use wgpu::Label;
 use wgpu::util::DeviceExt;
+use crate::models::graphics::GraphicsStatus;
 
-const NUM_PARTICLES: u32 = 2000;
 const PARTICLES_PER_GROUP: u32 = 128;
 
 
@@ -63,6 +63,8 @@ impl ComputeModel {
 }
 
 pub struct ComputeResources {
+    status: GraphicsStatus,
+
     render_state: egui_wgpu::RenderState,
     texture_view: Option<wgpu::TextureView>,
     pub texture_id: egui::TextureId,
@@ -86,7 +88,12 @@ pub struct ComputeResources {
 }
 
 impl ComputeResources {
-    pub fn new(render_state: egui_wgpu::RenderState) -> Self {
+    pub fn new(render_state: egui_wgpu::RenderState, status: GraphicsStatus) -> Self {
+
+        // let status = status.clone();
+
+        let num_particles: u32 = status.node_count as u32;
+
         let device = &render_state.device;
         let queue = &render_state.queue;
 
@@ -140,7 +147,7 @@ impl ComputeResources {
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Storage { read_only: true },
                             has_dynamic_offset: false,
-                            min_binding_size: wgpu::BufferSize::new((NUM_PARTICLES * 16) as _),
+                            min_binding_size: wgpu::BufferSize::new((num_particles * 16) as _),
                         },
                         count: None,
                     },
@@ -150,7 +157,7 @@ impl ComputeResources {
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Storage { read_only: false },
                             has_dynamic_offset: false,
-                            min_binding_size: wgpu::BufferSize::new((NUM_PARTICLES * 16) as _),
+                            min_binding_size: wgpu::BufferSize::new((num_particles * 16) as _),
                         },
                         count: None,
                     },
@@ -290,7 +297,7 @@ impl ComputeResources {
 
         // buffer for all particles data of type [(posx,posy,velx,vely),...]
 
-        let mut initial_particle_data = vec![0.0f32; (4 * NUM_PARTICLES) as usize];
+        let mut initial_particle_data = vec![0.0f32; (4 * num_particles) as usize];
         let mut rng = WyRand::new_seed(42);
         let mut unif = || rng.generate::<f32>() * 2f32 - 1f32; // Generate a num (-1, 1)
         for particle_instance_chunk in initial_particle_data.chunks_mut(4) {
@@ -300,12 +307,12 @@ impl ComputeResources {
             particle_instance_chunk[3] = unif() * 0.1; // vely
         }
 
-        // creates two buffers of particle data each of size NUM_PARTICLES
+        // creates two buffers of particle data each of size num_particles
         // the two buffers alternate as dst and src for each frame
 
         let mut particle_buffers = Vec::<wgpu::Buffer>::new();
         let mut particle_bind_groups = Vec::<wgpu::BindGroup>::new();
-        let unpadded_size = 4 * (4 * NUM_PARTICLES) as wgpu::BufferAddress;
+        let unpadded_size = 4 * (4 * num_particles) as wgpu::BufferAddress;
         let align_mask = wgpu::COPY_BUFFER_ALIGNMENT - 1;
         let padded_size =
             ((unpadded_size + align_mask) & !align_mask).max(wgpu::COPY_BUFFER_ALIGNMENT);
@@ -352,9 +359,10 @@ impl ComputeResources {
 
         // calculates number of work groups from PARTICLES_PER_GROUP constant
         let work_group_count =
-            ((NUM_PARTICLES as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
+            ((num_particles as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
 
         let mut boids_resources = ComputeResources {
+            status,
             render_state,
             texture_view: None,
             texture_id: Default::default(),
@@ -460,7 +468,7 @@ impl ComputeResources {
             rpass.set_pipeline(&self.render_pipeline);
             rpass.set_vertex_buffer(0, self.particle_buffers[(self.frame_num + 1) % 2].slice(..));
             rpass.set_vertex_buffer(1, self.vertices_buffer.slice(..));
-            rpass.draw(0..4, 0..NUM_PARTICLES);
+            rpass.draw(0..4, 0..self.status.node_count as u32);
         }
         command_encoder.pop_debug_group();
 
