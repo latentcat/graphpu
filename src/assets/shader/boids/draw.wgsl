@@ -1,3 +1,8 @@
+struct Input {
+    @builtin(vertex_index) vertex_index: u32,
+    @builtin(instance_index) instance_index: u32,
+}
+
 struct Varing {
     @location(0) tex_coords: vec2<f32>,
     @builtin(position) position: vec4<f32>,
@@ -8,15 +13,19 @@ struct Particle {
   vel : vec2<f32>,
 };
 
+@group(0) @binding(0) var<storage, read> particlesSrc : array<Particle>;
+
 @vertex
 fn main_vs(
-    @location(0) particle_pos: vec2<f32>,
-    @location(1) particle_vel: vec2<f32>,
-    @location(2) quad_pos: vec2<f32>,
+    @location(0) quad_pos: vec2<f32>,
+    i: Input
 ) -> Varing {
+    var particle = particlesSrc[i.instance_index];
+
     var v: Varing;
-    v.position = vec4<f32>(particle_pos + quad_pos * 0.0075, 0.0, 1.0);
+    v.position = vec4<f32>(particle.pos + quad_pos * 0.0075, 0.0, 1.0);
     v.tex_coords = quad_pos;
+
     return v;
 }
 

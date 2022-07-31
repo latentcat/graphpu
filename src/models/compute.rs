@@ -78,7 +78,8 @@ pub struct ComputeResources {
     copy_pipeline: wgpu::ComputePipeline,
 
     uniform_buffer: wgpu::Buffer,
-    particle_bind_groups: Vec<wgpu::BindGroup>,
+    particle_compute_bind_groups: Vec<wgpu::BindGroup>,
+    particle_render_bind_groups: Vec<wgpu::BindGroup>,
 
     vertices_buffer: wgpu::Buffer,
     particle_buffers: Vec<wgpu::Buffer>,
@@ -143,7 +144,7 @@ impl ComputeResources {
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
-                        visibility: wgpu::ShaderStages::COMPUTE,
+                        visibility: wgpu::ShaderStages::COMPUTE | wgpu::ShaderStages::VERTEX_FRAGMENT,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Storage { read_only: true },
                             has_dynamic_offset: false,
@@ -183,10 +184,26 @@ impl ComputeResources {
 
         // create render pipeline with empty bind group layout
 
+        let render_bind_group_layout =
+            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: wgpu::BufferSize::new((num_particles * 16) as _),
+                        },
+                        count: None,
+                    },
+                ],
+                label: None,
+            });
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("render"),
-                bind_group_layouts: &[],
+                bind_group_layouts: &[&render_bind_group_layout],
                 push_constant_ranges: &[],
             });
 
@@ -198,14 +215,9 @@ impl ComputeResources {
                 entry_point: "main_vs",
                 buffers: &[
                     wgpu::VertexBufferLayout {
-                        array_stride: 4 * 4,
-                        step_mode: wgpu::VertexStepMode::Instance,
-                        attributes: &wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2],
-                    },
-                    wgpu::VertexBufferLayout {
                         array_stride: 2 * 4,
                         step_mode: wgpu::VertexStepMode::Vertex,
-                        attributes: &wgpu::vertex_attr_array![2 => Float32x2],
+                        attributes: &wgpu::vertex_attr_array![0 => Float32x2],
                     },
                 ],
             },
@@ -299,7 +311,9 @@ impl ComputeResources {
         // the two buffers alternate as dst and src for each frame
 
         let mut particle_buffers = Vec::<wgpu::Buffer>::new();
-        let mut particle_bind_groups = Vec::<wgpu::BindGroup>::new();
+        let mut particle_compute_bind_groups = Vec::<wgpu::BindGroup>::new();
+        let mut particle_render_bind_groups = Vec::<wgpu::BindGroup>::new();
+
         let unpadded_size = 4 * (4 * num_particles) as wgpu::BufferAddress;
         let align_mask = wgpu::COPY_BUFFER_ALIGNMENT - 1;
         let padded_size =
@@ -321,7 +335,7 @@ impl ComputeResources {
         // where the alternate buffer is used as the dst
 
         for i in 0..2 {
-            particle_bind_groups.push(device.create_bind_group(&wgpu::BindGroupDescriptor {
+            particle_compute_bind_groups.push(device.create_bind_group(&wgpu::BindGroupDescriptor {
                 layout: &compute_bind_group_layout,
                 entries: &[
                     wgpu::BindGroupEntry {
@@ -345,6 +359,19 @@ impl ComputeResources {
             }));
         }
 
+        for i in 0..2 {
+            particle_render_bind_groups.push(device.create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &render_bind_group_layout,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: particle_buffers[i].as_entire_binding(),
+                    },
+                ],
+                label: None,
+            }));
+        }
+
         // calculates number of work groups from PARTICLES_PER_GROUP constant
         let work_group_count =
             ((num_particles as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
@@ -361,7 +388,8 @@ impl ComputeResources {
             randomize_pipeline,
             copy_pipeline,
             uniform_buffer,
-            particle_bind_groups,
+            particle_compute_bind_groups,
+            particle_render_bind_groups,
             vertices_buffer,
             particle_buffers,
             work_group_count,
@@ -389,7 +417,7 @@ impl ComputeResources {
             let mut cpass =
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
             cpass.set_pipeline(&self.compute_pipeline);
-            cpass.set_bind_group(0, &self.particle_bind_groups[self.frame_num % 2], &[]);
+            cpass.set_bind_group(0, &self.particle_compute_bind_groups[self.frame_num % 2], &[]);
             cpass.dispatch_workgroups(self.work_group_count, 1, 1);
         }
         command_encoder.pop_debug_group();
@@ -412,10 +440,10 @@ impl ComputeResources {
             let mut cpass =
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
             cpass.set_pipeline(&self.randomize_pipeline);
-            cpass.set_bind_group(0, &self.particle_bind_groups[self.frame_num % 2], &[]);
+            cpass.set_bind_group(0, &self.particle_compute_bind_groups[self.frame_num % 2], &[]);
             cpass.dispatch_workgroups(self.work_group_count, 1, 1);
             cpass.set_pipeline(&self.copy_pipeline);
-            cpass.set_bind_group(0, &self.particle_bind_groups[(self.frame_num + 1) % 2], &[]);
+            cpass.set_bind_group(0, &self.particle_compute_bind_groups[(self.frame_num + 1) % 2], &[]);
             cpass.dispatch_workgroups(self.work_group_count, 1, 1);
         }
         command_encoder.pop_debug_group();
@@ -454,8 +482,8 @@ impl ComputeResources {
             // render pass
             let mut rpass = command_encoder.begin_render_pass(&render_pass_descriptor);
             rpass.set_pipeline(&self.render_pipeline);
-            rpass.set_vertex_buffer(0, self.particle_buffers[(self.frame_num + 1) % 2].slice(..));
-            rpass.set_vertex_buffer(1, self.vertices_buffer.slice(..));
+            rpass.set_bind_group(0, &self.particle_render_bind_groups[self.frame_num % 2], &[]);
+            rpass.set_vertex_buffer(0, self.vertices_buffer.slice(..));
             rpass.draw(0..4, 0..self.status.node_count as u32);
         }
         command_encoder.pop_debug_group();
