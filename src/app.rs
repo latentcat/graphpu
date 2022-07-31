@@ -21,6 +21,23 @@ impl MainApp {
         style.visuals.widgets.noninteractive.fg_stroke.color = Color32::from_white_alpha(170);
         cc.egui_ctx.set_style(style);
 
+        let mut fonts = egui::FontDefinitions::default();
+
+        fonts.font_data.insert("prop_font".to_owned(),
+                               egui::FontData::from_static(include_bytes!("./assets/fonts/droidsans.ttf")));
+
+        fonts.font_data.insert("mono_font".to_owned(),
+                               egui::FontData::from_static(include_bytes!("./assets/fonts/droidsans.ttf"))); // .ttf and .otf supported
+
+        fonts.families.get_mut(&egui::FontFamily::Proportional).unwrap()
+            .insert(0, "prop_font".to_owned());
+
+        fonts.families.get_mut(&egui::FontFamily::Monospace).unwrap()
+            .insert(0, "mono_font".to_owned());
+            // .push("mono_font".to_owned());
+
+        cc.egui_ctx.set_fonts(fonts);
+
         let mut main_app = MainApp {
             models: Models { 
                 compute_model: ComputeModel::init(cc),
