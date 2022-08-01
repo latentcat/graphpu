@@ -18,8 +18,8 @@ pub fn panel_style(style: &egui::Style) -> egui::Frame {
         inner_margin: egui::style::Margin {
             left: 8.0,
             right: 8.0,
-            top: 4.0,
-            bottom: 2.0
+            top: 2.5,
+            bottom: 1.0
         },
         rounding: egui::Rounding::none(),
         fill: style.visuals.window_fill(),
