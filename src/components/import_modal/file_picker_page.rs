@@ -2,7 +2,8 @@ use std::path::PathBuf;
 
 use egui::Ui;
 
-use crate::models::{graphics::pick_csv, Models};
+use crate::models::{Models};
+use crate::utils::csv_loader::pick_csv;
 use crate::widgets::frames::DEFAULT_BUTTON_MARGIN;
 
 use super::ImportModal;

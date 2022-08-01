@@ -7,7 +7,8 @@ use egui::Context;
 
 use crate::models::app::ImportState;
 use crate::models::Models;
-use crate::models::graphics::{read_from_csv, ExternalData, read_headers_from_csv};
+use crate::models::graphics::{ExternalData};
+use crate::utils::csv_loader::read_headers_from_csv;
 use crate::widgets::frames::inner_panel_frame;
 use crate::widgets::modal::Modal;
 
@@ -99,42 +100,17 @@ impl ImportModal {
     }
 
     fn on_click_done(&mut self, models: &mut Models) {
-        if let Err(s) = self.load_data(models) {
-            models.app_model.import_state = ImportState::Error(s);
-            return;
-        }
-
-        let source_key = &models.graphic_model.edge_data.data_headers[self.edge_source];
-        let target_key = &models.graphic_model.edge_data.data_headers[self.edge_target];
-        let valid = models.graphic_model.edge_data.data.iter()
-            .all(|item| {
-                let source = item.get(source_key).unwrap().parse::<usize>();
-                let target = item.get(target_key).unwrap().parse::<usize>();
-                let item_valid = source.is_ok() && target.is_ok();
-                if item_valid {
-                    let source_id = source.unwrap();
-                    let target_id = target.unwrap();
-                    if source_id > models.graphic_model.max_id {
-                        models.graphic_model.max_id = source_id;
-                    }
-                    if target_id > models.graphic_model.max_id {
-                        models.graphic_model.max_id = target_id;
-                    }
+        match models.load_data(&self.node_file_path, &self.edge_file_path, self.edge_source, self.edge_target) {
+            Ok(_) => self.page_index = Page::FilePicker,
+            Err(s) => {
+                models.graphic_model.node_data = ExternalData::default();
+                models.graphic_model.edge_data = ExternalData {
+                    data_headers: models.graphic_model.edge_data.data_headers.clone(),
+                    data: Vec::default(),
                 };
-                item_valid
-            });
-        
-        if valid {
-            models.import_data(self.node_file_path.clone(), self.edge_file_path.clone());
-            self.page_index = Page::FilePicker;
-        } else {
-            models.graphic_model.node_data = ExternalData::default();
-            models.graphic_model.edge_data = ExternalData {
-                data_headers: models.graphic_model.edge_data.data_headers.clone(),
-                data: Vec::default(),
-            };
-            models.app_model.import_state = ImportState::Error("Source and target isn't uint".to_owned());
-        }
+                models.app_model.import_state = ImportState::Error(s);
+            }
+        };
     }
 
     fn load_edge_headers(&mut self, models: &mut Models) -> Result<(), String> {
@@ -146,11 +122,5 @@ impl ImportModal {
         } else {
             Ok(())
         }
-    }
-
-    fn load_data(&mut self, models: &mut Models) -> Result<(), String> {
-        models.graphic_model.node_data = read_from_csv(&Some(PathBuf::from(self.node_file_path.clone()))).unwrap_or(ExternalData::default());
-        models.graphic_model.edge_data = read_from_csv(&Some(PathBuf::from(self.edge_file_path.clone())))?;
-        Ok(())
     }
 }
