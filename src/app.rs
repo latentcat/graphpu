@@ -5,7 +5,7 @@ use crate::{
     },
     models::{app::{AppModel, Stage}, compute::ComputeModel, graphics::GraphicsModel, Models},
 };
-use egui::Color32;
+use egui::{Color32, TextStyle};
 
 pub struct MainApp {
     pub models: Models,
@@ -23,6 +23,9 @@ impl MainApp {
 
         style.spacing.icon_width = 12.0;
         style.spacing.indent = 16.0;
+
+        style.text_styles.get_mut(&TextStyle::Body).unwrap().size = 13.0;
+        style.text_styles.get_mut(&TextStyle::Button).unwrap().size = 13.0;
 
         cc.egui_ctx.set_style(style);
 

@@ -51,6 +51,7 @@ impl AppView for InspectorView {
                     .show_inside(ui, |ui| {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
+                        ui.spacing_mut().button_padding = egui::vec2(8.0, 1.0);
 
                         // Import Section / File Section
                         if matches!(models.app_model.import_state, ImportState::Success) {
