@@ -27,6 +27,8 @@ impl MainApp {
         style.text_styles.get_mut(&TextStyle::Body).unwrap().size = 13.0;
         style.text_styles.get_mut(&TextStyle::Button).unwrap().size = 13.0;
 
+        style.spacing.button_padding = egui::vec2(8.0, 1.0);
+
         cc.egui_ctx.set_style(style);
 
         let mut fonts = egui::FontDefinitions::default();

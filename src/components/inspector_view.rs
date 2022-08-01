@@ -9,7 +9,7 @@ use crate::models::app::{ImportState, NodeEdgeTab};
 use crate::models::compute::ComputeMethod;
 use crate::models::compute::ComputeMethodType;
 use crate::models::graphics::{PositionType, ColorType, ColorRamp, ColorPalette, SizeType};
-use crate::widgets::frames::{button_group_style, inspector_frame, inspector_inner_frame};
+use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_MARGIN, inspector_frame, inspector_inner_frame};
 
 use super::AppView;
 
@@ -31,6 +31,7 @@ impl AppView for InspectorView {
                     .show_inside(ui, |ui| {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
+                        ui.spacing_mut().button_padding = DEFAULT_BUTTON_MARGIN;
 
                         ui.with_layout(egui::Layout::right_to_left(), |ui| {
                             let _ = ui.button("⛭");
@@ -51,12 +52,13 @@ impl AppView for InspectorView {
                     .show_inside(ui, |ui| {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
-                        ui.spacing_mut().button_padding = egui::vec2(8.0, 1.0);
 
                         // Import Section / File Section
                         if matches!(models.app_model.import_state, ImportState::Success) {
                             ui.horizontal(|ui| {
                                 ui.with_layout(egui::Layout::right_to_left(), |ui| {
+
+                                    ui.spacing_mut().button_padding = DEFAULT_BUTTON_MARGIN;
                                     let remove_data_button = ui.button("🗑");
                                     if remove_data_button.clicked() {
                                         models.clear_data()
@@ -150,7 +152,7 @@ impl InspectorView {
 
                             grid_label(ui, "");
                             if node_settings.position_compute.1 == ComputeMethodType::Continuous {
-                                let continuous_button = ui.button(if !models.compute_model.is_computing { "▶ Start Computing" } else { "⏸ Pause Computing" });
+                                let continuous_button = ui.button(if !models.compute_model.is_computing { "Start Computing" } else { "Pause Computing" });
                                 if continuous_button.clicked() {
                                     models.compute_model.switch_computing();
                                 }
@@ -170,9 +172,7 @@ impl InspectorView {
                             ui.text_edit_singleline(&mut "".to_owned());
                             ui.end_row();
                             grid_label(ui, "");
-                            if ui.button("Set").clicked() {
-
-                            }
+                            let _ = ui.button("Set Position");
                             ui.end_row();
                         }
                     }
@@ -198,11 +198,6 @@ impl InspectorView {
                             grid_label(ui, "Constant");
                             ui.color_edit_button_srgba(&mut node_settings.color_constant);
                             ui.end_row();
-                            grid_label(ui, "");
-                            if ui.button("Set").clicked() {
-
-                            }
-                            ui.end_row();
                         },
                         ColorType::Ramp => {
                             let (source, ramp) = &mut node_settings.color_ramp;
@@ -215,6 +210,10 @@ impl InspectorView {
                                     ui.selectable_value(ramp, ColorRamp::Ramp2, "Ramp2");
                                 });
                             ui.end_row();
+
+                            grid_label(ui, "");
+                            let _ = ui.button("Set Color");
+                            ui.end_row();
                         },
                         ColorType::Partition => {
                             let (source, platte) = &mut node_settings.color_partition;
@@ -226,6 +225,10 @@ impl InspectorView {
                                     ui.selectable_value(platte, ColorPalette::Palette1, "Palette1");
                                     ui.selectable_value(platte, ColorPalette::Palette2, "Palette2");
                                 });
+                            ui.end_row();
+
+                            grid_label(ui, "");
+                            let _ = ui.button("Set Color");
                             ui.end_row();
                         },
                     }
@@ -251,12 +254,6 @@ impl InspectorView {
                             grid_label(ui, "Constant");
                             ui.add(egui::Slider::new(&mut node_settings.size_constant, 0.1..=10.0));
                             ui.end_row();
-
-                            grid_label(ui, "");
-                            if ui.button("Set").clicked() {
-
-                            }
-                            ui.end_row();
                         },
                         SizeType::Ramp => {
                             let (source, _) = &mut node_settings.size_ramp;
@@ -268,10 +265,9 @@ impl InspectorView {
                                 ui.add(egui::DragValue::new(&mut node_settings.size_ramp.1[1]).speed(0.1));
                             });
                             ui.end_row();
-                            grid_label(ui, "");
-                            if ui.button("Set").clicked() {
 
-                            }
+                            grid_label(ui, "");
+                            let _ = ui.button("Set Size");
                             ui.end_row();
                         }
                     }
@@ -288,6 +284,7 @@ fn source_combox(id_source: impl Hash, data_hearders: &Vec<Rc<String>>, current_
     egui::ComboBox::from_id_source(id_source)
         .selected_text(current_value.to_string())
         .show_ui(ui, |ui| {
+            ui.selectable_value(current_value, Rc::new(String::from("None")), String::from("None"));
             for col in data_hearders {
                 ui.selectable_value(current_value, col.clone(), &*col.clone());
             }

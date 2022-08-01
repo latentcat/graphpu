@@ -1,4 +1,6 @@
-use egui::Color32;
+use egui::{Color32, Vec2};
+
+pub const DEFAULT_BUTTON_MARGIN: Vec2 = egui::vec2(4.0, 1.0);
 
 pub fn window_frame(style: &egui::Style) -> egui::Frame {
   egui::Frame {

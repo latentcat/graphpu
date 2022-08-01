@@ -53,7 +53,7 @@ pub enum SizeType {
 pub struct NodeSettings {
     pub position_type: PositionType,
     pub position_compute: ComputeMethod,
-    pub posititon_set: (f32, f32, f32),
+    pub position_set: (f32, f32, f32),
     
     pub color_type: ColorType,
     pub color_constant: Color32,
@@ -70,13 +70,13 @@ impl Default for NodeSettings {
         Self {
             position_type: PositionType::Compute,
             position_compute: ComputeMethod::FORCE_ATLAS2,
-            posititon_set: (0.0, 0.0, 0.0),
+            position_set: (0.0, 0.0, 0.0),
             color_type: ColorType::Constant,
             color_constant: Color32::WHITE,
             color_ramp: (Rc::new(String::from("None")), ColorRamp::Ramp1),
             color_partition: (Rc::new(String::from("None")), ColorPalette::Palette1),
             size_type: SizeType::Constant,
-            size_constant: 0.0,
+            size_constant: 1.0,
             size_ramp: (Rc::new(String::from("None")), [0.5, 2.0]),
         }
     }

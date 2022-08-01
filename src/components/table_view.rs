@@ -23,8 +23,8 @@ impl AppView for TableView {
                     button_group_style(ui.style()).show(ui, |ui| {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
-                        ui.selectable_value(&mut models.app_model.ne_tab, NodeEdgeTab::Node, "    Node Data    ");
-                        ui.selectable_value(&mut models.app_model.ne_tab, NodeEdgeTab::Edge, "    Edge Data    ");
+                        ui.selectable_value(&mut models.app_model.ne_tab, NodeEdgeTab::Node, "  Node Data  ");
+                        ui.selectable_value(&mut models.app_model.ne_tab, NodeEdgeTab::Edge, "  Edge Data  ");
                     });
                 });
 
