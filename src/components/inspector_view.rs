@@ -33,6 +33,10 @@ impl AppView for InspectorView {
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
                         ui.spacing_mut().button_padding = DEFAULT_BUTTON_MARGIN;
 
+                        if models.app_model.import_state != ImportState::Success {
+                            ui.set_enabled(false);
+                        }
+
                         ui.with_layout(egui::Layout::right_to_left(), |ui| {
                             let _ = ui.button("⛭");
 
@@ -83,6 +87,10 @@ impl AppView for InspectorView {
                         }
 
                         ui.separator();
+
+                        if models.app_model.import_state != ImportState::Success {
+                            ui.set_enabled(false);
+                        }
 
                         // Node Edge Inspector Switch
                         button_group_style(ui.style()).show(ui, |ui| {

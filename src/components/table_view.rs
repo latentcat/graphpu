@@ -4,6 +4,7 @@ use crate::{
     models::{app::NodeEdgeTab, graphics::ExternalData, Models},
     widgets::frames::button_group_style,
 };
+use crate::models::app::ImportState;
 use crate::widgets::frames::central_panel_frame;
 
 use super::AppView;
@@ -35,7 +36,7 @@ impl AppView for TableView {
                     NodeEdgeTab::Edge => &models.graphic_model.edge_data,
                 };
 
-                if data_headers.len() == 0 {
+                if models.app_model.import_state != ImportState::Success {
                     ui.centered_and_justified(|ui| {
                         let empty_hint_text = match models.app_model.ne_tab {
                             NodeEdgeTab::Node => "Import node data to display.",
