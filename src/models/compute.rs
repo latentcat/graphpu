@@ -427,12 +427,12 @@ impl ComputeResources {
             mapped_at_creation: false
         });
 
-        let mut initial_edge_data: Vec<usize> = vec![0; (4 * edge_count) as usize];
+        let mut initial_edge_data: Vec<u32> = vec![0; (4 * edge_count) as usize];
         let edge_data = &model.edge_data.data;
         let (source_id, target_id) = (model.edge_source.as_ref().unwrap(), model.edge_target.as_ref().unwrap());
         for (index, edge_instance_chunk) in initial_edge_data.chunks_mut(4).enumerate() {
-            edge_instance_chunk[0] = edge_data[index].get(source_id).unwrap().parse::<usize>().unwrap();
-            edge_instance_chunk[1] = edge_data[index].get(target_id).unwrap().parse::<usize>().unwrap();
+            edge_instance_chunk[0] = edge_data[index].get(source_id).unwrap().parse::<u32>().unwrap();
+            edge_instance_chunk[1] = edge_data[index].get(target_id).unwrap().parse::<u32>().unwrap();
         }
 
         let edge_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
