@@ -1,6 +1,6 @@
 struct Node {
-  pos : vec3<f32>,
-  vel : vec3<f32>,
+  position: vec3<f32>,
+  velocity: vec3<f32>,
 };
 
 struct SimParams {
@@ -51,8 +51,8 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     return;
   }
 
-  var vPos : vec3<f32> = nodeSrc[index].pos;
-  var vVel : vec3<f32> = nodeSrc[index].vel;
+  var vPos : vec3<f32> = nodeSrc[index].position;
+  var vVel : vec3<f32> = nodeSrc[index].velocity;
 
   var cMass : vec3<f32> = vec3<f32>(0.0);
   var cVel : vec3<f32> = vec3<f32>(0.0);
@@ -69,8 +69,8 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
       continue;
     }
 
-    let pos = nodeSrc[i].pos;
-    let vel = nodeSrc[i].vel;
+    let pos = nodeSrc[i].position;
+    let vel = nodeSrc[i].velocity;
 
     if (distance(pos, vPos) < params.rule1Distance) {
       cMass += pos;
@@ -135,8 +135,8 @@ fn randomize(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     return;
   }
 
-  var vPos : vec3<f32> = nodeSrc[index].pos;
-  var vVel : vec3<f32> = nodeSrc[index].vel;
+  var vPos : vec3<f32> = nodeSrc[index].position;
+  var vVel : vec3<f32> = nodeSrc[index].velocity;
 
   vPos.x = random_xy(index, 0u + 3u * uniforms.frame_num) * 2.0 - 1.0;
   vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
@@ -157,8 +157,8 @@ fn copy(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     return;
   }
 
-  var vPos : vec3<f32> = nodeSrc[index].pos;
-  var vVel : vec3<f32> = nodeSrc[index].vel;
+  var vPos : vec3<f32> = nodeSrc[index].position;
+  var vVel : vec3<f32> = nodeSrc[index].velocity;
 
   // Write back
 //  nodeSrc[index] = Node(vPos, vVel);

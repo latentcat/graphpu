@@ -9,8 +9,8 @@ struct Varing {
 };
 
 struct Node {
-    pos : vec3<f32>,
-    vel : vec3<f32>,
+    position: vec3<f32>,
+    velocity: vec3<f32>,
 };
 
 struct Edge {
@@ -31,7 +31,7 @@ fn main_vs(
     var node = nodeSrc[node_id];
 
     var v: Varing;
-    v.position = vec4<f32>(node.pos.xy, 0.0, 1.0);
+    v.position = vec4<f32>(node.position.xy, 0.0, 1.0);
     v.tex_coords = vec2<f32>(0.0);
 
     return v;

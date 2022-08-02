@@ -7,15 +7,21 @@ use crate::models::graphics::GraphicsStatus;
 
 use super::graphics::GraphicsModel;
 
-// 须同步修改 WGSL 中的 @workgroup_size
+
+
+// 须同步修改 Compute WGSL 中的 @workgroup_size
 const PARTICLES_PER_GROUP: u32 = 128;
 
+
+// 须同步修改各个 WGSL 中的 Node struct
 #[repr(C)]
 pub struct Node {
-    position : [f32; 3],
-    velocity : [f32; 3],
+    position: [f32; 3],
+    velocity: [f32; 3],
 }
 
+
+// 须同步修改各个 WGSL 中的 Edge struct
 #[repr(C)]
 pub struct Edge {
     source_id: u32,
@@ -95,12 +101,12 @@ pub struct ComputeResources {
 
     // Buffers
     uniform_buffer: wgpu::Buffer,                   // 用于存放 Boids 参数
-    quad_buffer: wgpu::Buffer,                      // Quad 四个顶点数据
-    node_buffer: wgpu::Buffer,
-    edge_buffer: wgpu::Buffer,
+    quad_buffer:    wgpu::Buffer,                   // Quad 四个顶点数据
+    node_buffer:    wgpu::Buffer,
+    edge_buffer:    wgpu::Buffer,
 
     // Bind Group
-    compute_bind_group: wgpu::BindGroup,
+    compute_bind_group:     wgpu::BindGroup,
     node_render_bind_group: wgpu::BindGroup,
     edge_render_bind_group: wgpu::BindGroup,
 
@@ -109,12 +115,12 @@ pub struct ComputeResources {
     edge_render_pipeline: wgpu::RenderPipeline,
 
     // 计算管线
-    compute_pipeline: wgpu::ComputePipeline,        // 计算
+    compute_pipeline:   wgpu::ComputePipeline,      // 计算
     randomize_pipeline: wgpu::ComputePipeline,      // 随机位置
-    copy_pipeline: wgpu::ComputePipeline,           // 拷贝
+    copy_pipeline:      wgpu::ComputePipeline,      // 拷贝
 
-    work_group_count: u32,                          // 线程组数 = 线程数 / 每组线程数
-    frame_num: usize,                               // 帧计数器
+    work_group_count:   u32,                        // 线程组数 = 线程数 / 每组线程数
+    frame_num:          usize,                      // 帧计数器
 }
 
 impl ComputeResources {
@@ -126,7 +132,7 @@ impl ComputeResources {
         let edge_count: u32 = model.status.edge_count as u32;
 
         let node_struct_size = mem::size_of::<Node>();
-        let edge_struct_size = mem::size_of::<Edge>();
+        let _edge_struct_size = mem::size_of::<Edge>();
 
         let device = &render_state.device;
         let _queue = &render_state.queue;
