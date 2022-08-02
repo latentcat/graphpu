@@ -9,8 +9,8 @@ struct Varing {
 };
 
 struct Particle {
-  pos : vec2<f32>,
-  vel : vec2<f32>,
+  pos : vec3<f32>,
+  vel : vec3<f32>,
 };
 
 @group(0) @binding(0) var<storage, read> particlesSrc : array<Particle>;
@@ -23,7 +23,7 @@ fn main_vs(
     var particle = particlesSrc[i.instance_index];
 
     var v: Varing;
-    v.position = vec4<f32>(particle.pos + quad_pos * 0.0075, 0.0, 1.0);
+    v.position = vec4<f32>(particle.pos.xy + quad_pos * 0.0075, 0.0, 1.0);
     v.tex_coords = quad_pos;
 
     return v;

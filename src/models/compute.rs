@@ -5,7 +5,19 @@ use wgpu::Label;
 use wgpu::util::DeviceExt;
 use crate::models::graphics::GraphicsStatus;
 
+// 须同步修改 WGSL 中的 @workgroup_size
 const PARTICLES_PER_GROUP: u32 = 128;
+
+#[repr(C)]
+pub struct Node {
+    position : [f32; 3],
+    velocity : [f32; 3],
+}
+
+#[repr(C)]
+pub struct Edge {
+
+}
 
 
 #[derive(PartialEq)]
@@ -105,6 +117,8 @@ impl ComputeResources {
         // let status = status.clone();
 
         let num_particles: u32 = status.node_count as u32;
+        let node_struct_size = mem::size_of::<Node>();
+        let edge_struct_size = mem::size_of::<Edge>();
 
         let device = &render_state.device;
         let _queue = &render_state.queue;
@@ -159,7 +173,9 @@ impl ComputeResources {
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Storage { read_only: true },
                             has_dynamic_offset: false,
-                            min_binding_size: wgpu::BufferSize::new((num_particles * 16) as _),
+                            min_binding_size: wgpu::BufferSize::new(
+                                (num_particles as usize * node_struct_size) as _
+                            ),
                         },
                         count: None,
                     },
@@ -169,7 +185,9 @@ impl ComputeResources {
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Storage { read_only: false },
                             has_dynamic_offset: false,
-                            min_binding_size: wgpu::BufferSize::new((num_particles * 16) as _),
+                            min_binding_size: wgpu::BufferSize::new(
+                                (num_particles as usize * node_struct_size) as _
+                            ),
                         },
                         count: None,
                     },
@@ -325,10 +343,11 @@ impl ComputeResources {
         let mut compute_bind_groups = Vec::<wgpu::BindGroup>::new();
         let mut render_bind_groups = Vec::<wgpu::BindGroup>::new();
 
-        let unpadded_size = 4 * (4 * num_particles) as wgpu::BufferAddress;
+        let unpadded_size = (num_particles as usize * node_struct_size) as wgpu::BufferAddress;
         let align_mask = wgpu::COPY_BUFFER_ALIGNMENT - 1;
         let padded_size =
             ((unpadded_size + align_mask) & !align_mask).max(wgpu::COPY_BUFFER_ALIGNMENT);
+        println!("{}, {}, {}", unpadded_size, align_mask, padded_size);
         for i in 0..2 {
             particle_buffers.push(
                 device.create_buffer(&wgpu::BufferDescriptor {
