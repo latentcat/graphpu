@@ -16,7 +16,8 @@ pub struct Node {
 
 #[repr(C)]
 pub struct Edge {
-
+    source_id: u32,
+    target_id: u32,
 }
 
 
@@ -92,15 +93,18 @@ pub struct ComputeResources {
 
     // Buffers
     uniform_buffer: wgpu::Buffer,                   // 用于存放 Boids 参数
-    vertices_buffer: wgpu::Buffer,                  // Quad 四个顶点数据
-    particle_buffers: Vec<wgpu::Buffer>,            // 粒子数据（两个 Buffer，用于交替读写、渲染）
+    quad_buffer: wgpu::Buffer,                      // Quad 四个顶点数据
+    node_buffer: wgpu::Buffer,
+    edge_buffer: wgpu::Buffer,
 
-    // Bind Groups（绑定 Buffer 和 Pipeline 中的 Shader）
-    compute_bind_groups: Vec<wgpu::BindGroup>,
-    render_bind_groups: Vec<wgpu::BindGroup>,
+    // Bind Group
+    compute_bind_group: wgpu::BindGroup,
+    node_render_bind_group: wgpu::BindGroup,
+    edge_render_bind_group: wgpu::BindGroup,
 
     // 渲染管线
-    render_pipeline: wgpu::RenderPipeline,          // 渲染管线
+    node_render_pipeline: wgpu::RenderPipeline,
+    edge_render_pipeline: wgpu::RenderPipeline,
 
     // 计算管线
     compute_pipeline: wgpu::ComputePipeline,        // 计算
@@ -116,7 +120,9 @@ impl ComputeResources {
 
         // let status = status.clone();
 
-        let num_particles: u32 = status.node_count as u32;
+        let node_count: u32 = status.node_count as u32;
+        let edge_count: u32 = status.edge_count as u32;
+
         let node_struct_size = mem::size_of::<Node>();
         let edge_struct_size = mem::size_of::<Edge>();
 
@@ -127,9 +133,13 @@ impl ComputeResources {
             label: None,
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../assets/shader/boids/compute.wgsl"))),
         });
-        let draw_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        let node_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../assets/shader/boids/draw.wgsl"))),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../assets/shader/boids/M_node.wgsl"))),
+        });
+        let edge_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: None,
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../assets/shader/boids/M_edge.wgsl"))),
         });
 
         // buffer for simulation parameters uniform
@@ -169,30 +179,18 @@ impl ComputeResources {
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 1,
-                        visibility: wgpu::ShaderStages::COMPUTE | wgpu::ShaderStages::VERTEX_FRAGMENT,
+                        visibility: wgpu::ShaderStages::COMPUTE,
                         ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            ty: wgpu::BufferBindingType::Storage { read_only: false },
                             has_dynamic_offset: false,
                             min_binding_size: wgpu::BufferSize::new(
-                                (num_particles as usize * node_struct_size) as _
+                                (node_count as usize * node_struct_size) as _
                             ),
                         },
                         count: None,
                     },
                     wgpu::BindGroupLayoutEntry {
                         binding: 2,
-                        visibility: wgpu::ShaderStages::COMPUTE,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage { read_only: false },
-                            has_dynamic_offset: false,
-                            min_binding_size: wgpu::BufferSize::new(
-                                (num_particles as usize * node_struct_size) as _
-                            ),
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 3,
                         visibility: wgpu::ShaderStages::COMPUTE,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
@@ -213,34 +211,65 @@ impl ComputeResources {
 
         // create render pipeline with empty bind group layout
 
-        let render_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage { read_only: true },
-                            has_dynamic_offset: false,
-                            min_binding_size: wgpu::BufferSize::new((num_particles * 16) as _),
-                        },
-                        count: None,
+        let node_render_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new((node_count * 16) as _),
                     },
-                ],
-                label: None,
-            });
-        let render_pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("render"),
-                bind_group_layouts: &[&render_bind_group_layout],
-                push_constant_ranges: &[],
-            });
-
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+                    count: None,
+                },
+            ],
             label: None,
-            layout: Some(&render_pipeline_layout),
+        });
+
+        let edge_render_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new((node_count * 16) as _),
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: wgpu::BufferSize::new((edge_count * 16) as _),
+                    },
+                    count: None,
+                },
+            ],
+            label: None,
+        });
+
+        let node_render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("render"),
+            bind_group_layouts: &[&node_render_bind_group_layout],
+            push_constant_ranges: &[],
+        });
+
+        let edge_render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("render"),
+            bind_group_layouts: &[&edge_render_bind_group_layout],
+            push_constant_ranges: &[],
+        });
+
+        let node_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: None,
+            layout: Some(&node_render_pipeline_layout),
             vertex: wgpu::VertexState {
-                module: &draw_shader,
+                module: &node_shader,
                 entry_point: "main_vs",
                 buffers: &[
                     wgpu::VertexBufferLayout {
@@ -251,7 +280,7 @@ impl ComputeResources {
                 ],
             },
             fragment: Some(wgpu::FragmentState {
-                module: &draw_shader,
+                module: &node_shader,
                 entry_point: "main_fs",
                 targets: &[Some(wgpu::ColorTargetState {
                     format: render_state.target_format.into(),
@@ -273,6 +302,51 @@ impl ComputeResources {
             // primitive: wgpu::PrimitiveState::default(),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleStrip,
+                front_face: wgpu::FrontFace::Ccw,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+        });
+
+        let edge_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: None,
+            layout: Some(&edge_render_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &edge_shader,
+                entry_point: "main_vs",
+                buffers: &[
+                    wgpu::VertexBufferLayout {
+                        array_stride: 2 * 4,
+                        step_mode: wgpu::VertexStepMode::Vertex,
+                        attributes: &wgpu::vertex_attr_array![0 => Float32x2],
+                    },
+                ],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &edge_shader,
+                entry_point: "main_fs",
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: render_state.target_format.into(),
+                    blend: Some(wgpu::BlendState {
+                        color: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::One,
+                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                        alpha: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::OneMinusDstAlpha,
+                            dst_factor: wgpu::BlendFactor::One,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                    }),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            // primitive: wgpu::PrimitiveState::default(),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::LineList,
                 front_face: wgpu::FrontFace::Ccw,
                 ..Default::default()
             },
@@ -330,7 +404,7 @@ impl ComputeResources {
                 // 3
                 1.0, 1.0,
             ];
-        let vertices_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        let quad_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
             contents: bytemuck::bytes_of(&vertex_buffer_data),
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
@@ -339,72 +413,83 @@ impl ComputeResources {
         // creates two buffers of particle data each of size num_particles
         // the two buffers alternate as dst and src for each frame
 
-        let mut particle_buffers = Vec::<wgpu::Buffer>::new();
-        let mut compute_bind_groups = Vec::<wgpu::BindGroup>::new();
-        let mut render_bind_groups = Vec::<wgpu::BindGroup>::new();
 
-        let unpadded_size = (num_particles as usize * node_struct_size) as wgpu::BufferAddress;
-        let align_mask = wgpu::COPY_BUFFER_ALIGNMENT - 1;
-        let padded_size =
-            ((unpadded_size + align_mask) & !align_mask).max(wgpu::COPY_BUFFER_ALIGNMENT);
-        println!("{}, {}, {}", unpadded_size, align_mask, padded_size);
-        for i in 0..2 {
-            particle_buffers.push(
-                device.create_buffer(&wgpu::BufferDescriptor {
-                    label: Some(&format!("Particle Buffer {}", i)),
-                    size: padded_size,
-                    usage: wgpu::BufferUsages::VERTEX
-                        | wgpu::BufferUsages::STORAGE
-                        | wgpu::BufferUsages::COPY_DST,
-                    mapped_at_creation: false
-                }),
-            );
+        let node_buffer_size = pad_size(node_struct_size, node_count);
+
+        let node_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Node Buffer"),
+            size: node_buffer_size,
+            usage: wgpu::BufferUsages::VERTEX
+                | wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false
+        });
+
+        let mut initial_edge_data = vec![0u32; (4 * edge_count) as usize];
+        for edge_instance_chunk in initial_edge_data.chunks_mut(4) {
+            edge_instance_chunk[0] = 0;
+            edge_instance_chunk[1] = 1;
         }
+
+        let edge_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Edge Buffer"),
+            contents: bytemuck::cast_slice(&initial_edge_data),
+            usage: wgpu::BufferUsages::VERTEX
+                | wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_DST,
+        });
 
         // create two bind groups, one for each buffer as the src
         // where the alternate buffer is used as the dst
 
-        for i in 0..2 {
-            compute_bind_groups.push(device.create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &compute_bind_group_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: sim_param_buffer.as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: particle_buffers[i].as_entire_binding(),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 2,
-                        resource: particle_buffers[(i + 1) % 2].as_entire_binding(), // bind to opposite buffer
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 3,
-                        resource: uniform_buffer.as_entire_binding(),
-                    },
-                ],
-                label: None,
-            }));
-        }
+        let compute_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &compute_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: sim_param_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: node_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: uniform_buffer.as_entire_binding(),
+                },
+            ],
+            label: None,
+        });
 
-        for i in 0..2 {
-            render_bind_groups.push(device.create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &render_bind_group_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: particle_buffers[i].as_entire_binding(),
-                    },
-                ],
-                label: None,
-            }));
-        }
+        let node_render_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &node_render_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: node_buffer.as_entire_binding(),
+                },
+            ],
+            label: None,
+        });
+
+        let edge_render_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &edge_render_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: node_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: edge_buffer.as_entire_binding(),
+                },
+            ],
+            label: None,
+        });
 
         // calculates number of work groups from PARTICLES_PER_GROUP constant
         let work_group_count =
-            ((num_particles as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
+            ((node_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
 
         let mut boids_resources = ComputeResources {
             status,
@@ -414,11 +499,14 @@ impl ComputeResources {
             viewport_size: Default::default(),
             is_viewport_update: true,
             uniform_buffer,
-            vertices_buffer,
-            particle_buffers,
-            compute_bind_groups,
-            render_bind_groups,
-            render_pipeline,
+            quad_buffer,
+            node_buffer,
+            edge_buffer,
+            compute_bind_group,
+            node_render_bind_group,
+            edge_render_bind_group,
+            node_render_pipeline,
+            edge_render_pipeline,
             compute_pipeline,
             randomize_pipeline,
             copy_pipeline,
@@ -447,7 +535,7 @@ impl ComputeResources {
             let mut cpass =
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
             cpass.set_pipeline(&self.compute_pipeline);
-            cpass.set_bind_group(0, &self.compute_bind_groups[self.frame_num % 2], &[]);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.work_group_count, 1, 1);
         }
         command_encoder.pop_debug_group();
@@ -470,10 +558,10 @@ impl ComputeResources {
             let mut cpass =
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
             cpass.set_pipeline(&self.randomize_pipeline);
-            cpass.set_bind_group(0, &self.compute_bind_groups[self.frame_num % 2], &[]);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.work_group_count, 1, 1);
             cpass.set_pipeline(&self.copy_pipeline);
-            cpass.set_bind_group(0, &self.compute_bind_groups[(self.frame_num + 1) % 2], &[]);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.work_group_count, 1, 1);
         }
         command_encoder.pop_debug_group();
@@ -511,10 +599,15 @@ impl ComputeResources {
         {
             // render pass
             let mut rpass = command_encoder.begin_render_pass(&render_pass_descriptor);
-            rpass.set_pipeline(&self.render_pipeline);
-            rpass.set_bind_group(0, &self.render_bind_groups[self.frame_num % 2], &[]);
-            rpass.set_vertex_buffer(0, self.vertices_buffer.slice(..));
+            rpass.set_pipeline(&self.node_render_pipeline);
+            rpass.set_bind_group(0, &self.node_render_bind_group, &[]);
+            rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
             rpass.draw(0..4, 0..self.status.node_count as u32);
+
+            rpass.set_pipeline(&self.edge_render_pipeline);
+            rpass.set_bind_group(0, &self.edge_render_bind_group, &[]);
+            rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
+            rpass.draw(0..2, 0..self.status.edge_count as u32);
         }
         command_encoder.pop_debug_group();
 
@@ -564,9 +657,19 @@ impl ComputeResources {
     }
 
     pub fn dispose(&mut self) {
-        self.particle_buffers[0].destroy();
-        self.particle_buffers[1].destroy();
+        self.node_buffer.destroy();
+        self.edge_buffer.destroy();
     }
 
 
+}
+
+
+fn pad_size(node_struct_size: usize, num_particles: u32) -> wgpu::BufferAddress {
+
+    let align_mask = wgpu::COPY_BUFFER_ALIGNMENT * 4 - 1;
+    let padded_size = ((node_struct_size as u64 + align_mask) & !align_mask).max(wgpu::COPY_BUFFER_ALIGNMENT);
+    let padded_size = (padded_size * num_particles as u64) as wgpu::BufferAddress;
+
+    padded_size
 }

@@ -8,22 +8,22 @@ struct Varing {
     @builtin(position) position: vec4<f32>,
 };
 
-struct Particle {
-  pos : vec3<f32>,
-  vel : vec3<f32>,
+struct Node {
+  position : vec3<f32>,
+  velocity : vec3<f32>,
 };
 
-@group(0) @binding(0) var<storage, read> particlesSrc : array<Particle>;
+@group(0) @binding(0) var<storage, read> nodeSrc : array<Node>;
 
 @vertex
 fn main_vs(
     @location(0) quad_pos: vec2<f32>,
     i: Input
 ) -> Varing {
-    var particle = particlesSrc[i.instance_index];
+    var node = nodeSrc[i.instance_index];
 
     var v: Varing;
-    v.position = vec4<f32>(particle.pos.xy + quad_pos * 0.0075, 0.0, 1.0);
+    v.position = vec4<f32>(node.position.xy + quad_pos * 0.0075, 0.0, 1.0);
     v.tex_coords = quad_pos;
 
     return v;

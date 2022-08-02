@@ -1,4 +1,4 @@
-struct Particle {
+struct Node {
   pos : vec3<f32>,
   vel : vec3<f32>,
 };
@@ -18,9 +18,8 @@ struct Uniforms {
 };
 
 @group(0) @binding(0) var<uniform> params : SimParams;
-@group(0) @binding(1) var<storage, read> particlesSrc : array<Particle>;
-@group(0) @binding(2) var<storage, read_write> particlesDst : array<Particle>;
-@group(0) @binding(3) var<uniform> uniforms: Uniforms;
+@group(0) @binding(1) var<storage, read_write> nodeSrc : array<Node>;
+@group(0) @binding(2) var<uniform> uniforms: Uniforms;
 
 
 fn hash(s: u32) -> u32 {
@@ -46,14 +45,14 @@ fn random_xy(seed_x: u32, seed_y: u32) -> f32 {
 @compute
 @workgroup_size(128)
 fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
-  let total = arrayLength(&particlesSrc);
+  let total = arrayLength(&nodeSrc);
   let index = global_invocation_id.x;
   if (index >= total) {
     return;
   }
 
-  var vPos : vec3<f32> = particlesSrc[index].pos;
-  var vVel : vec3<f32> = particlesSrc[index].vel;
+  var vPos : vec3<f32> = nodeSrc[index].pos;
+  var vVel : vec3<f32> = nodeSrc[index].vel;
 
   var cMass : vec3<f32> = vec3<f32>(0.0);
   var cVel : vec3<f32> = vec3<f32>(0.0);
@@ -70,8 +69,8 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
       continue;
     }
 
-    let pos = particlesSrc[i].pos;
-    let vel = particlesSrc[i].vel;
+    let pos = nodeSrc[i].pos;
+    let vel = nodeSrc[i].vel;
 
     if (distance(pos, vPos) < params.rule1Distance) {
       cMass += pos;
@@ -123,21 +122,21 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
   }
 
   // Write back
-  particlesDst[index] = Particle(vPos, vVel);
+  nodeSrc[index] = Node(vPos, vVel);
 }
 
 
 @compute
 @workgroup_size(128)
 fn randomize(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
-  let total = arrayLength(&particlesSrc);
+  let total = arrayLength(&nodeSrc);
   let index = global_invocation_id.x;
   if (index >= total) {
     return;
   }
 
-  var vPos : vec3<f32> = particlesSrc[index].pos;
-  var vVel : vec3<f32> = particlesSrc[index].vel;
+  var vPos : vec3<f32> = nodeSrc[index].pos;
+  var vVel : vec3<f32> = nodeSrc[index].vel;
 
   vPos.x = random_xy(index, 0u + 3u * uniforms.frame_num) * 2.0 - 1.0;
   vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
@@ -146,21 +145,21 @@ fn randomize(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
   vVel = vec3<f32>(0.0);
 
   // Write back
-  particlesDst[index] = Particle(vPos, vVel);
+  nodeSrc[index] = Node(vPos, vVel);
 }
 
 @compute
 @workgroup_size(128)
 fn copy(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
-  let total = arrayLength(&particlesSrc);
+  let total = arrayLength(&nodeSrc);
   let index = global_invocation_id.x;
   if (index >= total) {
     return;
   }
 
-  var vPos : vec3<f32> = particlesSrc[index].pos;
-  var vVel : vec3<f32> = particlesSrc[index].vel;
+  var vPos : vec3<f32> = nodeSrc[index].pos;
+  var vVel : vec3<f32> = nodeSrc[index].vel;
 
   // Write back
-  particlesDst[index] = Particle(vPos, vVel);
+//  nodeSrc[index] = Node(vPos, vVel);
 }
