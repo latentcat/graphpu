@@ -8,10 +8,8 @@ use crate::models::graphics::GraphicsStatus;
 use super::graphics::GraphicsModel;
 
 
-
 // 须同步修改 Compute WGSL 中的 @workgroup_size
 const PARTICLES_PER_GROUP: u32 = 128;
-
 
 // 须同步修改各个 WGSL 中的 Node struct
 #[repr(C)]
@@ -20,7 +18,6 @@ pub struct Node {
     velocity: [f32; 3],
 }
 
-
 // 须同步修改各个 WGSL 中的 Edge struct
 #[repr(C)]
 pub struct Edge {
@@ -28,21 +25,26 @@ pub struct Edge {
     target_id: u32,
 }
 
-
+// 计算方法的类型
+// Continuous 为需要连续迭代模拟的方法，如 Force Atlas 2
+// OneStep 为单次方法，如 Randomize
 #[derive(PartialEq)]
 pub enum ComputeMethodType {
     Continuous,
     OneStep,
 }
 
+// ComputeMethod 结构体，包含名字、类型
 #[derive(PartialEq)]
 pub struct ComputeMethod(pub &'static str, pub ComputeMethodType);
 
+// 计算方法列表
 impl ComputeMethod {
     pub const FORCE_ATLAS2: ComputeMethod = ComputeMethod("Force Atlas 2", ComputeMethodType::Continuous);
     pub const RANDOMIZE: ComputeMethod = ComputeMethod("Randomize", ComputeMethodType::OneStep);
 }
 
+// 计算 Model，存放计算状态与计算资源
 pub struct ComputeModel {
     pub is_computing: bool,
     pub is_dispatching: bool,
@@ -51,6 +53,9 @@ pub struct ComputeModel {
 }
 
 impl ComputeModel {
+
+    // 初始化计算 Model，传入 eframe 初始化中的 render_state
+    // 仅启动时调用一次
     pub fn init(cc: &eframe::CreationContext) -> Self {
         Self {
             is_computing: false,
@@ -60,6 +65,7 @@ impl ComputeModel {
         }
     }
 
+    // 重置计算 Model，dispose 并删除计算资源
     pub fn reset(&mut self) {
         if let Some(compute_resources) = &mut self.compute_resources {
             compute_resources.dispose();
@@ -69,14 +75,21 @@ impl ComputeModel {
 }
 
 impl ComputeModel {
+
+    // 切换是否持续计算
+    // 仅对 ComputeMethodType::Continuous 生效
     pub fn switch_computing(&mut self) {
         self.is_computing = !self.is_computing;
     }
 
+    // 设置是否持续计算
+    // 仅对 ComputeMethodType::Continuous 生效
     pub fn set_computing(&mut self, state: bool) {
         self.is_computing = state;
     }
 
+    // 设置下一帧是否 Dispatch
+    // 仅对 ComputeMethodType::OneStep 生效
     pub fn set_dispatching(&mut self, state: bool) {
         self.is_dispatching = state;
     }
@@ -100,7 +113,7 @@ pub struct ComputeResources {
                                                     // graphics_view.rs 中设置 false）
 
     // Buffers
-    uniform_buffer: wgpu::Buffer,                   // 用于存放 Boids 参数
+    uniform_buffer: wgpu::Buffer,                   // 传递 Frame Num 等参数
     quad_buffer:    wgpu::Buffer,                   // Quad 四个顶点数据
     node_buffer:    wgpu::Buffer,
     edge_buffer:    wgpu::Buffer,
@@ -123,53 +136,51 @@ pub struct ComputeResources {
     frame_num:          usize,                      // 帧计数器
 }
 
+// 计算资源 Model，存放和计算和绘图相关的一切资源
 impl ComputeResources {
+
+    // 在导入数据后调用的方法，初始化计算和绘图的资源
     pub fn new(render_state: egui_wgpu::RenderState, model: &GraphicsModel) -> Self {
 
-        // let status = status.clone();
-
+        // 从 Graphics Model 中获取 Node 和 Edge 的数量
         let node_count: u32 = model.status.node_count as u32;
         let edge_count: u32 = model.status.edge_count as u32;
 
+        // Node 和 Edge 结构体的占内存大小，用于计算 Buffer 长度
         let node_struct_size = mem::size_of::<Node>();
         let _edge_struct_size = mem::size_of::<Edge>();
 
+        // 从 render_state 中获取 wgpu 的 device 和 queue
         let device = &render_state.device;
         let _queue = &render_state.queue;
 
+        // 从文件中创建 Shader
+
+        // Compute Shader
         let compute_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../assets/shader/boids/compute.wgsl"))),
         });
+
+        // Node Shader
         let node_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../assets/shader/boids/M_node.wgsl"))),
         });
+
+        // Edge Shader
         let edge_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../assets/shader/boids/M_edge.wgsl"))),
         });
 
-        // buffer for simulation parameters uniform
+        // Bind Group Layout
+        // Bind Group 的布局，允许在布局不变的情况下更换 Bind Group 绑定的 Buffer
 
-        let sim_param_data = [
-            0.04f32, // deltaT
-            0.1,     // rule1Distance
-            0.025,   // rule2Distance
-            0.025,   // rule3Distance
-            0.02,    // rule1Scale
-            0.05,    // rule2Scale
-            0.005,   // rule3Scale
-        ]
-            .to_vec();
-        let sim_param_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Simulation Parameter Buffer"),
-            contents: bytemuck::cast_slice(&sim_param_data),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
-        // create compute bind layout group and compute pipeline layout
-
+        // Compute Bind Group Layout
+        // 0 - Uniform Buffer
+        // 1 - Node Buffer
+        // 2 - Edge Buffer
         let compute_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
@@ -210,15 +221,9 @@ impl ComputeResources {
                 ],
                 label: None,
             });
-        let compute_pipeline_layout =
-            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-                label: Some("compute"),
-                bind_group_layouts: &[&compute_bind_group_layout],
-                push_constant_ranges: &[],
-            });
 
-        // create render pipeline with empty bind group layout
-
+        // Node Render Bind Group Layout
+        // 0 - Node Buffer
         let node_render_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
                 wgpu::BindGroupLayoutEntry {
@@ -235,6 +240,9 @@ impl ComputeResources {
             label: None,
         });
 
+        // Node Render Bind Group Layout
+        // 0 - Node Buffer
+        // 1 - Edge Buffer
         let edge_render_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[
                 wgpu::BindGroupLayoutEntry {
@@ -261,18 +269,33 @@ impl ComputeResources {
             label: None,
         });
 
+        // Pipeline Layout
+        // Pipeline 布局，用于关联 Pipeline 和 Bind Group Layout
+        // 在 RenderPass set_pipeline 后，可以通过 set_bind_group 更换符合 Pipeline Layout 中 Bind Group Layout 的 Bind Group
+
+        let compute_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("compute"),
+            bind_group_layouts: &[&compute_bind_group_layout],
+            push_constant_ranges: &[],
+        });
+
         let node_render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("render"),
+            label: Some("node render"),
             bind_group_layouts: &[&node_render_bind_group_layout],
             push_constant_ranges: &[],
         });
 
         let edge_render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("render"),
+            label: Some("edge render"),
             bind_group_layouts: &[&edge_render_bind_group_layout],
             push_constant_ranges: &[],
         });
 
+        // Render Pipeline
+        // 渲染管线
+
+        // Node Render Pipeline
+        // 拓扑结构：Triangle Strip
         let node_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(&node_render_pipeline_layout),
@@ -307,7 +330,6 @@ impl ComputeResources {
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
-            // primitive: wgpu::PrimitiveState::default(),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::TriangleStrip,
                 front_face: wgpu::FrontFace::Ccw,
@@ -318,6 +340,8 @@ impl ComputeResources {
             multiview: None,
         });
 
+        // Edge Render Pipeline
+        // 拓扑结构：Line List
         let edge_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
             layout: Some(&edge_render_pipeline_layout),
@@ -352,7 +376,6 @@ impl ComputeResources {
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
-            // primitive: wgpu::PrimitiveState::default(),
             primitive: wgpu::PrimitiveState {
                 topology: wgpu::PrimitiveTopology::LineList,
                 front_face: wgpu::FrontFace::Ccw,
@@ -363,8 +386,7 @@ impl ComputeResources {
             multiview: None,
         });
 
-        // create compute pipeline
-
+        // Compute Pipeline
         let compute_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
             label: Some("Compute pipeline"),
             layout: Some(&compute_pipeline_layout),
@@ -372,8 +394,7 @@ impl ComputeResources {
             entry_point: "main",
         });
 
-        // create randomize pipeline
-
+        // Randomize Pipeline
         let randomize_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
             label: Some("Compute pipeline"),
             layout: Some(&compute_pipeline_layout),
@@ -381,8 +402,7 @@ impl ComputeResources {
             entry_point: "randomize",
         });
 
-        // create copy pipeline
-
+        // Copy Pipeline
         let copy_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
             label: Some("Compute pipeline"),
             layout: Some(&compute_pipeline_layout),
@@ -390,7 +410,27 @@ impl ComputeResources {
             entry_point: "copy",
         });
 
+        // Buffer 创建
 
+        // Boids 模拟所用到的参数
+        let sim_param_data = [
+            0.04f32, // deltaT
+            0.1,     // rule1Distance
+            0.025,   // rule2Distance
+            0.025,   // rule3Distance
+            0.02,    // rule1Scale
+            0.05,    // rule2Scale
+            0.005,   // rule3Scale
+        ].to_vec();
+
+        // 创建 Sim Param Buffer 并传入数据
+        let sim_param_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Simulation Parameter Buffer"),
+            contents: bytemuck::cast_slice(&sim_param_data),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        // 创建 Uniform Buffer
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(&[0u32]),
@@ -399,8 +439,7 @@ impl ComputeResources {
                 | wgpu::BufferUsages::UNIFORM,
         });
 
-        // buffer for the three 2d triangle vertices of each instance
-
+        // Quad 顶点数据
         let vertex_buffer_data =
             [
                 // 0
@@ -412,18 +451,18 @@ impl ComputeResources {
                 // 3
                 1.0, 1.0,
             ];
+
+        // 创建 Quad Buffer 并传入数据
         let quad_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
             contents: bytemuck::bytes_of(&vertex_buffer_data),
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
-        // creates two buffers of particle data each of size num_particles
-        // the two buffers alternate as dst and src for each frame
-
-
+        // 计算对齐后的 Node Buffer 大小
         let node_buffer_size = pad_size(node_struct_size, node_count);
 
+        // 指定大小，创建 Node Buffer，不初始化数据
         let node_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Node Buffer"),
             size: node_buffer_size,
@@ -433,14 +472,18 @@ impl ComputeResources {
             mapped_at_creation: false
         });
 
+        // 新建初始化 Edge 数据，向 4 个 32 位对齐
         let mut initial_edge_data: Vec<u32> = vec![0; (4 * edge_count) as usize];
         let edge_data = &model.edge_data.data;
         let (source_id, target_id) = (model.edge_source.as_ref().unwrap(), model.edge_target.as_ref().unwrap());
+
+        // 在每四个的第 1、2 个写入 Edge 的 Source 和 Target 数据，转化为与 Compute Shader 同构的 u32
         for (index, edge_instance_chunk) in initial_edge_data.chunks_mut(4).enumerate() {
             edge_instance_chunk[0] = edge_data[index].get(source_id).unwrap().parse::<u32>().unwrap();
             edge_instance_chunk[1] = edge_data[index].get(target_id).unwrap().parse::<u32>().unwrap();
         }
 
+        // 新建 Edge Buffer 并传入数据
         let edge_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Edge Buffer"),
             contents: bytemuck::cast_slice(&initial_edge_data),
@@ -449,9 +492,11 @@ impl ComputeResources {
                 | wgpu::BufferUsages::COPY_DST,
         });
 
-        // create two bind groups, one for each buffer as the src
-        // where the alternate buffer is used as the dst
+        // Bind Group
+        // 用于绑定 Buffer 与 Bind Group Layout，后连接 Pipeline Layout 和 Pipeline
+        // 需与 Bind Group Layout 保持索引和容量一致
 
+        // Compute Bind Group
         let compute_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &compute_bind_group_layout,
             entries: &[
@@ -471,6 +516,7 @@ impl ComputeResources {
             label: None,
         });
 
+        // Node Render Bind Group
         let node_render_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &node_render_bind_group_layout,
             entries: &[
@@ -482,6 +528,7 @@ impl ComputeResources {
             label: None,
         });
 
+        // Edge Render Bind Group
         let edge_render_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &edge_render_bind_group_layout,
             entries: &[
@@ -497,7 +544,8 @@ impl ComputeResources {
             label: None,
         });
 
-        // calculates number of work groups from PARTICLES_PER_GROUP constant
+        // 计算线程组数
+        // 线程组数 = 线程数 / 每组线程数（取整）
         let work_group_count =
             ((node_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
 
@@ -674,7 +722,8 @@ impl ComputeResources {
 
 }
 
-
+// 计算对齐后的 Buffer 长度
+// 结构体 Buffer 须向 16 byte 对齐，也就是 4 个 32 位变量
 fn pad_size(node_struct_size: usize, num_particles: u32) -> wgpu::BufferAddress {
 
     let align_mask = wgpu::COPY_BUFFER_ALIGNMENT * 4 - 1;
