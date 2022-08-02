@@ -8,7 +8,8 @@ use crate::models::graphics::GraphicsStatus;
 use super::graphics::GraphicsModel;
 
 
-// 须同步修改 Compute WGSL 中的 @workgroup_size
+// 须同步修改 Compute WGSL 中每一个函数的 @workgroup_size
+// WGSL 中没有宏，不能使用类似 HLSL 的 #define 方法
 const PARTICLES_PER_GROUP: u32 = 128;
 
 // 须同步修改各个 WGSL 中的 Node struct
@@ -172,6 +173,26 @@ impl ComputeResources {
         let edge_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: None,
             source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../assets/shader/boids/M_edge.wgsl"))),
+        });
+
+
+        // Boids 模拟所用到的参数
+        let sim_param_data = [
+            0.04f32, // deltaT
+            0.1,     // rule1Distance
+            0.025,   // rule2Distance
+            0.025,   // rule3Distance
+            0.02,    // rule1Scale
+            0.05,    // rule2Scale
+            0.005,   // rule3Scale
+        ].to_vec();
+
+        // 创建 Sim Param Buffer 并传入数据
+        // 其他 Buffer 在后面创建
+        let sim_param_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Simulation Parameter Buffer"),
+            contents: bytemuck::cast_slice(&sim_param_data),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
         // Bind Group Layout
@@ -411,24 +432,6 @@ impl ComputeResources {
         });
 
         // Buffer 创建
-
-        // Boids 模拟所用到的参数
-        let sim_param_data = [
-            0.04f32, // deltaT
-            0.1,     // rule1Distance
-            0.025,   // rule2Distance
-            0.025,   // rule3Distance
-            0.02,    // rule1Scale
-            0.05,    // rule2Scale
-            0.005,   // rule3Scale
-        ].to_vec();
-
-        // 创建 Sim Param Buffer 并传入数据
-        let sim_param_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Simulation Parameter Buffer"),
-            contents: bytemuck::cast_slice(&sim_param_data),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
 
         // 创建 Uniform Buffer
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
