@@ -5,6 +5,8 @@ use wgpu::Label;
 use wgpu::util::DeviceExt;
 use crate::models::graphics::GraphicsStatus;
 
+use super::graphics::GraphicsModel;
+
 // 须同步修改 WGSL 中的 @workgroup_size
 const PARTICLES_PER_GROUP: u32 = 128;
 
@@ -38,7 +40,7 @@ impl ComputeMethod {
 pub struct ComputeModel {
     pub is_computing: bool,
     pub is_dispatching: bool,
-    pub compute_render_state: Option<egui_wgpu::RenderState>,
+    pub compute_render_state: egui_wgpu::RenderState,
     pub compute_resources: Option<ComputeResources>,
 }
 
@@ -47,7 +49,7 @@ impl ComputeModel {
         Self {
             is_computing: false,
             is_dispatching: false,
-            compute_render_state: Some(cc.render_state.as_ref().unwrap().clone()),
+            compute_render_state: cc.render_state.as_ref().unwrap().clone(),
             compute_resources: None,
         }
     }
@@ -116,12 +118,12 @@ pub struct ComputeResources {
 }
 
 impl ComputeResources {
-    pub fn new(render_state: egui_wgpu::RenderState, status: GraphicsStatus) -> Self {
+    pub fn new(render_state: egui_wgpu::RenderState, model: &GraphicsModel) -> Self {
 
         // let status = status.clone();
 
-        let node_count: u32 = status.node_count as u32;
-        let edge_count: u32 = status.edge_count as u32;
+        let node_count: u32 = model.status.node_count as u32;
+        let edge_count: u32 = model.status.edge_count as u32;
 
         let node_struct_size = mem::size_of::<Node>();
         let edge_struct_size = mem::size_of::<Edge>();
@@ -425,10 +427,12 @@ impl ComputeResources {
             mapped_at_creation: false
         });
 
-        let mut initial_edge_data = vec![0u32; (4 * edge_count) as usize];
-        for edge_instance_chunk in initial_edge_data.chunks_mut(4) {
-            edge_instance_chunk[0] = 0;
-            edge_instance_chunk[1] = 1;
+        let mut initial_edge_data: Vec<usize> = vec![0; (4 * edge_count) as usize];
+        let edge_data = &model.edge_data.data;
+        let (source_id, target_id) = (model.edge_source.as_ref().unwrap(), model.edge_target.as_ref().unwrap());
+        for (index, edge_instance_chunk) in initial_edge_data.chunks_mut(4).enumerate() {
+            edge_instance_chunk[0] = edge_data[index].get(source_id).unwrap().parse::<usize>().unwrap();
+            edge_instance_chunk[1] = edge_data[index].get(target_id).unwrap().parse::<usize>().unwrap();
         }
 
         let edge_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -492,7 +496,7 @@ impl ComputeResources {
             ((node_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
 
         let mut boids_resources = ComputeResources {
-            status,
+            status: model.status.clone(),
             render_state,
             texture_view: None,
             texture_id: Default::default(),

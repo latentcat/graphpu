@@ -50,7 +50,18 @@ impl Models {
             .iter()
             .max()
             .unwrap();
-        self.complete_import_data(node_file_path.to_string(), edge_file_path.to_string());
+
+        self.graphic_model.edge_source = Some(source_key.clone());
+        self.graphic_model.edge_target = Some(target_key.clone());
+        self.graphic_model.set_status();
+        self.app_model.node_file_path = Some(PathBuf::from(node_file_path));
+        self.app_model.edge_file_path = Some(PathBuf::from(edge_file_path));
+        self.app_model.import_state = ImportState::Success;
+        self.app_model.import_visible = false;
+        self.compute_model.compute_resources = Some(ComputeResources::new(
+            self.compute_model.compute_render_state.clone(),
+            &self.graphic_model,
+        ));
         Ok(())
     }
 
@@ -64,22 +75,5 @@ impl Models {
         self.compute_model.reset();
         self.compute_model.compute_resources = None;
         self.graphic_model.status = GraphicsStatus::default();
-    }
-}
-
-impl Models {
-    fn complete_import_data(&mut self, node_file_path: String, edge_file_path: String) {
-        self.graphic_model.set_status();
-        self.app_model.node_file_path = Some(PathBuf::from(node_file_path));
-        self.app_model.edge_file_path = Some(PathBuf::from(edge_file_path));
-        self.app_model.import_state = ImportState::Success;
-        self.app_model.import_visible = false;
-
-        if let Some(render_state) = &self.compute_model.compute_render_state {
-            self.compute_model.compute_resources = Some(ComputeResources::new(
-                render_state.clone(),
-                self.graphic_model.status.clone(),
-            ));
-        }
     }
 }

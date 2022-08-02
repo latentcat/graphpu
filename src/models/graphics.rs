@@ -85,6 +85,8 @@ impl Default for NodeSettings {
 pub struct GraphicsModel {
     pub node_data: ExternalData,
     pub edge_data: ExternalData,
+    pub edge_source: Option<Rc<String>>,
+    pub edge_target: Option<Rc<String>>,
     pub max_id: usize,
     pub status: GraphicsStatus,
     pub node_settings: NodeSettings,
@@ -95,6 +97,8 @@ impl Default for GraphicsModel {
         Self {
             node_data: ExternalData::default(),
             edge_data: ExternalData::default(),
+            edge_source: None,
+            edge_target: None,
             max_id: 0,
             status: GraphicsStatus::default(),
             node_settings: NodeSettings::default(),
