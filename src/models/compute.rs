@@ -469,12 +469,12 @@ impl ComputeResources {
             mapped_at_creation: false
         });
 
-        // 新建初始化 Edge 数据，向 4 个 32 位对齐
+        // 新建初始化 Edge 数据
         let mut initial_edge_data: Vec<u32> = vec![0; (2 * edge_count) as usize];
         let edge_data = &model.edge_data.data;
         let (source_id, target_id) = (model.edge_source.as_ref().unwrap(), model.edge_target.as_ref().unwrap());
 
-        // 在每四个的第 1、2 个写入 Edge 的 Source 和 Target 数据，转化为与 Compute Shader 同构的 u32
+        // 每组两个写入 Edge 的 Source 和 Target 数据，转化为与 Compute Shader 同构的 u32 类型
         for (index, edge_instance_chunk) in initial_edge_data.chunks_mut(2).enumerate() {
             edge_instance_chunk[0] = edge_data[index].get(source_id).unwrap().parse::<u32>().unwrap();
             edge_instance_chunk[1] = edge_data[index].get(target_id).unwrap().parse::<u32>().unwrap();
