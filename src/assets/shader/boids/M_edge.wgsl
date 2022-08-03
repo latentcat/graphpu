@@ -41,7 +41,7 @@ fn main_vs(
 fn main_fs(v: Varing) -> @location(0) vec4<f32> {
 
 
-    var out_color = vec4<f32>(0.05);
+    var out_color = vec4<f32>(0.01);
 
     return out_color;
 }

@@ -181,12 +181,12 @@ impl ComputeResources {
         // Boids 模拟所用到的参数
         let sim_param_data = [
             0.04f32, // deltaT
-            0.1,     // rule1Distance
+            0.2,     // rule1Distance
             0.025,   // rule2Distance
             0.025,   // rule3Distance
             0.02,    // rule1Scale
             0.05,    // rule2Scale
-            0.005,   // rule3Scale
+            0.01,   // rule3Scale
         ].to_vec();
 
         // 创建 Sim Param Buffer 并传入数据

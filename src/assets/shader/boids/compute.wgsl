@@ -121,6 +121,12 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
   if (vPos.y > 1.0) {
     vPos.y = -1.0;
   }
+  if (vPos.z < -1.0) {
+    vPos.z = 1.0;
+  }
+  if (vPos.z > 1.0) {
+    vPos.z = -1.0;
+  }
 
   // Write back
   nodeSrc[index] = Node(vPos, vVel);
@@ -141,7 +147,7 @@ fn randomize(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 
   vPos.x = random_xy(index, 0u + 3u * uniforms.frame_num) * 2.0 - 1.0;
   vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
-  vPos.z = 0.0;
+  vPos.z = random_xy(index, 2u + 3u * uniforms.frame_num) * 2.0 - 1.0;
 
   vVel = vec3<f32>(0.0);
 

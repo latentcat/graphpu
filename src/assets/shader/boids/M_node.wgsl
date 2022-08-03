@@ -25,7 +25,7 @@ fn main_vs(
     var node = nodeSrc[i.instance_index];
 
     var v: Varing;
-    v.position = vec4<f32>(node.position.xy + quad_pos * 0.0075, 0.0, 1.0);
+    v.position = vec4<f32>(node.position.xy + quad_pos * 0.0075, node.position.z, 1.0);
     v.position = projection * v.position;
     v.tex_coords = quad_pos;
 

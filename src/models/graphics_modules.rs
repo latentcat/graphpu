@@ -27,7 +27,7 @@ impl Camera {
         self.aspect_ratio = aspect_ratio;
         self.update_projection_matrix();
     }
-    
+
     pub fn set_position(&mut self, position: glam::Vec3) {
         self.position = position;
     }
