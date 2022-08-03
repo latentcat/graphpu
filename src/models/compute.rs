@@ -110,8 +110,6 @@ pub struct ComputeResources {
 
     // UI 视口相关
     viewport_size: egui::Vec2,                      // 视口大小
-    pub is_viewport_update: bool,                   // 视口是否更新（在 compute.rs 中设置 true，在
-                                                    // graphics_view.rs 中设置 false）
 
     // Buffers
     uniform_buffer: wgpu::Buffer,                   // 传递 Frame Num 等参数
@@ -558,7 +556,6 @@ impl ComputeResources {
             texture_view: None,
             texture_id: Default::default(),
             viewport_size: Default::default(),
-            is_viewport_update: true,
             uniform_buffer,
             quad_buffer,
             node_buffer,
@@ -576,8 +573,8 @@ impl ComputeResources {
         };
 
         boids_resources.randomize();
-        boids_resources.update_viewport(Vec2::from([100., 100.]));
-        boids_resources.render();
+        // boids_resources.update_viewport(Vec2::from([100., 100.]));
+        // boids_resources.render();
 
         boids_resources
 
@@ -676,14 +673,13 @@ impl ComputeResources {
 
     }
 
-    pub fn update_viewport(&mut self, new_size: Vec2) {
+    pub fn update_viewport(&mut self, new_size: Vec2) -> bool {
 
         let device = &self.render_state.device;
         let _queue = &self.render_state.queue;
 
         if self.viewport_size != new_size {
             self.viewport_size = new_size;
-            self.is_viewport_update = true;
 
             let texture_extent = wgpu::Extent3d {
                 width: self.viewport_size.x as u32,
@@ -714,7 +710,10 @@ impl ComputeResources {
 
             self.texture_view = Option::from(texture_view);
             self.texture_id = texture_id;
+
+            return true;
         }
+        return false;
     }
 
     pub fn dispose(&mut self) {
