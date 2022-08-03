@@ -13,7 +13,9 @@ struct Node {
   velocity : vec3<f32>,
 };
 
-@group(0) @binding(0) var<storage, read> nodeSrc : array<Node>;
+@group(0) @binding(0) var<uniform> projection: mat4x4<f32>;
+
+@group(1) @binding(0) var<storage, read> nodeSrc : array<Node>;
 
 @vertex
 fn main_vs(
@@ -24,6 +26,7 @@ fn main_vs(
 
     var v: Varing;
     v.position = vec4<f32>(node.position.xy + quad_pos * 0.0075, 0.0, 1.0);
+    v.position = projection * v.position;
     v.tex_coords = quad_pos;
 
     return v;

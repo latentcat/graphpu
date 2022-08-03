@@ -1,9 +1,11 @@
 use std::borrow::Cow;
 use std::mem;
 use egui::Vec2;
-use wgpu::Label;
+use glam::Vec3;
+use wgpu::{BufferAddress, Label};
 use wgpu::util::DeviceExt;
 use crate::models::graphics::GraphicsStatus;
+use crate::models::graphics_modules::Camera;
 
 use super::graphics::GraphicsModel;
 
@@ -13,9 +15,15 @@ use super::graphics::GraphicsModel;
 const PARTICLES_PER_GROUP: u32 = 128;
 
 // 须同步修改各个 WGSL 中的 Node struct
+#[repr(C)]
 pub struct Node {
     _position: [f32; 3],
     _velocity: [f32; 3],
+}
+
+#[repr(C)]
+pub struct RenderUniform {
+    project_matrix: glam::Mat4,
 }
 
 // 计算方法的类型
@@ -103,16 +111,21 @@ pub struct ComputeResources {
     // UI 视口相关
     viewport_size: egui::Vec2,                      // 视口大小
 
+    // 相机
+    camera: Camera,
+
     // Buffers
     uniform_buffer: wgpu::Buffer,                   // 传递 Frame Num 等参数
     quad_buffer:    wgpu::Buffer,                   // Quad 四个顶点数据
     node_buffer:    wgpu::Buffer,
     edge_buffer:    wgpu::Buffer,
+    render_uniform_buffer:    wgpu::Buffer,
 
     // Bind Group
     compute_bind_group:     wgpu::BindGroup,
     node_render_bind_group: wgpu::BindGroup,
     edge_render_bind_group: wgpu::BindGroup,
+    render_uniform_bind_group: wgpu::BindGroup,
 
     // 渲染管线
     node_render_pipeline: wgpu::RenderPipeline,
@@ -189,8 +202,9 @@ impl ComputeResources {
 
         // Compute Bind Group Layout
         // 0 - Uniform Buffer
-        // 1 - Node Buffer
-        // 2 - Edge Buffer
+        // 1 - Uniform Buffer
+        // 2 - Node Buffer
+        // 3 - Edge Buffer
         let compute_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
@@ -255,7 +269,7 @@ impl ComputeResources {
             label: None,
         });
 
-        // Node Render Bind Group Layout
+        // Edge Render Bind Group Layout
         // 0 - Node Buffer
         // 1 - Edge Buffer
         let edge_render_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -284,6 +298,22 @@ impl ComputeResources {
             label: None,
         });
 
+        let render_uniform_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                },
+            ],
+            label: None,
+        });
+
         // Pipeline Layout
         // Pipeline 布局，用于关联 Pipeline 和 Bind Group Layout
         // 在 RenderPass set_pipeline 后，可以通过 set_bind_group 更换符合 Pipeline Layout 中 Bind Group Layout 的 Bind Group
@@ -296,13 +326,13 @@ impl ComputeResources {
 
         let node_render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("node render"),
-            bind_group_layouts: &[&node_render_bind_group_layout],
+            bind_group_layouts: &[&render_uniform_bind_group_layout, &node_render_bind_group_layout],
             push_constant_ranges: &[],
         });
 
         let edge_render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("edge render"),
-            bind_group_layouts: &[&edge_render_bind_group_layout],
+            bind_group_layouts: &[&render_uniform_bind_group_layout, &edge_render_bind_group_layout],
             push_constant_ranges: &[],
         });
 
@@ -489,6 +519,17 @@ impl ComputeResources {
                 | wgpu::BufferUsages::COPY_DST,
         });
 
+        let mut camera = Camera::from(Vec3::new(0.0, 0.0, 2.5));
+
+        let initial_render_uniform_data: &[f32; 16] = camera.projection_matrix.as_ref();
+
+        // 指定大小，创建 Node Buffer，不初始化数据
+        let render_uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Edge Buffer"),
+            contents: bytemuck::cast_slice(initial_render_uniform_data),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
         // Bind Group
         // 用于绑定 Buffer 与 Bind Group Layout，后连接 Pipeline Layout 和 Pipeline
         // 需与 Bind Group Layout 保持索引和容量一致
@@ -545,6 +586,17 @@ impl ComputeResources {
             label: None,
         });
 
+        let render_uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &render_uniform_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: render_uniform_buffer.as_entire_binding(),
+                },
+            ],
+            label: None,
+        });
+
         // 计算线程组数
         // 线程组数 = 线程数 / 每组线程数（取整）
         let work_group_count =
@@ -556,13 +608,16 @@ impl ComputeResources {
             texture_view: None,
             texture_id: Default::default(),
             viewport_size: Default::default(),
+            camera,
             uniform_buffer,
             quad_buffer,
             node_buffer,
             edge_buffer,
+            render_uniform_buffer,
             compute_bind_group,
             node_render_bind_group,
             edge_render_bind_group,
+            render_uniform_bind_group,
             node_render_pipeline,
             edge_render_pipeline,
             compute_pipeline,
@@ -658,12 +713,14 @@ impl ComputeResources {
             // render pass
             let mut rpass = command_encoder.begin_render_pass(&render_pass_descriptor);
             rpass.set_pipeline(&self.node_render_pipeline);
-            rpass.set_bind_group(0, &self.node_render_bind_group, &[]);
+            rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
+            rpass.set_bind_group(1, &self.node_render_bind_group, &[]);
             rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
             rpass.draw(0..4, 0..self.status.node_count as u32);
 
             rpass.set_pipeline(&self.edge_render_pipeline);
-            rpass.set_bind_group(0, &self.edge_render_bind_group, &[]);
+            rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
+            rpass.set_bind_group(1, &self.edge_render_bind_group, &[]);
             rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
             rpass.draw(0..2, 0..self.status.edge_count as u32);
         }
@@ -676,10 +733,15 @@ impl ComputeResources {
     pub fn update_viewport(&mut self, new_size: Vec2) -> bool {
 
         let device = &self.render_state.device;
-        let _queue = &self.render_state.queue;
+        let queue = &self.render_state.queue;
 
         if self.viewport_size != new_size {
             self.viewport_size = new_size;
+
+            self.camera.set_aspect_ratio(new_size.x / new_size.y as f32);
+            let initial_render_uniform_data: &[f32; 16] = self.camera.projection_matrix.as_ref();
+
+            queue.write_buffer(&self.render_uniform_buffer, 0, bytemuck::cast_slice(initial_render_uniform_data));
 
             let texture_extent = wgpu::Extent3d {
                 width: self.viewport_size.x as u32,

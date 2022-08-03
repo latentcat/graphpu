@@ -1,3 +1,5 @@
+
+
 struct Input {
     @builtin(vertex_index) vertex_index: u32,
     @builtin(instance_index) instance_index: u32,
@@ -13,8 +15,10 @@ struct Node {
     velocity: vec3<f32>,
 };
 
-@group(0) @binding(0) var<storage, read> nodeSrc : array<Node>;
-@group(0) @binding(1) var<storage, read> edgeSrc : array<vec2<u32>>;
+@group(0) @binding(0) var<uniform> projection: mat4x4<f32>;
+
+@group(1) @binding(0) var<storage, read> nodeSrc : array<Node>;
+@group(1) @binding(1) var<storage, read> edgeSrc : array<vec2<u32>>;
 
 @vertex
 fn main_vs(
@@ -26,7 +30,8 @@ fn main_vs(
     var node = nodeSrc[node_id];
 
     var v: Varing;
-    v.position = vec4<f32>(node.position.xy, 0.0, 1.0);
+    v.position = vec4<f32>(node.position.xyz, 1.0);
+    v.position = projection * v.position;
     v.tex_coords = vec2<f32>(0.0);
 
     return v;

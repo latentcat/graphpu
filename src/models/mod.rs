@@ -6,6 +6,7 @@ use self::{app::ImportState, compute::ComputeResources, graphics::ExternalData};
 pub mod app;
 pub mod compute;
 pub mod graphics;
+pub mod graphics_modules;
 
 pub struct Models {
     pub compute_model: compute::ComputeModel,
