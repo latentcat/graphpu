@@ -57,9 +57,8 @@ impl AppView for TableView {
                         TableBuilder::new(ui)
                             .striped(true)
                             .cell_layout(egui::Layout::left_to_right())
-                            .column(Size::initial(70.0).at_least(70.0).at_most(100.))
-                            .columns(Size::initial(100.0).at_least(60.0), if data_headers.len() > 0 { data_headers.len() - 1 } else { 0 })
-                            .columns(Size::remainder().at_least(60.0), if data_headers.len() > 0 { 1 } else { 0 })
+                            .columns(Size::initial(100.0).at_least(60.0), if data_headers.len() > 0 { data_headers.len() } else { 0 })
+                            .columns(Size::remainder().at_least(60.0), 1)
                             .resizable(true)
                             .header(20.0, |mut header| {
                                 header.col(|ui| {
@@ -72,17 +71,25 @@ impl AppView for TableView {
                                 }
                             })
                             .body(|body| {
-                                body.rows(text_height, data.len(), |row_index, mut row| {
+                                body.rows(text_height, models.graphic_model.status.node_count, |row_index, mut row| {
                                     row.col(|ui| {
                                         ui.label(egui::RichText::new(row_index.to_string()).weak());
-                                        // ui.with_layout(egui::Layout::right_to_left(), |ui| {});
                                     });
-                                    let data_row = &data[row_index];
-                                    for data_col in data_headers {
-                                        row.col(|ui| {
-                                            ui.label(data_row.get(data_col).unwrap_or(&"".to_string()));
-                                        });
+                                    if row_index >= data.len() {
+                                        for _data_col in data_headers {
+                                            row.col(|ui| {
+                                                ui.label(egui::RichText::new("N/A").weak());
+                                            });
+                                        }
+                                    } else {
+                                        let data_row = &data[row_index];
+                                        for data_col in data_headers {
+                                            row.col(|ui| {
+                                                ui.label(data_row.get(data_col).unwrap_or(&"".to_string()));
+                                            });
+                                        }
                                     }
+
                                 })
                             });
                     });
