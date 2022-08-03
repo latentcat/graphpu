@@ -4,6 +4,7 @@ pub mod components;
 pub mod models;
 pub mod utils;
 pub mod bootstrap;
+pub mod wlib;
 
 pub use app::MainApp;
 

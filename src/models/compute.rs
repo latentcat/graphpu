@@ -133,6 +133,7 @@ impl ComputeResources {
     // 在导入数据后调用的方法，初始化计算和绘图的资源
     pub fn new(render_state: egui_wgpu::RenderState, model: &GraphicsModel) -> Self {
 
+
         // 从 Graphics Model 中获取 Node 和 Edge 的数量
         let node_count: u32 = model.status.node_count as u32;
         let edge_count: u32 = model.status.edge_count as u32;
