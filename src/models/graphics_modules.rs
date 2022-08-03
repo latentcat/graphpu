@@ -27,6 +27,10 @@ impl Camera {
         self.aspect_ratio = aspect_ratio;
         self.update_projection_matrix();
     }
+    
+    pub fn set_position(&mut self, position: glam::Vec3) {
+        self.position = position;
+    }
 
     pub fn update_projection_matrix(&mut self) {
         let zoom_factor = if self.aspect_ratio > 1.0 { self.aspect_ratio } else { 1.0 };
