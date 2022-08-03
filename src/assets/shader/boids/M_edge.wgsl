@@ -13,13 +13,8 @@ struct Node {
     velocity: vec3<f32>,
 };
 
-struct Edge {
-    source_id: u32,
-    target_id: u32,
-}
-
 @group(0) @binding(0) var<storage, read> nodeSrc : array<Node>;
-@group(0) @binding(1) var<storage, read> edgeSrc : array<Edge>;
+@group(0) @binding(1) var<storage, read> edgeSrc : array<vec2<u32>>;
 
 @vertex
 fn main_vs(
@@ -27,7 +22,7 @@ fn main_vs(
     i: Input
 ) -> Varing {
     var edge = edgeSrc[i.instance_index];
-    var node_id = vec2<u32>(edge.source_id, edge.target_id)[i.vertex_index];
+    var node_id = edge[i.vertex_index];
     var node = nodeSrc[node_id];
 
     var v: Varing;

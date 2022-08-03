@@ -13,17 +13,9 @@ use super::graphics::GraphicsModel;
 const PARTICLES_PER_GROUP: u32 = 128;
 
 // 须同步修改各个 WGSL 中的 Node struct
-#[repr(C)]
 pub struct Node {
-    position: [f32; 3],
-    velocity: [f32; 3],
-}
-
-// 须同步修改各个 WGSL 中的 Edge struct
-#[repr(C)]
-pub struct Edge {
-    source_id: u32,
-    target_id: u32,
+    _position: [f32; 3],
+    _velocity: [f32; 3],
 }
 
 // 计算方法的类型
@@ -147,7 +139,6 @@ impl ComputeResources {
 
         // Node 和 Edge 结构体的占内存大小，用于计算 Buffer 长度
         let node_struct_size = mem::size_of::<Node>();
-        let _edge_struct_size = mem::size_of::<Edge>();
 
         // 从 render_state 中获取 wgpu 的 device 和 queue
         let device = &render_state.device;
@@ -200,8 +191,7 @@ impl ComputeResources {
         // 0 - Uniform Buffer
         // 1 - Node Buffer
         // 2 - Edge Buffer
-        let compute_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        let compute_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                 entries: &[
                     wgpu::BindGroupLayoutEntry {
                         binding: 0,
@@ -209,9 +199,7 @@ impl ComputeResources {
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Uniform,
                             has_dynamic_offset: false,
-                            min_binding_size: wgpu::BufferSize::new(
-                                (sim_param_data.len() * mem::size_of::<f32>()) as _,
-                            ),
+                            min_binding_size: None,
                         },
                         count: None,
                     },
@@ -219,11 +207,9 @@ impl ComputeResources {
                         binding: 1,
                         visibility: wgpu::ShaderStages::COMPUTE,
                         ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage { read_only: false },
+                            ty: wgpu::BufferBindingType::Uniform,
                             has_dynamic_offset: false,
-                            min_binding_size: wgpu::BufferSize::new(
-                                (node_count as usize * node_struct_size) as _
-                            ),
+                            min_binding_size: None,
                         },
                         count: None,
                     },
@@ -231,7 +217,17 @@ impl ComputeResources {
                         binding: 2,
                         visibility: wgpu::ShaderStages::COMPUTE,
                         ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
+                            ty: wgpu::BufferBindingType::Storage { read_only: false },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 3,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: true },
                             has_dynamic_offset: false,
                             min_binding_size: None,
                         },
@@ -251,7 +247,7 @@ impl ComputeResources {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Storage { read_only: true },
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new((node_count * 16) as _),
+                        min_binding_size: None,
                     },
                     count: None,
                 },
@@ -270,7 +266,7 @@ impl ComputeResources {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Storage { read_only: true },
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new((node_count * 16) as _),
+                        min_binding_size: None,
                     },
                     count: None,
                 },
@@ -280,7 +276,7 @@ impl ComputeResources {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Storage { read_only: true },
                         has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new((edge_count * 16) as _),
+                        min_binding_size: None,
                     },
                     count: None,
                 },
@@ -474,12 +470,12 @@ impl ComputeResources {
         });
 
         // 新建初始化 Edge 数据，向 4 个 32 位对齐
-        let mut initial_edge_data: Vec<u32> = vec![0; (4 * edge_count) as usize];
+        let mut initial_edge_data: Vec<u32> = vec![0; (2 * edge_count) as usize];
         let edge_data = &model.edge_data.data;
         let (source_id, target_id) = (model.edge_source.as_ref().unwrap(), model.edge_target.as_ref().unwrap());
 
         // 在每四个的第 1、2 个写入 Edge 的 Source 和 Target 数据，转化为与 Compute Shader 同构的 u32
-        for (index, edge_instance_chunk) in initial_edge_data.chunks_mut(4).enumerate() {
+        for (index, edge_instance_chunk) in initial_edge_data.chunks_mut(2).enumerate() {
             edge_instance_chunk[0] = edge_data[index].get(source_id).unwrap().parse::<u32>().unwrap();
             edge_instance_chunk[1] = edge_data[index].get(target_id).unwrap().parse::<u32>().unwrap();
         }
@@ -507,11 +503,15 @@ impl ComputeResources {
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: node_buffer.as_entire_binding(),
+                    resource: uniform_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
-                    resource: uniform_buffer.as_entire_binding(),
+                    resource: node_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 3,
+                    resource: edge_buffer.as_entire_binding(),
                 },
             ],
             label: None,

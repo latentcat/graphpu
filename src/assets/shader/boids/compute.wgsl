@@ -18,8 +18,9 @@ struct Uniforms {
 };
 
 @group(0) @binding(0) var<uniform> params : SimParams;
-@group(0) @binding(1) var<storage, read_write> nodeSrc : array<Node>;
-@group(0) @binding(2) var<uniform> uniforms: Uniforms;
+@group(0) @binding(1) var<uniform> uniforms: Uniforms;
+@group(0) @binding(2) var<storage, read_write> nodeSrc : array<Node>;
+@group(0) @binding(3) var<storage, read> edgeSrc : array<vec2<u32>>;
 
 
 fn hash(s: u32) -> u32 {
