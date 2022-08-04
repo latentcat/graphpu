@@ -2,12 +2,12 @@ use std::borrow::Cow;
 use std::mem;
 use egui::Vec2;
 use glam::Vec3;
-use wgpu::{BufferAddress, Label};
+use wgpu::Label;
 use wgpu::util::DeviceExt;
-use crate::models::graphics::GraphicsStatus;
-use crate::models::graphics_modules::Camera;
+use crate::models::data_model::GraphicsStatus;
+use crate::models::graphics_lib::{Camera, Texture};
 
-use super::graphics::GraphicsModel;
+use super::data_model::DataModel;
 
 
 // 须同步修改 Compute WGSL 中每一个函数的 @workgroup_size
@@ -19,6 +19,12 @@ const PARTICLES_PER_GROUP: u32 = 128;
 pub struct Node {
     _position: [f32; 3],
     _velocity: [f32; 3],
+}
+
+#[repr(C)]
+struct _Transform {
+    _view: glam::Mat4,
+    _projection: glam::Mat4,
 }
 
 #[repr(C)]
@@ -45,15 +51,15 @@ impl ComputeMethod {
     pub const RANDOMIZE: ComputeMethod = ComputeMethod("Randomize", ComputeMethodType::OneStep);
 }
 
-// 计算 Model，存放计算状态与计算资源
-pub struct ComputeModel {
+// 绘图 Model，存放计算状态与计算资源
+pub struct GraphicsModel {
     pub is_computing: bool,
     pub is_dispatching: bool,
     pub compute_render_state: egui_wgpu::RenderState,
-    pub compute_resources: Option<ComputeResources>,
+    pub compute_resources: Option<GraphicsResources>,
 }
 
-impl ComputeModel {
+impl GraphicsModel {
 
     // 初始化计算 Model，传入 eframe 初始化中的 render_state
     // 仅启动时调用一次
@@ -75,7 +81,7 @@ impl ComputeModel {
     }
 }
 
-impl ComputeModel {
+impl GraphicsModel {
 
     // 切换是否持续计算
     // 仅对 ComputeMethodType::Continuous 生效
@@ -96,7 +102,8 @@ impl ComputeModel {
     }
 }
 
-pub struct ComputeResources {
+// 绘图资源 Model，存放和计算和绘图相关的一切资源
+pub struct GraphicsResources {
 
     // 包含 Node / Edge Count
     status: GraphicsStatus,
@@ -104,12 +111,14 @@ pub struct ComputeResources {
     // 包含 Device、Queue、target_format 和 egui_rpass
     render_state: egui_wgpu::RenderState,
 
+    depth_texture: Option<Texture>,
+
     // 用于呈现渲染结果的 Texture View，在 egui 中注册后用 Texture ID 在 Image 组件显示
     texture_view: Option<wgpu::TextureView>,
     pub texture_id: egui::TextureId,
 
-    // UI 视口相关
-    viewport_size: egui::Vec2,                      // 视口大小
+    // 视口大小
+    viewport_size: egui::Vec2,
 
     // 相机
     camera: Camera,
@@ -138,13 +147,13 @@ pub struct ComputeResources {
 
     work_group_count:   u32,                        // 线程组数 = 线程数 / 每组线程数
     frame_num:          usize,                      // 帧计数器
+
 }
 
-// 计算资源 Model，存放和计算和绘图相关的一切资源
-impl ComputeResources {
+impl GraphicsResources {
 
     // 在导入数据后调用的方法，初始化计算和绘图的资源
-    pub fn new(render_state: egui_wgpu::RenderState, model: &GraphicsModel) -> Self {
+    pub fn new(render_state: egui_wgpu::RenderState, model: &DataModel) -> Self {
 
         // 从 Graphics Model 中获取 Node 和 Edge 的数量
         let node_count: u32 = model.status.node_count as u32;
@@ -362,15 +371,16 @@ impl ComputeResources {
                     format: render_state.target_format.into(),
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::One,
+                            src_factor: wgpu::BlendFactor::SrcAlpha,
                             dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
                             operation: wgpu::BlendOperation::Add,
                         },
                         alpha: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::OneMinusDstAlpha,
-                            dst_factor: wgpu::BlendFactor::One,
+                            src_factor: wgpu::BlendFactor::SrcAlpha,
+                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
                             operation: wgpu::BlendOperation::Add,
                         },
+                        // alpha: wgpu::BlendComponent::OVER,
                     }),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
@@ -380,7 +390,14 @@ impl ComputeResources {
                 front_face: wgpu::FrontFace::Ccw,
                 ..Default::default()
             },
-            depth_stencil: None,
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: Texture::DEPTH_FORMAT,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less, // 1.
+                stencil: wgpu::StencilState::default(), // 2.
+                bias: wgpu::DepthBiasState::default(),
+            }),
+            // depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
         });
@@ -426,7 +443,14 @@ impl ComputeResources {
                 front_face: wgpu::FrontFace::Ccw,
                 ..Default::default()
             },
-            depth_stencil: None,
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: Texture::DEPTH_FORMAT,
+                depth_write_enabled: false,
+                depth_compare: wgpu::CompareFunction::Less, // 1.
+                stencil: wgpu::StencilState::default(), // 2.
+                bias: wgpu::DepthBiasState::default(),
+            }),
+            // depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
         });
@@ -519,14 +543,15 @@ impl ComputeResources {
                 | wgpu::BufferUsages::COPY_DST,
         });
 
-        let mut camera = Camera::from(Vec3::new(0.0, 0.0, 2.5));
+        let camera = Camera::from(Vec3::new(0.0, 0.0, 2.5));
 
-        let initial_render_uniform_data: &[f32; 16] = camera.projection_matrix.as_ref();
+        let mut initial_render_uniform_data: Vec<f32> = camera.view_matrix.as_ref().to_vec();
+        initial_render_uniform_data.append(&mut camera.projection_matrix.as_ref().to_vec());
 
         // 指定大小，创建 Node Buffer，不初始化数据
         let render_uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Edge Buffer"),
-            contents: bytemuck::cast_slice(initial_render_uniform_data),
+            contents: bytemuck::cast_slice(&initial_render_uniform_data),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -602,9 +627,10 @@ impl ComputeResources {
         let work_group_count =
             ((node_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
 
-        let mut boids_resources = ComputeResources {
+        let mut boids_resources = GraphicsResources {
             status: model.status.clone(),
             render_state,
+            depth_texture: None,
             texture_view: None,
             texture_id: Default::default(),
             viewport_size: Default::default(),
@@ -702,7 +728,15 @@ impl ComputeResources {
         let render_pass_descriptor = wgpu::RenderPassDescriptor {
             label: None,
             color_attachments: &color_attachments,
-            depth_stencil_attachment: None,
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                view: &self.depth_texture.as_ref().unwrap().view,
+                depth_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(1.0),
+                    store: true,
+                }),
+                stencil_ops: None,
+            }),
+            // depth_stencil_attachment: None,
         };
 
         // get command encoder
@@ -739,9 +773,11 @@ impl ComputeResources {
             self.viewport_size = new_size;
 
             self.camera.set_aspect_ratio(new_size.x / new_size.y as f32);
-            let initial_render_uniform_data: &[f32; 16] = self.camera.projection_matrix.as_ref();
 
-            queue.write_buffer(&self.render_uniform_buffer, 0, bytemuck::cast_slice(initial_render_uniform_data));
+            let mut initial_render_uniform_data: Vec<f32> = self.camera.view_matrix.as_ref().to_vec();
+            initial_render_uniform_data.append(&mut self.camera.projection_matrix.as_ref().to_vec());
+
+            queue.write_buffer(&self.render_uniform_buffer, 0, bytemuck::cast_slice(&initial_render_uniform_data));
 
             let texture_extent = wgpu::Extent3d {
                 width: self.viewport_size.x as u32,
@@ -750,7 +786,7 @@ impl ComputeResources {
             };
 
             let texture = device.create_texture(&wgpu::TextureDescriptor {
-                size: texture_extent,
+                size: texture_extent.clone(),
                 mip_level_count: 1,
                 sample_count: 1,
                 dimension: wgpu::TextureDimension::D2,
@@ -769,6 +805,8 @@ impl ComputeResources {
                 self.render_state.egui_rpass.write().free_texture(&self.texture_id);
             }
             let texture_id = self.render_state.egui_rpass.write().register_native_texture(device, &texture_view, wgpu::FilterMode::Linear);
+
+            self.depth_texture = Some(Texture::create_depth_texture(&device, &texture_extent, "depth_texture"));
 
             self.texture_view = Option::from(texture_view);
             self.texture_id = texture_id;

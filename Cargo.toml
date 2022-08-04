@@ -32,6 +32,9 @@ wgpu = { version = "0.13", features = ["webgl"] }
 pollster = { version = "0.2.5" }
 glam = { version = "0.20.2" }
 
+image = "0.23"
+anyhow = "1.0"
+
 nanorand = { version = "0.7", default-features = false, features = ["wyrand"] }
 rfd = "0.9.1"
 csv = "1.1.6"

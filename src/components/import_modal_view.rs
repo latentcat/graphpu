@@ -5,9 +5,9 @@ use std::path::PathBuf;
 
 use egui::Context;
 
-use crate::models::app::ImportState;
+use crate::models::app_model::ImportState;
 use crate::models::Models;
-use crate::models::graphics::{ExternalData};
+use crate::models::data_model::{ExternalData};
 use crate::utils::csv_loader::read_headers_from_csv;
 use crate::widgets::frames::inner_panel_frame;
 use crate::widgets::modal::Modal;
@@ -30,7 +30,7 @@ pub struct ImportModal {
 
 impl ImportModal {
     pub fn show(&mut self, ctx: &Context, models: &mut Models) {
-        Modal::new(String::from("import_modal")).show(ctx, |ui| {
+        Modal::new(String::from("import_modal_view")).show(ctx, |ui| {
             ui.set_width(400.0);
             ui.set_height(250.0);
 

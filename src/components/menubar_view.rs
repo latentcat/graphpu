@@ -1,6 +1,6 @@
 use egui::Ui;
 
-use crate::{models::{app::{Stage, ImportState}, Models}, widgets::frames::button_group_style};
+use crate::{models::{app_model::{Stage, ImportState}, Models}, widgets::frames::button_group_style};
 
 use super::AppView;
 

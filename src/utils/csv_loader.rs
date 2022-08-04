@@ -1,6 +1,6 @@
 use std::{path::PathBuf, rc::Rc, collections::HashMap};
 
-use crate::models::graphics::ExternalData;
+use crate::models::data_model::ExternalData;
 
 pub fn pick_csv() -> Option<PathBuf> {
   rfd::FileDialog::new()

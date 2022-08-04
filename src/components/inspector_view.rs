@@ -5,10 +5,10 @@ use egui::{Ui};
 use egui::collapsing_header::HeaderResponse;
 
 use crate::models::Models;
-use crate::models::app::{ImportState, NodeEdgeTab};
-use crate::models::compute::ComputeMethod;
-use crate::models::compute::ComputeMethodType;
-use crate::models::graphics::{PositionType, ColorType, ColorRamp, ColorPalette, SizeType};
+use crate::models::app_model::{ImportState, NodeEdgeTab};
+use crate::models::graphics_model::ComputeMethod;
+use crate::models::graphics_model::ComputeMethodType;
+use crate::models::data_model::{PositionType, ColorType, ColorRamp, ColorPalette, SizeType};
 use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_MARGIN, inspector_frame, inspector_inner_frame};
 
 use super::AppView;

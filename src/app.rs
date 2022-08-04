@@ -1,9 +1,9 @@
 use crate::{
     components::{
         detail_view::DetailView, graphics_view::GraphicsView, inspector_view::InspectorView,
-        menubar_view::MenuBarView, AppView, import_modal::ImportModal, table_view::TableView,
+        menubar_view::MenuBarView, AppView, import_modal_view::ImportModal, table_view::TableView,
     },
-    models::{app::{AppModel, Stage}, compute::ComputeModel, graphics::GraphicsModel, Models},
+    models::{app_model::{AppModel, Stage}, graphics_model::GraphicsModel, data_model::DataModel, Models},
 };
 use egui::{Color32, TextStyle};
 
@@ -50,8 +50,8 @@ impl MainApp {
 
         let mut main_app = MainApp {
             models: Models { 
-                compute_model: ComputeModel::init(cc),
-                graphic_model: GraphicsModel::default(),
+                compute_model: GraphicsModel::init(cc),
+                graphic_model: DataModel::default(),
                 app_model: AppModel::default(),
             },
             inspector_view: InspectorView::default(),

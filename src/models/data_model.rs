@@ -3,7 +3,7 @@ use eframe::epaint::Color32;
 
 use strum::Display;
 
-use super::compute::ComputeMethod;
+use super::graphics_model::ComputeMethod;
 
 #[derive(Debug, Default)]
 pub struct ExternalData {
@@ -82,7 +82,7 @@ impl Default for NodeSettings {
     }
 }
 
-pub struct GraphicsModel {
+pub struct DataModel {
     pub node_data: ExternalData,
     pub edge_data: ExternalData,
     pub edge_source: Option<Rc<String>>,
@@ -92,7 +92,7 @@ pub struct GraphicsModel {
     pub node_settings: NodeSettings,
 }
 
-impl Default for GraphicsModel {
+impl Default for DataModel {
     fn default() -> Self {
         Self {
             node_data: ExternalData::default(),
@@ -106,7 +106,7 @@ impl Default for GraphicsModel {
     }
 }
 
-impl GraphicsModel {
+impl DataModel {
     pub fn set_status(&mut self) {
         self.status.node_count =
             std::cmp::max(

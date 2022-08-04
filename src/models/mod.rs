@@ -1,17 +1,17 @@
-use crate::{models::graphics::GraphicsStatus, utils::csv_loader::read_from_csv};
+use crate::{models::data_model::GraphicsStatus, utils::csv_loader::read_from_csv};
 use std::path::PathBuf;
 
-use self::{app::ImportState, compute::ComputeResources, graphics::ExternalData};
+use self::{app_model::ImportState, graphics_model::GraphicsResources, data_model::ExternalData};
 
-pub mod app;
-pub mod compute;
-pub mod graphics;
-pub mod graphics_modules;
+pub mod app_model;
+pub mod graphics_model;
+pub mod data_model;
+pub mod graphics_lib;
 
 pub struct Models {
-    pub compute_model: compute::ComputeModel,
-    pub graphic_model: graphics::GraphicsModel,
-    pub app_model: app::AppModel,
+    pub compute_model: graphics_model::GraphicsModel,
+    pub graphic_model: data_model::DataModel,
+    pub app_model: app_model::AppModel,
 }
 
 impl Models {
@@ -59,7 +59,7 @@ impl Models {
         self.app_model.edge_file_path = Some(PathBuf::from(edge_file_path));
         self.app_model.import_state = ImportState::Success;
         self.app_model.import_visible = false;
-        self.compute_model.compute_resources = Some(ComputeResources::new(
+        self.compute_model.compute_resources = Some(GraphicsResources::new(
             self.compute_model.compute_render_state.clone(),
             &self.graphic_model,
         ));

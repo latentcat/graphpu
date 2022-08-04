@@ -1,10 +1,10 @@
 use egui_extras::{TableBuilder, Size};
 
 use crate::{
-    models::{app::NodeEdgeTab, graphics::ExternalData, Models},
+    models::{app_model::NodeEdgeTab, data_model::ExternalData, Models},
     widgets::frames::button_group_style,
 };
-use crate::models::app::ImportState;
+use crate::models::app_model::ImportState;
 use crate::widgets::frames::central_panel_frame;
 
 use super::AppView;

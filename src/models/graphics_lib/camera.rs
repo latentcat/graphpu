@@ -4,7 +4,8 @@ use std::f32::consts;
 pub struct Camera {
     pub position: glam::Vec3,
     pub aspect_ratio: f32,
-    pub projection_matrix: glam::Mat4
+    pub view_matrix: glam::Mat4,
+    pub projection_matrix: glam::Mat4,
 }
 
 impl Camera {
@@ -40,6 +41,7 @@ impl Camera {
             glam::Vec3::ZERO,
             glam::Vec3::Y,
         );
-        self.projection_matrix = projection * view;
+        self.view_matrix = view;
+        self.projection_matrix = projection;
     }
 }
