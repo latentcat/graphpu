@@ -2,6 +2,7 @@
 
 use graphpu::bootstrap::{start_frame, ConfigBuilder};
 
-fn main() {
+#[tokio::main]
+async fn main() {
     start_frame(ConfigBuilder::default().build());
 }

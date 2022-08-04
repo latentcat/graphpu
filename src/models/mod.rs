@@ -1,5 +1,5 @@
-use crate::{models::data_model::GraphicsStatus, utils::csv_loader::read_from_csv};
-use std::path::PathBuf;
+use crate::models::data_model::GraphicsStatus;
+use std::{path::PathBuf, rc::Rc};
 
 use self::{app_model::ImportState, graphics_model::GraphicsResources, data_model::ExternalData};
 
@@ -14,46 +14,27 @@ pub struct Models {
     pub app_model: app_model::AppModel,
 }
 
+#[derive(Debug)]
+pub struct ImportedData {
+    pub node_file_path: String,
+    pub edge_file_path: String,
+    pub node_data: ExternalData,
+    pub edge_data: ExternalData,
+    pub source_key: Rc<String>,
+    pub target_key: Rc<String>,
+    pub max_id: usize,
+}
+
+unsafe impl Send for ImportedData {}
+
 impl Models {
-    pub fn load_data(
-        &mut self,
-        node_file_path: &str,
-        edge_file_path: &str,
-        edge_source: usize,
-        edge_target: usize,
-    ) -> Result<(), String> {
-        self.graphic_model.node_data =
-            read_from_csv(&Some(PathBuf::from(node_file_path))).unwrap_or(ExternalData::default());
-        self.graphic_model.edge_data = read_from_csv(&Some(PathBuf::from(edge_file_path)))?;
-
-        let source_key = &self.graphic_model.edge_data.data_headers[edge_source];
-        let target_key = &self.graphic_model.edge_data.data_headers[edge_target];
-        let err_mapper = |_| String::from("Source and target isn't uint");
-        self.graphic_model.max_id = *self
-            .graphic_model
-            .edge_data
-            .data
-            .iter()
-            .map::<Result<usize, String>, _>(|item| {
-                let source = item
-                    .get(source_key)
-                    .unwrap()
-                    .parse::<usize>()
-                    .map_err(err_mapper)?;
-                let target = item
-                    .get(target_key)
-                    .unwrap()
-                    .parse::<usize>()
-                    .map_err(err_mapper)?;
-                Ok(std::cmp::max(source, target))
-            })
-            .collect::<Result<Vec<_>, _>>()?
-            .iter()
-            .max()
-            .unwrap();
-
-        self.graphic_model.edge_source = Some(source_key.clone());
-        self.graphic_model.edge_target = Some(target_key.clone());
+    pub fn setup_data(&mut self, data: ImportedData) {
+        let ImportedData { node_file_path, edge_file_path, node_data, edge_data, source_key, target_key, max_id } = data;
+        self.graphic_model.node_data = node_data;
+        self.graphic_model.edge_data = edge_data;
+        self.graphic_model.edge_source = Some(source_key);
+        self.graphic_model.edge_target = Some(target_key);
+        self.graphic_model.max_id = max_id;
         self.graphic_model.set_status();
         self.app_model.node_file_path = Some(PathBuf::from(node_file_path));
         self.app_model.edge_file_path = Some(PathBuf::from(edge_file_path));
@@ -63,7 +44,6 @@ impl Models {
             self.compute_model.compute_render_state.clone(),
             &self.graphic_model,
         ));
-        Ok(())
     }
 
     pub fn clear_data(&mut self) {

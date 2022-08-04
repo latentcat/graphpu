@@ -1,6 +1,6 @@
 use std::{path::PathBuf, rc::Rc, collections::HashMap};
 
-use crate::models::data_model::ExternalData;
+use crate::models::{data_model::ExternalData, ImportedData};
 
 pub fn pick_csv() -> Option<PathBuf> {
   rfd::FileDialog::new()
@@ -44,4 +44,41 @@ pub fn read_from_csv(path: &Option<PathBuf>) -> Result<ExternalData, String> {
       })
       .collect();
   Ok(ExternalData { data_headers, data })
+}
+
+pub fn load_data(node_file_path: &str, edge_file_path: &str, edge_source: usize, edge_target: usize) -> Result<ImportedData, String> {
+  let node_data = read_from_csv(&Some(PathBuf::from(node_file_path))).unwrap_or(ExternalData::default());
+  let edge_data = read_from_csv(&Some(PathBuf::from(edge_file_path)))?;
+  let source_key = edge_data.data_headers[edge_source].clone();
+  let target_key = edge_data.data_headers[edge_target].clone();
+  let err_mapper = |_| String::from("Source and target isn't uint");
+  let max_id = *edge_data
+      .data
+      .iter()
+      .map::<Result<usize, String>, _>(|item| {
+          let source = item
+              .get(&source_key)
+              .unwrap()
+              .parse::<usize>()
+              .map_err(err_mapper)?;
+          let target = item
+              .get(&target_key)
+              .unwrap()
+              .parse::<usize>()
+              .map_err(err_mapper)?;
+          Ok(std::cmp::max(source, target))
+      })
+      .collect::<Result<Vec<_>, _>>()?
+      .iter()
+      .max()
+      .unwrap();
+  Ok(ImportedData {
+    node_file_path: node_file_path.to_string(),
+    edge_file_path: edge_file_path.to_string(),
+    node_data,
+    edge_data,
+    source_key,
+    target_key,
+    max_id,
+})
 }

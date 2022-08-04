@@ -2,13 +2,15 @@ mod config_page;
 mod file_picker_page;
 
 use std::path::PathBuf;
+use std::sync::mpsc::{self, Receiver};
 
 use egui::Context;
+use tokio::task::JoinHandle;
 
 use crate::models::app_model::ImportState;
-use crate::models::Models;
-use crate::models::data_model::{ExternalData};
-use crate::utils::csv_loader::read_headers_from_csv;
+use crate::models::data_model::ExternalData;
+use crate::models::{Models, ImportedData};
+use crate::utils::csv_loader::{read_headers_from_csv, load_data};
 use crate::widgets::frames::inner_panel_frame;
 use crate::widgets::modal::Modal;
 
@@ -26,6 +28,8 @@ pub struct ImportModal {
     edge_file_path: String,
     edge_source: usize,
     edge_target: usize,
+    import_promise: Option<Receiver<Result<ImportedData, String>>>,
+    import_join_handle: Option<JoinHandle<()>>,
 }
 
 impl ImportModal {
@@ -69,11 +73,15 @@ impl ImportModal {
                                 Page::Config => {
                                     let remove_data_button = ui.button("   Done   ");
                                     if remove_data_button.clicked() {
-                                        self.on_click_done(models);
+                                        self.on_click_done();
                                     }
                                     let reimport_data_button = ui.button("   Back   ");
                                     if reimport_data_button.clicked() {
+                                        self.reset_import_promise();
                                         self.page_index = Page::FilePicker;
+                                    }
+                                    if self.check_import_done(models) {
+                                        ui.spinner();
                                     }
                                 }
                             },
@@ -99,18 +107,47 @@ impl ImportModal {
         }
     }
 
-    fn on_click_done(&mut self, models: &mut Models) {
-        match models.load_data(&self.node_file_path, &self.edge_file_path, self.edge_source, self.edge_target) {
-            Ok(_) => self.page_index = Page::FilePicker,
-            Err(s) => {
-                models.graphic_model.node_data = ExternalData::default();
-                models.graphic_model.edge_data = ExternalData {
-                    data_headers: models.graphic_model.edge_data.data_headers.clone(),
-                    data: Vec::default(),
-                };
-                models.app_model.import_state = ImportState::Error(s);
+    #[allow(unused_must_use)]
+    fn on_click_done(&mut self) {
+        let node_file_path = self.node_file_path.clone();
+        let edge_file_path = self.edge_file_path.clone();
+        let edge_source = self.edge_source;
+        let edge_target = self.edge_target;
+        let (sender, recv) = mpsc::channel();
+        let join_handle = tokio::task::spawn(async move {
+            sender.send(load_data(&node_file_path, &edge_file_path, edge_source, edge_target));
+        });
+        self.import_promise = Some(recv);
+        self.import_join_handle = Some(join_handle);
+    }
+
+    fn check_import_done(&mut self, models: &mut Models) -> bool {
+        if let Some(promise) = self.import_promise.take() {
+            match promise.try_recv() {
+                Ok(result) => {
+                    match result {
+                        Ok(data) => {
+                            models.setup_data(data);
+                            self.reset_import_promise();
+                            self.page_index = Page::FilePicker;
+                        },
+                        Err(s) => {
+                            models.graphic_model.node_data = ExternalData::default();
+                            models.graphic_model.edge_data = ExternalData {
+                                data_headers: models.graphic_model.edge_data.data_headers.clone(),
+                                data: Vec::default(),
+                            };
+                            models.app_model.import_state = ImportState::Error(s);
+                        }
+                    }
+                },
+                Err(_) => {
+                    self.import_promise = Some(promise);
+                    return true;
+                }
             }
-        };
+        }
+        false
     }
 
     fn load_edge_headers(&mut self, models: &mut Models) -> Result<(), String> {
@@ -122,5 +159,13 @@ impl ImportModal {
         } else {
             Ok(())
         }
+    }
+
+    fn reset_import_promise(&mut self) {
+        if let Some(join_handle) = &self.import_join_handle {
+            join_handle.abort();
+        }
+        self.import_promise = None;
+        self.import_join_handle = None;
     }
 }
