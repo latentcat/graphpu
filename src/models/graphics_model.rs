@@ -177,8 +177,6 @@ impl GraphicsResources {
             include_str!("../assets/shader/boids/M_edge.wgsl"),
         ];
 
-        let now = Instant::now();
-
         let shaders = shader_files.par_iter().map(|shader_file| {
 
             let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -189,9 +187,6 @@ impl GraphicsResources {
             shader
 
         }).collect::<Vec<ShaderModule>>();
-
-        let elapsed_time = now.elapsed();
-        println!("Running slow_function() took {} micro second.", elapsed_time.as_micros());
 
         // Compute Shader
         let compute_shader = &shaders[0];
@@ -539,16 +534,22 @@ impl GraphicsResources {
             mapped_at_creation: false
         });
 
-        // 新建初始化 Edge 数据
-        let mut initial_edge_data: Vec<u32> = vec![0; (2 * edge_count) as usize];
+
+        let now = Instant::now();
+
         let edge_data = &model.edge_data.data;
         let (source_id, target_id) = (model.edge_source.as_ref().unwrap(), model.edge_target.as_ref().unwrap());
 
-        // 每组两个写入 Edge 的 Source 和 Target 数据，转化为与 Compute Shader 同构的 u32 类型
-        for (index, edge_instance_chunk) in initial_edge_data.chunks_mut(2).enumerate() {
-            edge_instance_chunk[0] = edge_data[index].get(source_id).unwrap().parse::<u32>().unwrap();
-            edge_instance_chunk[1] = edge_data[index].get(target_id).unwrap().parse::<u32>().unwrap();
-        }
+        let mut initial_edge_data = (0..(2 * edge_count)).into_par_iter().map(|x| {
+            if x % 2 == 0 {
+                edge_data[(x / 2) as usize].get(source_id).unwrap().parse::<u32>().unwrap()
+            } else {
+                edge_data[(x / 2) as usize].get(target_id).unwrap().parse::<u32>().unwrap()
+            }
+        }).collect::<Vec<u32>>();
+
+        let elapsed_time = now.elapsed();
+        println!("Running slow_function() took {} micro second.", elapsed_time.as_micros());
 
         // 新建 Edge Buffer 并传入数据
         let edge_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
