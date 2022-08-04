@@ -1,11 +1,14 @@
 use std::borrow::Cow;
 use std::mem;
+use std::time::Instant;
 use egui::Vec2;
 use glam::Vec3;
-use wgpu::Label;
+use wgpu::{Label, ShaderModule};
 use wgpu::util::DeviceExt;
 use crate::models::data_model::GraphicsStatus;
 use crate::models::graphics_lib::{Camera, Texture};
+
+use rayon::prelude::*;
 
 use super::data_model::DataModel;
 
@@ -168,23 +171,36 @@ impl GraphicsResources {
 
         // 从文件中创建 Shader
 
+        let shader_files = [
+            include_str!("../assets/shader/boids/compute.wgsl"),
+            include_str!("../assets/shader/boids/M_node.wgsl"),
+            include_str!("../assets/shader/boids/M_edge.wgsl"),
+        ];
+
+        let now = Instant::now();
+
+        let shaders = shader_files.par_iter().map(|shader_file| {
+
+            let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(shader_file)),
+            });
+
+            shader
+
+        }).collect::<Vec<ShaderModule>>();
+
+        let elapsed_time = now.elapsed();
+        println!("Running slow_function() took {} micro second.", elapsed_time.as_micros());
+
         // Compute Shader
-        let compute_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: None,
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../assets/shader/boids/compute.wgsl"))),
-        });
+        let compute_shader = &shaders[0];
 
         // Node Shader
-        let node_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: None,
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../assets/shader/boids/M_node.wgsl"))),
-        });
+        let node_shader = &shaders[1];
 
         // Edge Shader
-        let edge_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-            label: None,
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("../assets/shader/boids/M_edge.wgsl"))),
-        });
+        let edge_shader = &shaders[2];
 
 
         // Boids 模拟所用到的参数
