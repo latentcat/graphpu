@@ -22,7 +22,7 @@ pub struct ImportedData {
     pub edge_data: ExternalData,
     pub source_index: usize,
     pub target_index: usize,
-    pub max_id: usize,
+    pub max_id: u32,
 }
 
 unsafe impl Send for ImportedData {}

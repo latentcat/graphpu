@@ -88,7 +88,9 @@ pub struct DataModel {
     pub edge_data: ExternalData,
     pub edge_source: Option<usize>,
     pub edge_target: Option<usize>,
-    pub max_id: usize,
+    pub source_list: Option<Vec<u32>>,
+    pub target_list: Option<Vec<u32>>,
+    pub max_id: u32,
     pub status: GraphicsStatus,
     pub node_settings: NodeSettings,
 }
@@ -100,6 +102,8 @@ impl Default for DataModel {
             edge_data: ExternalData::default(),
             edge_source: None,
             edge_target: None,
+            source_list: None,
+            target_list: None,
             max_id: 0,
             status: GraphicsStatus::default(),
             node_settings: NodeSettings::default(),
@@ -112,7 +116,7 @@ impl DataModel {
         self.status.node_count =
             std::cmp::max(
                 self.node_data.data.len(),
-                if self.edge_data.data.len() > 0 { self.max_id + 1 } else { 0 }
+                if self.edge_data.data.len() > 0 { (self.max_id + 1) as usize } else { 0 }
             );
         self.status.edge_count = self.edge_data.data.len();
         self.status.node_data_length = self.node_data.data.len();
