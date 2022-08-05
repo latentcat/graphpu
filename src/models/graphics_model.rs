@@ -59,7 +59,7 @@ pub struct GraphicsModel {
     pub is_computing: bool,
     pub is_dispatching: bool,
     pub compute_render_state: egui_wgpu::RenderState,
-    pub compute_resources: Option<GraphicsResources>,
+    pub grphics_resources: Option<GraphicsResources>,
 }
 
 impl GraphicsModel {
@@ -71,16 +71,16 @@ impl GraphicsModel {
             is_computing: false,
             is_dispatching: false,
             compute_render_state: cc.render_state.as_ref().unwrap().clone(),
-            compute_resources: None,
+            grphics_resources: None,
         }
     }
 
     // 重置计算 Model，dispose 并删除计算资源
     pub fn reset(&mut self) {
-        if let Some(compute_resources) = &mut self.compute_resources {
+        if let Some(compute_resources) = &mut self.grphics_resources {
             compute_resources.dispose();
         }
-        self.compute_resources = None;
+        self.grphics_resources = None;
     }
 }
 
