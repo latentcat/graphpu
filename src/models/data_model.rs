@@ -1,4 +1,4 @@
-use std::{collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 use eframe::epaint::Color32;
 
 use strum::Display;
@@ -7,8 +7,9 @@ use super::graphics_model::ComputeMethod;
 
 #[derive(Debug, Default)]
 pub struct ExternalData {
-    pub data_headers: Vec<Rc<String>>,
-    pub data: Vec<HashMap<Rc<String>, String>>,
+    pub headers_str_index: HashMap<String, usize>,
+    pub headers_index_str: Vec<String>,
+    pub data: Vec<Vec<String>>,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -57,12 +58,12 @@ pub struct NodeSettings {
     
     pub color_type: ColorType,
     pub color_constant: Color32,
-    pub color_ramp: (Rc<String>, ColorRamp),
-    pub color_partition: (Rc<String>, ColorPalette),
+    pub color_ramp: (String, ColorRamp),
+    pub color_partition: (String, ColorPalette),
     
     pub size_type: SizeType,
     pub size_constant: f32,
-    pub size_ramp: (Rc<String>, [f32; 2]),
+    pub size_ramp: (String, [f32; 2]),
 }
 
 impl Default for NodeSettings {
@@ -73,11 +74,11 @@ impl Default for NodeSettings {
             position_set: (0.0, 0.0, 0.0),
             color_type: ColorType::Constant,
             color_constant: Color32::WHITE,
-            color_ramp: (Rc::new(String::from("None")), ColorRamp::Ramp1),
-            color_partition: (Rc::new(String::from("None")), ColorPalette::Palette1),
+            color_ramp: (String::from("None"), ColorRamp::Ramp1),
+            color_partition: (String::from("None"), ColorPalette::Palette1),
             size_type: SizeType::Constant,
             size_constant: 1.0,
-            size_ramp: (Rc::new(String::from("None")), [0.5, 2.0]),
+            size_ramp: (String::from("None"), [0.5, 2.0]),
         }
     }
 }
@@ -85,8 +86,8 @@ impl Default for NodeSettings {
 pub struct DataModel {
     pub node_data: ExternalData,
     pub edge_data: ExternalData,
-    pub edge_source: Option<Rc<String>>,
-    pub edge_target: Option<Rc<String>>,
+    pub edge_source: Option<usize>,
+    pub edge_target: Option<usize>,
     pub max_id: usize,
     pub status: GraphicsStatus,
     pub node_settings: NodeSettings,

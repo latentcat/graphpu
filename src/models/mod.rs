@@ -1,5 +1,5 @@
 use crate::models::data_model::GraphicsStatus;
-use std::{path::PathBuf, rc::Rc};
+use std::path::PathBuf;
 
 use self::{app_model::ImportState, graphics_model::GraphicsResources, data_model::ExternalData};
 
@@ -20,8 +20,8 @@ pub struct ImportedData {
     pub edge_file_path: String,
     pub node_data: ExternalData,
     pub edge_data: ExternalData,
-    pub source_key: Rc<String>,
-    pub target_key: Rc<String>,
+    pub source_index: usize,
+    pub target_index: usize,
     pub max_id: usize,
 }
 
@@ -29,11 +29,11 @@ unsafe impl Send for ImportedData {}
 
 impl Models {
     pub fn setup_data(&mut self, data: ImportedData) {
-        let ImportedData { node_file_path, edge_file_path, node_data, edge_data, source_key, target_key, max_id } = data;
+        let ImportedData { node_file_path, edge_file_path, node_data, edge_data, source_index, target_index, max_id } = data;
         self.graphic_model.node_data = node_data;
         self.graphic_model.edge_data = edge_data;
-        self.graphic_model.edge_source = Some(source_key);
-        self.graphic_model.edge_target = Some(target_key);
+        self.graphic_model.edge_source = Some(source_index);
+        self.graphic_model.edge_target = Some(target_index);
         self.graphic_model.max_id = max_id;
         self.graphic_model.set_status();
         self.app_model.node_file_path = Some(PathBuf::from(node_file_path));

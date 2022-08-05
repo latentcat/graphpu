@@ -31,7 +31,7 @@ impl AppView for TableView {
 
                 ui.separator();
 
-                let ExternalData { data_headers, data } = match models.app_model.ne_tab {
+                let ExternalData { headers_index_str: data_headers, data, .. } = match models.app_model.ne_tab {
                     NodeEdgeTab::Node => &models.graphic_model.node_data,
                     NodeEdgeTab::Edge => &models.graphic_model.edge_data,
                 };
@@ -66,7 +66,7 @@ impl AppView for TableView {
                                 });
                                 for col in data_headers.iter() {
                                     header.col(|ui| {
-                                        ui.label(egui::RichText::new(&col[..]).strong());
+                                        ui.label(egui::RichText::new(col).strong());
                                     });
                                 }
                             })
@@ -83,9 +83,9 @@ impl AppView for TableView {
                                         }
                                     } else {
                                         let data_row = &data[row_index];
-                                        for data_col in data_headers {
+                                        for data_col in data_row {
                                             row.col(|ui| {
-                                                ui.label(data_row.get(data_col).unwrap_or(&"".to_string()));
+                                                ui.label(data_col);
                                             });
                                         }
                                     }

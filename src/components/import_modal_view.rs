@@ -94,9 +94,9 @@ impl ImportModal {
     fn on_click_next(&mut self, models: &mut Models) {
         match self.load_edge_headers(models) {
             Ok(_) => {
-                let edge_data_headers = &models.graphic_model.edge_data.data_headers;
-                self.edge_source = edge_data_headers.iter().position(|s| s.as_ref() == "source").unwrap_or(0);
-                self.edge_target = edge_data_headers.iter().position(|s| s.as_ref() == "target").unwrap_or(1);
+                let edge_data_headers = &models.graphic_model.edge_data.headers_index_str;
+                self.edge_source = edge_data_headers.iter().position(|s| s == "source").unwrap_or(0);
+                self.edge_target = edge_data_headers.iter().position(|s| s == "target").unwrap_or(1);
                 self.page_index = Page::Config;
                 models.app_model.import_state = ImportState::Initial;
             }
@@ -134,7 +134,8 @@ impl ImportModal {
                         Err(s) => {
                             models.graphic_model.node_data = ExternalData::default();
                             models.graphic_model.edge_data = ExternalData {
-                                data_headers: models.graphic_model.edge_data.data_headers.clone(),
+                                headers_str_index: models.graphic_model.edge_data.headers_str_index.clone(),
+                                headers_index_str: models.graphic_model.edge_data.headers_index_str.clone(),
                                 data: Vec::default(),
                             };
                             models.app_model.import_state = ImportState::Error(s);
@@ -151,10 +152,12 @@ impl ImportModal {
     }
 
     fn load_edge_headers(&mut self, models: &mut Models) -> Result<(), String> {
-        models.graphic_model.edge_data.data_headers = read_headers_from_csv(&Some(PathBuf::from(self.edge_file_path.clone())))?;
+        let (headers_str_index, headers_index_str) = read_headers_from_csv(&Some(PathBuf::from(self.edge_file_path.clone())))?;
+        models.graphic_model.edge_data.headers_str_index = headers_str_index;
+        models.graphic_model.edge_data.headers_index_str = headers_index_str;
 
         // validate edge data
-        if models.graphic_model.edge_data.data_headers.len() < 2 {
+        if models.graphic_model.edge_data.headers_str_index.len() < 2 {
             Err("The edge file must contain source and target node IDs".to_owned())
         } else {
             Ok(())

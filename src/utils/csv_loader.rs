@@ -1,4 +1,4 @@
-use std::{path::PathBuf, rc::Rc, collections::HashMap};
+use std::{path::PathBuf, collections::HashMap};
 
 use crate::models::{data_model::ExternalData, ImportedData};
 
@@ -8,17 +8,20 @@ pub fn pick_csv() -> Option<PathBuf> {
       .pick_file()
 }
 
-pub fn read_headers_from_csv(path: &Option<PathBuf>) -> Result<Vec<Rc<String>>, String> {
+pub fn read_headers_from_csv(path: &Option<PathBuf>) -> Result<(HashMap<String, usize>, Vec<String>), String> {
   let path = path.as_deref().ok_or("Can't find file")?;
   let err_fomatter = |err| format!("{}", err);
 
   let mut rdr = csv::Reader::from_path(path).map_err(err_fomatter)?;
-  Ok(rdr.headers()
-      .map_err(err_fomatter)?
-      .into_iter()
-      .map(|s| Rc::new(s.to_string()))
-      .collect()
-  )
+  let headers_str_index: HashMap<_, _> = rdr
+    .headers()
+    .map_err(err_fomatter)?
+    .into_iter()
+    .enumerate()
+    .map(|(index, s)| (s.to_string(), index))
+    .collect();
+  let headers_index_str: Vec<_> = headers_str_index.keys().map(|key| key.to_string()).collect();
+  Ok((headers_str_index, headers_index_str))
 }
 
 pub fn read_from_csv(path: &Option<PathBuf>) -> Result<ExternalData, String> {
@@ -26,44 +29,36 @@ pub fn read_from_csv(path: &Option<PathBuf>) -> Result<ExternalData, String> {
   let err_fomatter = |err| format!("{}", err);
 
   let mut rdr = csv::Reader::from_path(path).map_err(err_fomatter)?;
-  let data_headers: Vec<_> = rdr
+  let headers_str_index: HashMap<_, _> = rdr
       .headers()
       .map_err(err_fomatter)?
       .into_iter()
-      .map(|s| Rc::new(s.to_string()))
+      .enumerate()
+      .map(|(index, s)| (s.to_string(), index))
       .collect();
-  let data: Vec<HashMap<_, _>> = rdr
+  let headers_index_str: Vec<_> = headers_str_index.keys().map(|key| key.to_string()).collect();
+  let data: Vec<Vec<_>> = rdr
       .records()
       .into_iter()
       .map(|record| {
-          data_headers
-              .iter()
-              .map(|s| s.clone())
-              .zip(record.unwrap().into_iter().map(str::to_string))
-              .collect()
+        record.unwrap().into_iter().map(str::to_string).collect()
       })
       .collect();
-  Ok(ExternalData { data_headers, data })
+  Ok(ExternalData { headers_str_index, headers_index_str, data })
 }
 
-pub fn load_data(node_file_path: &str, edge_file_path: &str, edge_source: usize, edge_target: usize) -> Result<ImportedData, String> {
+pub fn load_data(node_file_path: &str, edge_file_path: &str, source_index: usize, target_index: usize) -> Result<ImportedData, String> {
   let node_data = read_from_csv(&Some(PathBuf::from(node_file_path))).unwrap_or(ExternalData::default());
   let edge_data = read_from_csv(&Some(PathBuf::from(edge_file_path)))?;
-  let source_key = edge_data.data_headers[edge_source].clone();
-  let target_key = edge_data.data_headers[edge_target].clone();
   let err_mapper = |_| String::from("Source and target isn't uint");
   let max_id = *edge_data
       .data
       .iter()
       .map::<Result<usize, String>, _>(|item| {
-          let source = item
-              .get(&source_key)
-              .unwrap()
+          let source = item[source_index]
               .parse::<usize>()
               .map_err(err_mapper)?;
-          let target = item
-              .get(&target_key)
-              .unwrap()
+          let target = item[target_index]
               .parse::<usize>()
               .map_err(err_mapper)?;
           Ok(std::cmp::max(source, target))
@@ -77,8 +72,8 @@ pub fn load_data(node_file_path: &str, edge_file_path: &str, edge_source: usize,
     edge_file_path: edge_file_path.to_string(),
     node_data,
     edge_data,
-    source_key,
-    target_key,
+    source_index,
+    target_index,
     max_id,
 })
 }

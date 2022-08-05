@@ -1,7 +1,6 @@
 use std::hash::Hash;
-use std::rc::Rc;
 
-use egui::{Ui};
+use egui::Ui;
 use egui::collapsing_header::HeaderResponse;
 
 use crate::models::Models;
@@ -209,7 +208,7 @@ impl InspectorView {
                         },
                         ColorType::Ramp => {
                             let (source, ramp) = &mut node_settings.color_ramp;
-                            source_combox("Color Ramp Source", &models.graphic_model.node_data.data_headers, source, ui);
+                            source_combox("Color Ramp Source", &models.graphic_model.node_data.headers_index_str, source, ui);
                             grid_label(ui, "Picker");
                             egui::ComboBox::from_id_source("Color Ramp")
                                 .selected_text(&ramp.to_string())
@@ -225,7 +224,7 @@ impl InspectorView {
                         },
                         ColorType::Partition => {
                             let (source, platte) = &mut node_settings.color_partition;
-                            source_combox("Color Partition Source", &models.graphic_model.node_data.data_headers, source, ui);
+                            source_combox("Color Partition Source", &models.graphic_model.node_data.headers_index_str, source, ui);
                             grid_label(ui, "Platte");
                             egui::ComboBox::from_id_source("Color Partition")
                                 .selected_text(&platte.to_string())
@@ -265,7 +264,7 @@ impl InspectorView {
                         },
                         SizeType::Ramp => {
                             let (source, _) = &mut node_settings.size_ramp;
-                            source_combox("Size Ramp Source", &models.graphic_model.node_data.data_headers, source, ui);
+                            source_combox("Size Ramp Source", &models.graphic_model.node_data.headers_index_str, source, ui);
                             grid_label(ui, "Range");
                             ui.horizontal(|ui| {
                                 ui.add(egui::DragValue::new(&mut node_settings.size_ramp.1[0]).speed(0.1));
@@ -287,14 +286,14 @@ impl InspectorView {
     }
 }
 
-fn source_combox(id_source: impl Hash, data_hearders: &Vec<Rc<String>>, current_value: &mut Rc<String>, ui: &mut Ui) {
+fn source_combox(id_source: impl Hash, data_hearders: &Vec<String>, current_value: &mut String, ui: &mut Ui) {
     grid_label(ui, "Source");
     egui::ComboBox::from_id_source(id_source)
         .selected_text(current_value.to_string())
         .show_ui(ui, |ui| {
-            ui.selectable_value(current_value, Rc::new(String::from("None")), String::from("None"));
-            for col in data_hearders {
-                ui.selectable_value(current_value, col.clone(), &*col.clone());
+            ui.selectable_value(current_value, String::from("None"), String::from("None"));
+            for value in data_hearders {
+                ui.selectable_value(current_value, value.clone(), value);
             }
         });
     ui.end_row();
