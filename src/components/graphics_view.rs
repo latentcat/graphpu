@@ -29,7 +29,7 @@ impl AppView for GraphicsView {
 
                         // 如果 Compute Model 已经初始化，即数据导入完成，可以开始渲染
                         // 则获取 Compute Resource
-                        if let Some(compute_resources) = &mut models.compute_model.grphics_resources {
+                        if let Some(compute_resources) = &mut models.compute_model.graphics_resources {
 
                             // 如果正在持续计算，则计算一次
                             if is_computing {
