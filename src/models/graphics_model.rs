@@ -23,9 +23,6 @@ pub struct Node {
     _position: [f32; 3],
     _velocity: [f32; 3],
     _mass: u32,
-    _spring_force_x: u32,
-    _spring_force_y: u32,
-    _spring_force_z: u32,
 }
 
 #[repr(C)]
@@ -134,6 +131,7 @@ pub struct GraphicsResources {
     uniform_buffer: wgpu::Buffer,                   // 传递 Frame Num 等参数
     quad_buffer:    wgpu::Buffer,                   // Quad 四个顶点数据
     node_buffer:    wgpu::Buffer,
+    spring_force_buffer:    wgpu::Buffer,
     edge_buffer:    wgpu::Buffer,
     render_uniform_buffer:    wgpu::Buffer,
 
@@ -270,6 +268,16 @@ impl GraphicsResources {
                         visibility: wgpu::ShaderStages::COMPUTE,
                         ty: wgpu::BindingType::Buffer {
                             ty: wgpu::BufferBindingType::Storage { read_only: true },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 4,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: false },
                             has_dynamic_offset: false,
                             min_binding_size: None,
                         },
@@ -558,6 +566,17 @@ impl GraphicsResources {
             mapped_at_creation: false
         });
 
+        let spring_force_buffer_size = node_count * 3 * 4;
+
+        let spring_force_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Node Buffer"),
+            size: spring_force_buffer_size as wgpu::BufferAddress,
+            usage: wgpu::BufferUsages::VERTEX
+                | wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false
+        });
+
         // 新建 Edge Buffer 并传入数据
         let edge_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Edge Buffer"),
@@ -606,6 +625,10 @@ impl GraphicsResources {
                 wgpu::BindGroupEntry {
                     binding: 3,
                     resource: edge_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 4,
+                    resource: spring_force_buffer.as_entire_binding(),
                 },
             ],
             label: None,
@@ -668,6 +691,7 @@ impl GraphicsResources {
             uniform_buffer,
             quad_buffer,
             node_buffer,
+            spring_force_buffer,
             edge_buffer,
             render_uniform_buffer,
             compute_bind_group,

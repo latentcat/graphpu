@@ -14,9 +14,6 @@ struct Node {
     position: vec3<f32>,
     velocity: vec3<f32>,
     mass: u32,
-    spring_force_x: u32,
-    spring_force_y: u32,
-    spring_force_z: u32,
 };
 
 struct Transform {

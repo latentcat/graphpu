@@ -2,9 +2,6 @@ struct Node {
     position: vec3<f32>,
     velocity: vec3<f32>,
     mass: atomic<u32>,
-    spring_force_x: atomic<u32>,
-    spring_force_y: atomic<u32>,
-    spring_force_z: atomic<u32>,
 };
 
 struct SimParams {
@@ -25,6 +22,7 @@ struct Uniforms {
 @group(0) @binding(1) var<uniform> uniforms: Uniforms;
 @group(0) @binding(2) var<storage, read_write> nodeSrc: array<Node>;
 @group(0) @binding(3) var<storage, read> edgeSrc: array<vec2<u32>>;
+@group(0) @binding(4) var<storage, read_write> springForceSrc: array<atomic<u32>>;
 
 
 fn hash(s: u32) -> u32 {
@@ -88,9 +86,9 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     nodeSrc[index].position = vPos;
     nodeSrc[index].velocity = vVel;
     atomicStore(&nodeSrc[index].mass, 0u);
-    atomicStore(&nodeSrc[index].spring_force_x, 0u);
-    atomicStore(&nodeSrc[index].spring_force_y, 0u);
-    atomicStore(&nodeSrc[index].spring_force_z, 0u);
+    atomicStore(&springForceSrc[index * 3u + 0u], 0u);
+    atomicStore(&springForceSrc[index * 3u + 1u], 0u);
+    atomicStore(&springForceSrc[index * 3u + 2u], 0u);
 }
 
 @compute
@@ -135,9 +133,7 @@ fn attractive_force(@builtin(global_invocation_id) global_invocation_id: vec3<u3
 //    interlocked_add_float(&nodeSrc[target_node].spring_force_x, -dir.x);
 //    interlocked_add_float(&nodeSrc[target_node].spring_force_y, -dir.y);
 //    interlocked_add_float(&nodeSrc[target_node].spring_force_z, -dir.x);
-
-
-    atomicExchange(&nodeSrc[source_node].spring_force_x, 1u);
+    atomicExchange(&springForceSrc[source_node * 3u + 2u], 0u);
 
 }
 
