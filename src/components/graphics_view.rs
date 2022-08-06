@@ -25,7 +25,7 @@ impl AppView for GraphicsView {
 
                 // 新建一个空 Frame，用于存放 Image
                 egui::Frame::none()
-                    .show(ui, |ui| {
+                    .show(ui, |ui| unsafe {
 
                         // 如果 Compute Model 已经初始化，即数据导入完成，可以开始渲染
                         // 则获取 Compute Resource

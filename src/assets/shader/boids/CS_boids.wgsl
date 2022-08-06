@@ -127,14 +127,14 @@ fn attractive_force(@builtin(global_invocation_id) global_invocation_id: vec3<u3
 
     var dir = nodeSrc[target_node].position - nodeSrc[source_node].position;
 
-    var dir_i32 = vec3<i32>(dir * 1000.0);
+    var dir_i32 = vec3<i32>(dir * 10000.0);
 
     atomicAdd(&springForceSrc[source_node * 3u + 0u], dir_i32.x);
     atomicAdd(&springForceSrc[source_node * 3u + 1u], dir_i32.y);
     atomicAdd(&springForceSrc[source_node * 3u + 2u], dir_i32.z);
     atomicAdd(&springForceSrc[target_node * 3u + 0u], -dir_i32.x);
     atomicAdd(&springForceSrc[target_node * 3u + 1u], -dir_i32.y);
-    atomicAdd(&springForceSrc[target_node * 3u + 2u], -dir_i32.x);
+    atomicAdd(&springForceSrc[target_node * 3u + 2u], -dir_i32.z);
 
 }
 
@@ -160,7 +160,7 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
         let pos = nodeSrc[i].position;
         let dir = pos - vPos;
 
-        electron_force += -dir / (dot(dir, dir) * dot(dir, dir));
+        electron_force += -dir / dot(dir, dir);
 
         continuing {
             i = i + 1u;
@@ -175,21 +175,25 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     spring_force.y = f32( atomicLoad(&springForceSrc[index * 3u + 1u]) );
     spring_force.z = f32( atomicLoad(&springForceSrc[index * 3u + 2u]) );
 
-    spring_force *= 1.0 / 1000.0;
+    atomicStore(&springForceSrc[index * 3u + 0u], 0);
+    atomicStore(&springForceSrc[index * 3u + 1u], 0);
+    atomicStore(&springForceSrc[index * 3u + 2u], 0);
+
+    spring_force *= 0.001;
 
 //    var spring_force = bitcast<vec3<f32>>();
 
-    var vForce: vec3<f32> = electron_force * 0.05 + spring_force * 0.01;
+    var vForce: vec3<f32> = electron_force * 0.05 + gravaty_force * 10. + spring_force * 100.0;
 
-    vVel = vVel + vForce;
+    vVel = vVel + vForce * params.deltaT;
 
     // clamp velocity for a more pleasing simulation
     if (dot(vVel, vVel) > 0.0) {
-//        vVel = normalize(vVel) * clamp(length(vVel), 0.0, 1.0);
+        vVel = normalize(vVel) * clamp(length(vVel), 0.0, .5);
     }
 
     // kinematic update
-    vPos += vVel * params.deltaT * 0.001;
+    vPos += vVel * params.deltaT;
 
     // Write back
     nodeSrc[index].position = vPos;

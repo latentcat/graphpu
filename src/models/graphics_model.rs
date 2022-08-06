@@ -803,7 +803,7 @@ impl GraphicsResources {
         self.frame_num += 1;
     }
 
-    pub fn render(&mut self) {
+    pub unsafe fn render(&mut self) {
 
         let device = &self.render_state.device;
         let queue = &self.render_state.queue;
@@ -833,6 +833,14 @@ impl GraphicsResources {
             }),
             // depth_stencil_attachment: None,
         };
+
+        let time: f32 = self.frame_num as f32 * 0.003;
+        self.camera.set_position(glam::Vec3::new(time.sin() * 10.0, 0.0, time.cos() * 10.0));
+
+        let mut initial_render_uniform_data: Vec<f32> = self.camera.view_matrix.as_ref().to_vec();
+        initial_render_uniform_data.append(&mut self.camera.projection_matrix.as_ref().to_vec());
+
+        queue.write_buffer(&self.render_uniform_buffer, 0, bytemuck::cast_slice(&initial_render_uniform_data));
 
         // get command encoder
         let mut command_encoder =

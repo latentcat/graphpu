@@ -31,6 +31,7 @@ impl Camera {
 
     pub fn set_position(&mut self, position: glam::Vec3) {
         self.position = position;
+        self.update_projection_matrix();
     }
 
     pub fn update_projection_matrix(&mut self) {
