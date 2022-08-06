@@ -69,25 +69,23 @@ pub fn load_data(
         read_from_csv(&Some(PathBuf::from(node_file_path))).unwrap_or(ExternalData::default());
     let edge_data = read_from_csv(&Some(PathBuf::from(edge_file_path)))?;
     let err_mapper = |_| String::from("Source and target isn't uint");
-    let (source_list, target_list): (Vec<u32>, Vec<u32>) = edge_data
-        .data
-        .par_iter()
-        .map::<_, Result<(u32, u32), String>>(|item| {
-            let source = item[source_index].parse::<u32>().map_err(err_mapper)?;
-            let target = item[target_index].parse::<u32>().map_err(err_mapper)?;
-            Ok((source, target))
+    let source_target_list  = (0..edge_data.data.len() * 2).into_par_iter()
+        .map::<_, Result<u32, String>>(|index| {
+            let item = &edge_data.data[index / 2];
+            if index % 2 == 0 {
+                item[source_index].parse::<u32>().map_err(err_mapper)
+            } else {
+                item[target_index].parse::<u32>().map_err(err_mapper)
+            }
         })
-        .collect::<Result<_, _>>()?;
-    let max_id = (0..source_list.len())
-        .into_par_iter()
-        .map(|index| std::cmp::max(source_list[index], target_list[index]))
-        .max()
-        .unwrap();
+        .collect::<Result<Vec<u32>, String>>()?;
+    let max_id = *source_target_list.par_iter().max().unwrap();
     Ok(ImportedData {
         node_file_path: node_file_path.to_string(),
         edge_file_path: edge_file_path.to_string(),
         node_data,
         edge_data,
+        source_target_list,
         source_index,
         target_index,
         max_id,
