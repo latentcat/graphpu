@@ -53,7 +53,7 @@ impl Models {
         self.app_model.import_visible = false;
         self.compute_model.graphics_resources = Some(GraphicsResources::new(
             self.compute_model.compute_render_state.clone(),
-            &self.graphic_model,
+            &mut self.graphic_model,
         ));
     }
 

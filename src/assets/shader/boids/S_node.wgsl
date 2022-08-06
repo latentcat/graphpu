@@ -9,8 +9,12 @@ struct Varing {
 };
 
 struct Node {
-  position : vec3<f32>,
-  velocity : vec3<f32>,
+    position : vec3<f32>,
+    velocity : vec3<f32>,
+    mass: u32,
+    spring_force_x: u32,
+    spring_force_y: u32,
+    spring_force_z: u32,
 };
 
 struct Transform {
@@ -32,7 +36,7 @@ fn main_vs(
     var v: Varing;
     v.position = vec4<f32>(node.position.xyz, 1.0);
     v.position = transform.view * v.position;
-    v.position += vec4<f32>(quad_pos * 0.0075, 0.0, 0.0);
+    v.position += vec4<f32>(quad_pos * 0.01 * (1.0 + f32(node.mass) * 0.1), 0.0, 0.0);
     v.position = transform.projection * v.position;
     v.tex_coords = quad_pos;
 
@@ -47,7 +51,7 @@ fn main_fs(v: Varing) -> @location(0) vec4<f32> {
 
     var out_color = vec4<f32>(1.0);
 
-    let alpha = 0.25;
+    let alpha = 0.5;
 
     out_color.r *= alpha;
     out_color.g *= alpha;

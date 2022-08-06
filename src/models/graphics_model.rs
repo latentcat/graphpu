@@ -22,6 +22,10 @@ const PARTICLES_PER_GROUP: u32 = 128;
 pub struct Node {
     _position: [f32; 3],
     _velocity: [f32; 3],
+    _mass: u32,
+    _spring_force_x: u32,
+    _spring_force_y: u32,
+    _spring_force_z: u32,
 }
 
 #[repr(C)]
@@ -144,11 +148,15 @@ pub struct GraphicsResources {
     edge_render_pipeline: wgpu::RenderPipeline,
 
     // 计算管线
+    gen_node_pipeline:   wgpu::ComputePipeline,
+    cal_mass_pipeline:   wgpu::ComputePipeline,
     compute_pipeline:   wgpu::ComputePipeline,      // 计算
     randomize_pipeline: wgpu::ComputePipeline,      // 随机位置
     copy_pipeline:      wgpu::ComputePipeline,      // 拷贝
 
-    work_group_count:   u32,                        // 线程组数 = 线程数 / 每组线程数
+    // 线程组数 = 线程数 / 每组线程数
+    node_work_group_count:   u32,
+    edge_work_group_count:   u32,
     frame_num:          usize,                      // 帧计数器
 
 }
@@ -156,7 +164,7 @@ pub struct GraphicsResources {
 impl GraphicsResources {
 
     // 在导入数据后调用的方法，初始化计算和绘图的资源
-    pub fn new(render_state: egui_wgpu::RenderState, model: &DataModel) -> Self {
+    pub fn new(render_state: egui_wgpu::RenderState, model: &mut DataModel) -> Self {
 
         // 从 Graphics Model 中获取 Node 和 Edge 的数量
         let node_count: u32 = model.status.node_count as u32;
@@ -172,12 +180,10 @@ impl GraphicsResources {
         // 从文件中创建 Shader
 
         let shader_files = [
-            include_str!("../assets/shader/boids/compute.wgsl"),
-            include_str!("../assets/shader/boids/M_node.wgsl"),
-            include_str!("../assets/shader/boids/M_edge.wgsl"),
+            include_str!("../assets/shader/boids/CS_boids.wgsl"),
+            include_str!("../assets/shader/boids/S_node.wgsl"),
+            include_str!("../assets/shader/boids/S_edge.wgsl"),
         ];
-
-        let now = Instant::now();
 
         let shaders = shader_files.par_iter().map(|shader_file| {
 
@@ -189,9 +195,6 @@ impl GraphicsResources {
             shader
 
         }).collect::<Vec<ShaderModule>>();
-
-        let elapsed_time = now.elapsed();
-        println!("Running slow_function() took {} micro second.", elapsed_time.as_micros());
 
         // Compute Shader
         let compute_shader = &shaders[0];
@@ -471,6 +474,22 @@ impl GraphicsResources {
             multiview: None,
         });
 
+        // Gen Node Pipeline
+        let gen_node_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some("Gen Node Pipeline"),
+            layout: Some(&compute_pipeline_layout),
+            module: &compute_shader,
+            entry_point: "gen_node",
+        });
+
+        // Cal Mass Pipeline
+        let cal_mass_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some("Cal Mass Pipeline"),
+            layout: Some(&compute_pipeline_layout),
+            module: &compute_shader,
+            entry_point: "cal_mass",
+        });
+
         // Compute Pipeline
         let compute_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
             label: Some("Compute pipeline"),
@@ -539,27 +558,20 @@ impl GraphicsResources {
             mapped_at_creation: false
         });
 
-        // 新建初始化 Edge 数据
-        let mut initial_edge_data: Vec<u32> = vec![0; (2 * edge_count) as usize];
-        let edge_data = &model.edge_data.data;
-        let (&source_id, &target_id) = (model.edge_source.as_ref().unwrap(), model.edge_target.as_ref().unwrap());
-
-        // 每组两个写入 Edge 的 Source 和 Target 数据，转化为与 Compute Shader 同构的 u32 类型
-        for (index, edge_instance_chunk) in initial_edge_data.chunks_mut(2).enumerate() {
-            edge_instance_chunk[0] = edge_data[index].get(source_id).unwrap().parse::<u32>().unwrap();
-            edge_instance_chunk[1] = edge_data[index].get(target_id).unwrap().parse::<u32>().unwrap();
-        }
-
         // 新建 Edge Buffer 并传入数据
         let edge_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Edge Buffer"),
-            contents: bytemuck::cast_slice(&initial_edge_data),
+            contents: bytemuck::cast_slice(model.source_target_list.as_ref().unwrap()),
             usage: wgpu::BufferUsages::VERTEX
                 | wgpu::BufferUsages::STORAGE
                 | wgpu::BufferUsages::COPY_DST,
         });
 
-        let camera = Camera::from(Vec3::new(0.0, 0.0, 2.5));
+        // 清空 Model 中的 Source Target List
+        model.clear_source_target_list();
+
+
+        let camera = Camera::from(Vec3::new(0.0, 0.0, 10.0));
 
         let mut initial_render_uniform_data: Vec<f32> = camera.view_matrix.as_ref().to_vec();
         initial_render_uniform_data.append(&mut camera.projection_matrix.as_ref().to_vec());
@@ -640,8 +652,10 @@ impl GraphicsResources {
 
         // 计算线程组数
         // 线程组数 = 线程数 / 每组线程数（取整）
-        let work_group_count =
+        let node_work_group_count =
             ((node_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
+        let edge_work_group_count =
+            ((edge_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
 
         let mut boids_resources = GraphicsResources {
             status: model.status.clone(),
@@ -662,14 +676,17 @@ impl GraphicsResources {
             render_uniform_bind_group,
             node_render_pipeline,
             edge_render_pipeline,
+            gen_node_pipeline,
+            cal_mass_pipeline,
             compute_pipeline,
             randomize_pipeline,
             copy_pipeline,
-            work_group_count,
+            node_work_group_count,
+            edge_work_group_count,
             frame_num: 0,
         };
 
-        boids_resources.randomize();
+        boids_resources.gen_node();
         // boids_resources.update_viewport(Vec2::from([100., 100.]));
         // boids_resources.render();
 
@@ -691,7 +708,32 @@ impl GraphicsResources {
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
             cpass.set_pipeline(&self.compute_pipeline);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.work_group_count, 1, 1);
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+        }
+        command_encoder.pop_debug_group();
+        queue.submit(Some(command_encoder.finish()));
+        self.frame_num += 1;
+    }
+
+
+    pub fn gen_node(&mut self) {
+
+        let device = &self.render_state.device;
+        let queue = &self.render_state.queue;
+
+        let mut command_encoder =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        command_encoder.push_debug_group("compute boids movement");
+        {
+            // compute pass
+            let mut cpass =
+                command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+            cpass.set_pipeline(&self.gen_node_pipeline);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+            cpass.set_pipeline(&self.cal_mass_pipeline);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));
@@ -714,10 +756,10 @@ impl GraphicsResources {
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
             cpass.set_pipeline(&self.randomize_pipeline);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.work_group_count, 1, 1);
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
             cpass.set_pipeline(&self.copy_pipeline);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.work_group_count, 1, 1);
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));

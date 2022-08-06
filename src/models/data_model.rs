@@ -120,4 +120,8 @@ impl DataModel {
         self.status.node_data_length = self.node_data.data.len();
         self.status.edge_data_length = self.edge_data.data.len();
     }
+
+    pub fn clear_source_target_list(&mut self) {
+        self.source_target_list = None;
+    }
 }
