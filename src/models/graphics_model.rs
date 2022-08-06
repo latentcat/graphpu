@@ -148,6 +148,7 @@ pub struct GraphicsResources {
     // 计算管线
     gen_node_pipeline:   wgpu::ComputePipeline,
     cal_mass_pipeline:   wgpu::ComputePipeline,
+    attractive_force_pipeline:   wgpu::ComputePipeline,
     compute_pipeline:   wgpu::ComputePipeline,      // 计算
     randomize_pipeline: wgpu::ComputePipeline,      // 随机位置
     copy_pipeline:      wgpu::ComputePipeline,      // 拷贝
@@ -498,6 +499,14 @@ impl GraphicsResources {
             entry_point: "cal_mass",
         });
 
+        // attractive_force Pipeline
+        let attractive_force_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some("attractive_force Pipeline"),
+            layout: Some(&compute_pipeline_layout),
+            module: &compute_shader,
+            entry_point: "attractive_force",
+        });
+
         // Compute Pipeline
         let compute_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
             label: Some("Compute pipeline"),
@@ -702,6 +711,7 @@ impl GraphicsResources {
             edge_render_pipeline,
             gen_node_pipeline,
             cal_mass_pipeline,
+            attractive_force_pipeline,
             compute_pipeline,
             randomize_pipeline,
             copy_pipeline,
@@ -733,6 +743,9 @@ impl GraphicsResources {
             cpass.set_pipeline(&self.compute_pipeline);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+            cpass.set_pipeline(&self.attractive_force_pipeline);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));

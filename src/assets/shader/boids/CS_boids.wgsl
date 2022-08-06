@@ -22,7 +22,7 @@ struct Uniforms {
 @group(0) @binding(1) var<uniform> uniforms: Uniforms;
 @group(0) @binding(2) var<storage, read_write> nodeSrc: array<Node>;
 @group(0) @binding(3) var<storage, read> edgeSrc: array<vec2<u32>>;
-@group(0) @binding(4) var<storage, read_write> springForceSrc: array<atomic<u32>>;
+@group(0) @binding(4) var<storage, read_write> springForceSrc: array<atomic<i32>>;
 
 
 fn hash(s: u32) -> u32 {
@@ -86,9 +86,9 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     nodeSrc[index].position = vPos;
     nodeSrc[index].velocity = vVel;
     atomicStore(&nodeSrc[index].mass, 0u);
-    atomicStore(&springForceSrc[index * 3u + 0u], 0u);
-    atomicStore(&springForceSrc[index * 3u + 1u], 0u);
-    atomicStore(&springForceSrc[index * 3u + 2u], 0u);
+    atomicStore(&springForceSrc[index * 3u + 0u], 0);
+    atomicStore(&springForceSrc[index * 3u + 1u], 0);
+    atomicStore(&springForceSrc[index * 3u + 2u], 0);
 }
 
 @compute
@@ -126,14 +126,15 @@ fn attractive_force(@builtin(global_invocation_id) global_invocation_id: vec3<u3
     let target_node: u32 = edge[1];
 
     var dir = nodeSrc[target_node].position - nodeSrc[source_node].position;
-//
-//    interlocked_add_float(&nodeSrc[source_node].spring_force_x, dir.x);
-//    interlocked_add_float(&nodeSrc[source_node].spring_force_y, dir.y);
-//    interlocked_add_float(&nodeSrc[source_node].spring_force_z, dir.z);
-//    interlocked_add_float(&nodeSrc[target_node].spring_force_x, -dir.x);
-//    interlocked_add_float(&nodeSrc[target_node].spring_force_y, -dir.y);
-//    interlocked_add_float(&nodeSrc[target_node].spring_force_z, -dir.x);
-    atomicExchange(&springForceSrc[source_node * 3u + 2u], 0u);
+
+    var dir_i32 = vec3<i32>(dir * 1000.0);
+
+    atomicAdd(&springForceSrc[source_node * 3u + 0u], dir_i32.x);
+    atomicAdd(&springForceSrc[source_node * 3u + 1u], dir_i32.y);
+    atomicAdd(&springForceSrc[source_node * 3u + 2u], dir_i32.z);
+    atomicAdd(&springForceSrc[target_node * 3u + 0u], -dir_i32.x);
+    atomicAdd(&springForceSrc[target_node * 3u + 1u], -dir_i32.y);
+    atomicAdd(&springForceSrc[target_node * 3u + 2u], -dir_i32.x);
 
 }
 
@@ -168,19 +169,27 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 
     var gravaty_force = -vPos;
 
+    var spring_force = vec3<f32>(0.0);
+
+    spring_force.x = f32( atomicLoad(&springForceSrc[index * 3u + 0u]) );
+    spring_force.y = f32( atomicLoad(&springForceSrc[index * 3u + 1u]) );
+    spring_force.z = f32( atomicLoad(&springForceSrc[index * 3u + 2u]) );
+
+    spring_force *= 1.0 / 1000.0;
+
 //    var spring_force = bitcast<vec3<f32>>();
 
-    var vForce: vec3<f32> = electron_force * 0.25 + gravaty_force * 10.0;
+    var vForce: vec3<f32> = electron_force * 0.05 + spring_force * 0.01;
 
     vVel = vVel + vForce;
 
     // clamp velocity for a more pleasing simulation
     if (dot(vVel, vVel) > 0.0) {
-        vVel = normalize(vVel) * clamp(length(vVel), 0.0, 1.0);
+//        vVel = normalize(vVel) * clamp(length(vVel), 0.0, 1.0);
     }
 
     // kinematic update
-    vPos += vVel * params.deltaT;
+    vPos += vVel * params.deltaT * 0.001;
 
     // Write back
     nodeSrc[index].position = vPos;
