@@ -4,8 +4,9 @@ struct Input {
 }
 
 struct Varing {
-    @location(0) tex_coords: vec2<f32>,
     @builtin(position) position: vec4<f32>,
+    @location(0) tex_coords: vec2<f32>,
+    @location(1) blur_opacity: f32,
 };
 
 struct Node {
@@ -30,12 +31,19 @@ fn main_vs(
 ) -> Varing {
     var node = nodeSrc[i.instance_index];
 
+    var focal_length = 10.0;
+
     var v: Varing;
     v.position = vec4<f32>(node.position.xyz, 1.0);
     v.position = transform.view * v.position;
-    v.position += vec4<f32>(quad_pos * 0.0075 * (1.0 + f32(node.mass) * 0.05), 0.0, 0.0);
+
+    var blur_scale = abs(-v.position.z - focal_length) * 2.0;
+    var blur_opacity = exp2(-blur_scale);
+
+    v.position += vec4<f32>(quad_pos * 0.0075 * (1.0 + f32(node.mass) * 0.0) * (1.0 + blur_scale), 0.0, 0.0);
     v.position = transform.projection * v.position;
     v.tex_coords = quad_pos;
+    v.blur_opacity = blur_opacity;
 
     return v;
 }
@@ -48,7 +56,7 @@ fn main_fs(v: Varing) -> @location(0) vec4<f32> {
 
     var out_color = vec4<f32>(1.0);
 
-    let alpha = 0.5;
+    let alpha = 0.5 * v.blur_opacity;
 
     out_color.r *= alpha;
     out_color.g *= alpha;
