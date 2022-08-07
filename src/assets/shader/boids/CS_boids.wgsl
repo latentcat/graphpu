@@ -189,7 +189,7 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 
     // clamp velocity for a more pleasing simulation
     if (dot(vVel, vVel) > 0.0) {
-        vVel = normalize(vVel) * clamp(length(vVel), 0.0, .5);
+        vVel = normalize(vVel) * clamp(length(vVel) * 0.1, 0.0, .5);
     }
 
     // kinematic update
