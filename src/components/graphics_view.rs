@@ -46,14 +46,16 @@ impl AppView for GraphicsView {
                             // 若发生变化，则更新材质视图，注册 egui 材质 ID，并返回 true
                             // 若无变化，不更新材质视图，返回 false
                             // 其中，pixels_per_point 代表当前每点像素密度
-                            let is_viewport_update = compute_resources.update_viewport(
+                            let is_viewport_updated = compute_resources.update_viewport(
                                 ui.max_rect().size()
                                     .mul(Vec2::from([models.app_model.pixels_per_point; 2])
                                 )
                             );
 
+                            let is_control_updated = compute_resources.update_control(ui);
+
                             // 若有任何变化，渲染并请求 egui UI 更新
-                            if is_computing || is_dispatching || is_viewport_update {
+                            if is_computing || is_dispatching || is_viewport_updated || is_control_updated {
                                 compute_resources.render();
                                 ui.ctx().request_repaint();
                             }

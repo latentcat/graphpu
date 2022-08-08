@@ -1,12 +1,12 @@
 use std::borrow::Cow;
 use std::mem;
 use std::time::Instant;
-use egui::Vec2;
+use egui::{Ui, Vec2};
 use glam::Vec3;
-use wgpu::{Label, ShaderModule};
+use wgpu::{Label, Queue, ShaderModule};
 use wgpu::util::DeviceExt;
 use crate::models::data_model::GraphicsStatus;
-use crate::models::graphics_lib::{Camera, Texture};
+use crate::models::graphics_lib::{Camera, OrbitControls, Texture};
 
 use rayon::prelude::*;
 
@@ -126,6 +126,7 @@ pub struct GraphicsResources {
 
     // 相机
     camera: Camera,
+    control: OrbitControls,
 
     // Buffers
     uniform_buffer: wgpu::Buffer,                   // 传递 Frame Num 等参数
@@ -600,6 +601,7 @@ impl GraphicsResources {
 
 
         let camera = Camera::from(Vec3::new(0.0, 0.0, 10.0));
+        let control = OrbitControls::new();
 
         let mut initial_render_uniform_data: Vec<f32> = camera.view_matrix.as_ref().to_vec();
         initial_render_uniform_data.append(&mut camera.projection_matrix.as_ref().to_vec());
@@ -697,6 +699,7 @@ impl GraphicsResources {
             texture_id: Default::default(),
             viewport_size: Default::default(),
             camera,
+            control,
             uniform_buffer,
             quad_buffer,
             node_buffer,
@@ -834,13 +837,10 @@ impl GraphicsResources {
             // depth_stencil_attachment: None,
         };
 
-        let time: f32 = self.frame_num as f32 * 0.003;
-        self.camera.set_position(glam::Vec3::new(time.sin() * 10.0, 0.0, time.cos() * 10.0));
+        // let time: f32 = self.frame_num as f32 * 0.003;
+        // self.camera.set_position(glam::Vec3::new(time.sin() * 10.0, 0.0, time.cos() * 10.0));
 
-        let mut initial_render_uniform_data: Vec<f32> = self.camera.view_matrix.as_ref().to_vec();
-        initial_render_uniform_data.append(&mut self.camera.projection_matrix.as_ref().to_vec());
-
-        queue.write_buffer(&self.render_uniform_buffer, 0, bytemuck::cast_slice(&initial_render_uniform_data));
+        update_transform_matrix(queue, &mut self.camera, &self.render_uniform_buffer);
 
         // get command encoder
         let mut command_encoder =
@@ -876,11 +876,6 @@ impl GraphicsResources {
             self.viewport_size = new_size;
 
             self.camera.set_aspect_ratio(new_size.x / new_size.y as f32);
-
-            let mut initial_render_uniform_data: Vec<f32> = self.camera.view_matrix.as_ref().to_vec();
-            initial_render_uniform_data.append(&mut self.camera.projection_matrix.as_ref().to_vec());
-
-            queue.write_buffer(&self.render_uniform_buffer, 0, bytemuck::cast_slice(&initial_render_uniform_data));
 
             let texture_extent = wgpu::Extent3d {
                 width: self.viewport_size.x as u32,
@@ -919,11 +914,32 @@ impl GraphicsResources {
         return false;
     }
 
+    pub fn update_control(&mut self, ui: &mut Ui) -> bool {
+
+        let is_updated = self.control.update_interaction(ui);
+        self.control.update_camera(&mut self.camera);
+
+        is_updated
+
+    }
+
     pub fn dispose(&mut self) {
         self.node_buffer.destroy();
         self.edge_buffer.destroy();
     }
 
+
+}
+
+fn update_transform_matrix(queue: &Queue, camera: &mut Camera, render_uniform_buffer: &wgpu::Buffer) {
+
+    if camera.is_updated {
+        camera.update_projection_matrix();
+        let mut initial_render_uniform_data: Vec<f32> = camera.view_matrix.as_ref().to_vec();
+        initial_render_uniform_data.append(&mut camera.projection_matrix.as_ref().to_vec());
+        queue.write_buffer(&render_uniform_buffer, 0, bytemuck::cast_slice(&initial_render_uniform_data));
+        camera.is_updated = false;
+    }
 
 }
 
