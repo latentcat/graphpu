@@ -2,7 +2,7 @@ use std::f32::consts::{FRAC_PI_2, PI};
 use egui::{PointerButton, Pos2, Ui, Vec2};
 use crate::models::graphics_lib::Camera;
 
-pub struct OrbitControls {
+pub struct Controls {
     pos: Option<Pos2>,
     primary_clicked: bool,
     primary_down: bool,
@@ -11,7 +11,7 @@ pub struct OrbitControls {
     viewport_size: Vec2,
 }
 
-impl OrbitControls {
+impl Controls {
 
     pub fn new() -> Self {
         Self {
@@ -26,7 +26,7 @@ impl OrbitControls {
 
 }
 
-impl OrbitControls {
+impl Controls {
 
     pub fn update_interaction(&mut self, ui: &mut Ui) -> bool {
         self.pos = None;

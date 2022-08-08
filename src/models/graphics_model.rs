@@ -6,7 +6,7 @@ use glam::Vec3;
 use wgpu::{Label, Queue, ShaderModule};
 use wgpu::util::DeviceExt;
 use crate::models::data_model::GraphicsStatus;
-use crate::models::graphics_lib::{Camera, OrbitControls, Texture};
+use crate::models::graphics_lib::{Camera, Controls, Texture};
 
 use rayon::prelude::*;
 
@@ -126,7 +126,7 @@ pub struct GraphicsResources {
 
     // 相机
     camera: Camera,
-    control: OrbitControls,
+    control: Controls,
 
     // Buffers
     uniform_buffer: wgpu::Buffer,                   // 传递 Frame Num 等参数
@@ -601,7 +601,7 @@ impl GraphicsResources {
 
 
         let camera = Camera::from(Vec3::new(0.0, 0.0, 10.0));
-        let control = OrbitControls::new();
+        let control = Controls::new();
 
         let mut initial_render_uniform_data: Vec<f32> = camera.view_matrix.as_ref().to_vec();
         initial_render_uniform_data.append(&mut camera.projection_matrix.as_ref().to_vec());
