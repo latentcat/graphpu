@@ -44,8 +44,8 @@ impl Controls {
 
                 self.pos = Some(pos - viewport_rect.min.to_vec2());
                 if ui.input().pointer.primary_clicked() { self.primary_clicked = true; is_updated = true; }
-                if ui.input().pointer.primary_down()    { self.primary_down = true; is_updated = true; }
-                if self.scroll_delta != Vec2::ZERO { is_updated = true; }
+                if ui.input().pointer.primary_down()    { self.primary_down = true;    is_updated = true; }
+                if self.scroll_delta != Vec2::ZERO      { is_updated = true; }
 
             }
         }
@@ -59,7 +59,7 @@ impl Controls {
 
     pub fn update_camera(&mut self, camera: &mut Camera) {
         if self.pos.is_some() {
-            camera.zoom(f32::powf(1.2, -self.scroll_delta.y * 0.1) );
+            camera.zoom(f32::powf(1.2, -self.scroll_delta.y * 0.03) );
         }
         if self.primary_down {
             let mut angles = glam::Vec2::new(self.delta.x, self.delta.y);

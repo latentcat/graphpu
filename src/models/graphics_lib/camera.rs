@@ -39,7 +39,13 @@ impl Camera {
     }
 
     pub fn zoom(&mut self, zoom_factor: f32) {
-        self.position = (self.position - self.center) * zoom_factor + self.center;
+
+        let dir = self.position - self.center;
+        let ( mut length, norm_dir ) = ( dir.length(), dir.normalize() );
+
+        length = f32::clamp(length * zoom_factor, 0.1, 1000.0);
+
+        self.position = length * norm_dir + self.center;
         self.is_updated = true;
     }
 
