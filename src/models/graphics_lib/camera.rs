@@ -10,6 +10,8 @@ pub struct Camera {
     pub view_matrix: glam::Mat4,
     pub projection_matrix: glam::Mat4,
     pub is_updated: bool,
+    pub near_far: glam::Vec2,
+    pub zoom_factor: f32,
 }
 
 impl Camera {
@@ -17,6 +19,7 @@ impl Camera {
         let mut camera = Self {
             position,
             aspect_ratio: 1.0,
+            near_far: glam::Vec2::new(0.01, 10000.0),
             ..Default::default()
         };
 
@@ -62,8 +65,8 @@ impl Camera {
     }
 
     pub fn update_projection_matrix(&mut self) {
-        let zoom_factor = if self.aspect_ratio > 1.0 { self.aspect_ratio } else { 1.0 };
-        let projection = glam::Mat4::perspective_rh(consts::FRAC_PI_4 / zoom_factor, self.aspect_ratio, 0.1, 1000.0);
+        self.zoom_factor = if self.aspect_ratio > 1.0 { 1.0 / self.aspect_ratio } else { 1.0 };
+        let projection = glam::Mat4::perspective_rh(consts::FRAC_PI_4 * self.zoom_factor, self.aspect_ratio, self.near_far.x, self.near_far.y);
         let view = glam::Mat4::look_at_rh(
             self.position,
             self.center,

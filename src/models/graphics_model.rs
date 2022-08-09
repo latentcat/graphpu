@@ -145,6 +145,7 @@ pub struct GraphicsResources {
     // 渲染管线
     node_render_pipeline: wgpu::RenderPipeline,
     edge_render_pipeline: wgpu::RenderPipeline,
+    axis_render_pipeline: wgpu::RenderPipeline,
 
     // 计算管线
     gen_node_pipeline:   wgpu::ComputePipeline,
@@ -183,6 +184,7 @@ impl GraphicsResources {
             include_str!("../assets/shader/boids/CS_boids.wgsl"),
             include_str!("../assets/shader/boids/S_node.wgsl"),
             include_str!("../assets/shader/boids/S_edge.wgsl"),
+            include_str!("../assets/shader/boids/S_axis.wgsl"),
         ];
 
         let shaders = shader_files.par_iter().map(|shader_file| {
@@ -204,6 +206,9 @@ impl GraphicsResources {
 
         // Edge Shader
         let edge_shader = &shaders[2];
+
+        // Axis Shader
+        let axis_shader = &shaders[3];
 
 
         // Boids 模拟所用到的参数
@@ -374,6 +379,12 @@ impl GraphicsResources {
             push_constant_ranges: &[],
         });
 
+        let axis_render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("axis render"),
+            bind_group_layouts: &[&render_uniform_bind_group_layout],
+            push_constant_ranges: &[],
+        });
+
         // Render Pipeline
         // 渲染管线
 
@@ -483,6 +494,63 @@ impl GraphicsResources {
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
         });
+
+
+        // Node Render Pipeline
+        // 拓扑结构：Triangle Strip
+        let axis_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: None,
+            layout: Some(&axis_render_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &axis_shader,
+                entry_point: "main_vs",
+                buffers: &[
+                    wgpu::VertexBufferLayout {
+                        array_stride: 2 * 4,
+                        step_mode: wgpu::VertexStepMode::Vertex,
+                        attributes: &wgpu::vertex_attr_array![0 => Float32x2],
+                    },
+                ],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &axis_shader,
+                entry_point: "main_fs",
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: render_state.target_format.into(),
+                    blend: Some(wgpu::BlendState {
+                        color: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::SrcAlpha,
+                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                        alpha: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::SrcAlpha,
+                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                        // alpha: wgpu::BlendComponent::OVER,
+                    }),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleStrip,
+                front_face: wgpu::FrontFace::Ccw,
+                ..Default::default()
+            },
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: Texture::DEPTH_FORMAT,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less, // 1.
+                stencil: wgpu::StencilState::default(), // 2.
+                bias: wgpu::DepthBiasState::default(),
+            }),
+            // depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+        });
+
+
 
         // Gen Node Pipeline
         let gen_node_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
@@ -600,16 +668,15 @@ impl GraphicsResources {
         model.clear_source_target_list();
 
 
-        let camera = Camera::from(Vec3::new(0.0, 0.0, 10.0));
+        let camera = Camera::from(Vec3::new(3.0, 3.0, 6.0));
         let control = Controls::new();
 
-        let mut initial_render_uniform_data: Vec<f32> = camera.view_matrix.as_ref().to_vec();
-        initial_render_uniform_data.append(&mut camera.projection_matrix.as_ref().to_vec());
+        let uniform_data = generate_uniform_data(&camera);
 
         // 指定大小，创建 Node Buffer，不初始化数据
         let render_uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Edge Buffer"),
-            contents: bytemuck::cast_slice(&initial_render_uniform_data),
+            contents: bytemuck::cast_slice(&uniform_data),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
@@ -712,6 +779,7 @@ impl GraphicsResources {
             render_uniform_bind_group,
             node_render_pipeline,
             edge_render_pipeline,
+            axis_render_pipeline,
             gen_node_pipeline,
             cal_mass_pipeline,
             attractive_force_pipeline,
@@ -840,7 +908,7 @@ impl GraphicsResources {
         // let time: f32 = self.frame_num as f32 * 0.003;
         // self.camera.set_position(glam::Vec3::new(time.sin() * 10.0, 0.0, time.cos() * 10.0));
 
-        update_transform_matrix(queue, &mut self.camera, &self.render_uniform_buffer);
+        update_transform_matrix(queue, &mut self.camera, &self.render_uniform_buffer, glam::Vec2::new(self.viewport_size.x, self.viewport_size.y));
 
         // get command encoder
         let mut command_encoder =
@@ -849,6 +917,12 @@ impl GraphicsResources {
         {
             // render pass
             let mut rpass = command_encoder.begin_render_pass(&render_pass_descriptor);
+
+            rpass.set_pipeline(&self.axis_render_pipeline);
+            rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
+            rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
+            rpass.draw(0..4, 0..2);
+
             rpass.set_pipeline(&self.node_render_pipeline);
             rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
             rpass.set_bind_group(1, &self.node_render_bind_group, &[]);
@@ -931,15 +1005,29 @@ impl GraphicsResources {
 
 }
 
-fn update_transform_matrix(queue: &Queue, camera: &mut Camera, render_uniform_buffer: &wgpu::Buffer) {
+fn update_transform_matrix(queue: &Queue, camera: &mut Camera, render_uniform_buffer: &wgpu::Buffer, viewport_size: glam::Vec2) {
 
     if camera.is_updated {
+
         camera.update_projection_matrix();
-        let mut initial_render_uniform_data: Vec<f32> = camera.view_matrix.as_ref().to_vec();
-        initial_render_uniform_data.append(&mut camera.projection_matrix.as_ref().to_vec());
-        queue.write_buffer(&render_uniform_buffer, 0, bytemuck::cast_slice(&initial_render_uniform_data));
+
+        let mut uniform_data = generate_uniform_data(camera);
+
+        queue.write_buffer(&render_uniform_buffer, 0, bytemuck::cast_slice(&uniform_data));
         camera.is_updated = false;
+
     }
+
+}
+
+fn generate_uniform_data(camera: &Camera) -> Vec<f32> {
+
+    let mut uniform_data: Vec<f32> = camera.view_matrix.as_ref().to_vec();
+    uniform_data.append(&mut camera.projection_matrix.as_ref().to_vec());
+    uniform_data.append(&mut [camera.aspect_ratio, camera.zoom_factor].to_vec());
+    uniform_data.append(&mut camera.near_far.to_array().to_vec());
+
+    uniform_data
 
 }
 

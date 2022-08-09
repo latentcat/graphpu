@@ -1,0 +1,69 @@
+struct Input {
+    @builtin(vertex_index) vertex_index: u32,
+    @builtin(instance_index) instance_index: u32,
+}
+
+struct Varing {
+    @builtin(position) position: vec4<f32>,
+    @location(0) tex_coords: vec2<f32>,
+    @location(1) color: vec3<f32>,
+};
+
+struct Transform {
+    view: mat4x4<f32>,
+    projection: mat4x4<f32>,
+    aspect_ratio: f32,
+    zoom_factor: f32,
+    near_far: vec2<f32>,
+}
+
+@group(0) @binding(0) var<uniform> transform: Transform;
+
+@vertex
+fn main_vs(
+    @location(0) quad_pos: vec2<f32>,
+    i: Input
+) -> Varing {
+
+    var v: Varing;
+
+    var has_x = f32(i.instance_index);
+    var has_z = 1.0 - f32(i.instance_index);
+
+    var length = quad_pos.x * 10000000.0;
+
+    v.position = vec4<f32>(vec3<f32>(length * has_x, 0.0, length * has_z), 1.0);
+    v.position = transform.projection * transform.view * v.position;
+
+    var dir = transform.projection * transform.view * vec4<f32>(0.01 * has_x, 0.0, 0.01 * has_z, 1.0);
+    var center = transform.projection * transform.view * vec4<f32>(0.0, 0.0, 0.0, 1.0);
+
+    var cast_position = center + (dir - center) / (dir.z - center.z) * (transform.near_far.x * 0.001 - center.z);
+
+    if v.position.w < transform.near_far.x {
+        v.position = cast_position;
+    }
+
+    var ratio = transform.aspect_ratio;
+    var dir_normal = normalize(vec2<f32>(dir.y / ratio / ratio, -dir.x)) * transform.zoom_factor;
+
+    v.position = v.position / abs(v.position.w);
+    v.position += vec4<f32>(dir_normal * quad_pos.y * 0.002, 0.0, 0.0);
+
+    v.tex_coords = quad_pos;
+
+    var colors = array<vec3<f32>, 2>(vec3<f32>(.917, .735, .296), vec3<f32>(.272, .866, .855));
+    v.color = colors[i.instance_index];
+
+    return v;
+}
+
+@fragment
+fn main_fs(v: Varing) -> @location(0) vec4<f32> {
+
+    var color = v.color;
+
+    let alpha = 0.3;
+
+    return vec4<f32>(color, alpha);
+}
