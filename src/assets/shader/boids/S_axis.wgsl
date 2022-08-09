@@ -45,14 +45,14 @@ fn main_vs(
     }
 
     var ratio = transform.aspect_ratio;
-    var dir_normal = normalize(vec2<f32>(dir.y / ratio / ratio, -dir.x)) * transform.zoom_factor;
+    var dir_normal = normalize(vec2<f32>(dir.y / ratio / ratio, -dir.x));
 
     v.position = v.position / abs(v.position.w);
     v.position += vec4<f32>(dir_normal * quad_pos.y * 0.002, 0.0, 0.0);
 
     v.tex_coords = quad_pos;
 
-    var colors = array<vec3<f32>, 2>(vec3<f32>(.917, .735, .296), vec3<f32>(.272, .866, .855));
+    var colors = array<vec3<f32>, 2>(vec3<f32>(.917, .535, .196), vec3<f32>(.272, .866, .855));
     v.color = colors[i.instance_index];
 
     return v;
@@ -62,8 +62,11 @@ fn main_vs(
 fn main_fs(v: Varing) -> @location(0) vec4<f32> {
 
     var color = v.color;
+    var x = v.position.z * 0.5 + 0.5;
+    var lerp = (1.0 - pow(x, 10000.0)) * 1.2;
+    color *= lerp;
 
-    let alpha = 0.3;
+    let alpha = 0.5;
 
     return vec4<f32>(color, alpha);
 }
