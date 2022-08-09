@@ -6,6 +6,7 @@ pub struct Controls {
     pos: Option<Pos2>,
     primary_clicked: bool,
     primary_down: bool,
+    secondary_down: bool,
     scroll_delta: Vec2,
     delta: Vec2,
     viewport_size: Vec2,
@@ -18,6 +19,7 @@ impl Controls {
             pos: None,
             primary_clicked: false,
             primary_down: false,
+            secondary_down: false,
             scroll_delta: Vec2::ZERO,
             delta: Vec2::ZERO,
             viewport_size: Vec2::ZERO,
@@ -45,6 +47,7 @@ impl Controls {
                 self.pos = Some(pos - viewport_rect.min.to_vec2());
                 if ui.input().pointer.primary_clicked() { self.primary_clicked = true; is_updated = true; }
                 if ui.input().pointer.primary_down()    { self.primary_down = true;    is_updated = true; }
+                if ui.input().pointer.secondary_down() {self.secondary_down = true; is_updated = true;}
                 if self.scroll_delta != Vec2::ZERO      { is_updated = true; }
 
             }
@@ -52,6 +55,10 @@ impl Controls {
 
         if !ui.input().pointer.primary_down() {
             self.primary_down = false;
+        }
+
+        if !ui.input().pointer.secondary_down() {
+            self.secondary_down = false;
         }
 
         return is_updated;
@@ -65,6 +72,9 @@ impl Controls {
             let mut angles = glam::Vec2::new(self.delta.x, self.delta.y);
             angles = angles / glam::Vec2::new(self.viewport_size.x, self.viewport_size.y);
             camera.rotate(angles * PI);
+        }
+        if self.secondary_down {
+            camera.zoom(f32::powf(1.2, -self.delta.y * 0.03) );
         }
     }
 
