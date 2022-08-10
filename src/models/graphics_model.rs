@@ -1,12 +1,11 @@
 use std::borrow::Cow;
 use std::mem;
-use std::time::Instant;
 use egui::{Ui, Vec2};
 use glam::Vec3;
-use wgpu::{Label, Queue, ShaderModule};
+use wgpu::{Queue, ShaderModule};
 use wgpu::util::DeviceExt;
 use crate::models::data_model::GraphicsStatus;
-use crate::models::graphics_lib::{Camera, Controls, Texture};
+use crate::models::graphics_lib::{Camera, Controls, RenderPipeline, Texture};
 
 use rayon::prelude::*;
 
@@ -17,11 +16,6 @@ use super::data_model::DataModel;
 // WGSL 中没有宏，不能使用类似 HLSL 的 #define 方法
 const PARTICLES_PER_GROUP: u32 = 128;
 
-const MULTISAMPLE_STATE: wgpu::MultisampleState = wgpu::MultisampleState {
-    count: 4,
-    mask: !0,
-    alpha_to_coverage_enabled: false
-};
 
 // 须同步修改各个 WGSL 中的 Node struct
 #[repr(C)]
@@ -139,7 +133,6 @@ pub struct GraphicsResources {
     uniform_buffer: wgpu::Buffer,                   // 传递 Frame Num 等参数
     quad_buffer:    wgpu::Buffer,                   // Quad 四个顶点数据
     node_buffer:    wgpu::Buffer,
-    spring_force_buffer:    wgpu::Buffer,
     edge_buffer:    wgpu::Buffer,
     render_uniform_buffer:    wgpu::Buffer,
 
@@ -397,165 +390,15 @@ impl GraphicsResources {
 
         // Node Render Pipeline
         // 拓扑结构：Triangle Strip
-        let node_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: None,
-            layout: Some(&node_render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &node_shader,
-                entry_point: "main_vs",
-                buffers: &[
-                    wgpu::VertexBufferLayout {
-                        array_stride: 2 * 4,
-                        step_mode: wgpu::VertexStepMode::Vertex,
-                        attributes: &wgpu::vertex_attr_array![0 => Float32x2],
-                    },
-                ],
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &node_shader,
-                entry_point: "main_fs",
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: render_state.target_format.into(),
-                    blend: Some(wgpu::BlendState {
-                        color: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::SrcAlpha,
-                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                            operation: wgpu::BlendOperation::Add,
-                        },
-                        alpha: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::SrcAlpha,
-                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                            operation: wgpu::BlendOperation::Add,
-                        },
-                        // alpha: wgpu::BlendComponent::OVER,
-                    }),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleStrip,
-                front_face: wgpu::FrontFace::Ccw,
-                ..Default::default()
-            },
-            depth_stencil: Some(wgpu::DepthStencilState {
-                format: Texture::DEPTH_FORMAT,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Less, // 1.
-                stencil: wgpu::StencilState::default(), // 2.
-                bias: wgpu::DepthBiasState::default(),
-            }),
-            // depth_stencil: None,
-            multisample: MULTISAMPLE_STATE,
-            multiview: None,
-        });
+        let node_render_pipeline = RenderPipeline::create_node_render_pipeline(device, node_render_pipeline_layout, node_shader).render_pipeline;
 
         // Edge Render Pipeline
         // 拓扑结构：Line List
-        let edge_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: None,
-            layout: Some(&edge_render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &edge_shader,
-                entry_point: "main_vs",
-                buffers: &[
-                    wgpu::VertexBufferLayout {
-                        array_stride: 2 * 4,
-                        step_mode: wgpu::VertexStepMode::Vertex,
-                        attributes: &wgpu::vertex_attr_array![0 => Float32x2],
-                    },
-                ],
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &edge_shader,
-                entry_point: "main_fs",
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: render_state.target_format.into(),
-                    blend: Some(wgpu::BlendState {
-                        color: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::One,
-                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                            operation: wgpu::BlendOperation::Add,
-                        },
-                        alpha: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::OneMinusDstAlpha,
-                            dst_factor: wgpu::BlendFactor::One,
-                            operation: wgpu::BlendOperation::Add,
-                        },
-                    }),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::LineList,
-                front_face: wgpu::FrontFace::Ccw,
-                ..Default::default()
-            },
-            depth_stencil: Some(wgpu::DepthStencilState {
-                format: Texture::DEPTH_FORMAT,
-                depth_write_enabled: false,
-                depth_compare: wgpu::CompareFunction::Less, // 1.
-                stencil: wgpu::StencilState::default(), // 2.
-                bias: wgpu::DepthBiasState::default(),
-            }),
-            // depth_stencil: None,
-            multisample: MULTISAMPLE_STATE,
-            multiview: None,
-        });
-
+        let edge_render_pipeline = RenderPipeline::create_edge_render_pipeline(device, edge_render_pipeline_layout, edge_shader).render_pipeline;
 
         // Node Render Pipeline
         // 拓扑结构：Triangle Strip
-        let axis_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: None,
-            layout: Some(&axis_render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &axis_shader,
-                entry_point: "main_vs",
-                buffers: &[
-                    wgpu::VertexBufferLayout {
-                        array_stride: 2 * 4,
-                        step_mode: wgpu::VertexStepMode::Vertex,
-                        attributes: &wgpu::vertex_attr_array![0 => Float32x2],
-                    },
-                ],
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &axis_shader,
-                entry_point: "main_fs",
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: render_state.target_format.into(),
-                    blend: Some(wgpu::BlendState {
-                        color: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::SrcAlpha,
-                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                            operation: wgpu::BlendOperation::Add,
-                        },
-                        alpha: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::SrcAlpha,
-                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
-                            operation: wgpu::BlendOperation::Add,
-                        },
-                        // alpha: wgpu::BlendComponent::OVER,
-                    }),
-                    write_mask: wgpu::ColorWrites::ALL,
-                })],
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleStrip,
-                front_face: wgpu::FrontFace::Ccw,
-                ..Default::default()
-            },
-            depth_stencil: Some(wgpu::DepthStencilState {
-                format: Texture::DEPTH_FORMAT,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Less, // 1.
-                stencil: wgpu::StencilState::default(), // 2.
-                bias: wgpu::DepthBiasState::default(),
-            }),
-            // depth_stencil: None,
-            multisample: MULTISAMPLE_STATE,
-            multiview: None,
-        });
+        let axis_render_pipeline = RenderPipeline::create_axis_render_pipeline(device, axis_render_pipeline_layout, axis_shader).render_pipeline;
 
 
 
@@ -778,7 +621,6 @@ impl GraphicsResources {
             uniform_buffer,
             quad_buffer,
             node_buffer,
-            spring_force_buffer,
             edge_buffer,
             render_uniform_buffer,
             compute_bind_group,
@@ -950,7 +792,7 @@ impl GraphicsResources {
     pub fn update_viewport(&mut self, new_size: Vec2) -> bool {
 
         let device = &self.render_state.device;
-        let queue = &self.render_state.queue;
+        let _queue = &self.render_state.queue;
 
         if self.viewport_size != new_size {
             self.viewport_size = new_size;
@@ -1031,7 +873,7 @@ fn update_transform_matrix(queue: &Queue, camera: &mut Camera, render_uniform_bu
 
         camera.update_projection_matrix();
 
-        let mut uniform_data = generate_uniform_data(camera);
+        let uniform_data = generate_uniform_data(camera);
 
         queue.write_buffer(&render_uniform_buffer, 0, bytemuck::cast_slice(&uniform_data));
         camera.is_updated = false;

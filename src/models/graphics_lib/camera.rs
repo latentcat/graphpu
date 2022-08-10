@@ -1,4 +1,4 @@
-use std::cmp::max;
+
 use std::f32::consts;
 use std::f32::consts::FRAC_PI_2;
 

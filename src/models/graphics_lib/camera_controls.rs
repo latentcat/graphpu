@@ -1,5 +1,5 @@
-use std::f32::consts::{FRAC_PI_2, PI};
-use egui::{PointerButton, Pos2, Ui, Vec2};
+use std::f32::consts::{PI};
+use egui::{Pos2, Ui, Vec2};
 use crate::models::graphics_lib::Camera;
 
 pub struct Controls {
