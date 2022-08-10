@@ -17,6 +17,12 @@ use super::data_model::DataModel;
 // WGSL 中没有宏，不能使用类似 HLSL 的 #define 方法
 const PARTICLES_PER_GROUP: u32 = 128;
 
+const MULTISAMPLE_STATE: wgpu::MultisampleState = wgpu::MultisampleState {
+    count: 4,
+    mask: !0,
+    alpha_to_coverage_enabled: false
+};
+
 // 须同步修改各个 WGSL 中的 Node struct
 #[repr(C)]
 pub struct Node {
@@ -119,6 +125,7 @@ pub struct GraphicsResources {
 
     // 用于呈现渲染结果的 Texture View，在 egui 中注册后用 Texture ID 在 Image 组件显示
     texture_view: Option<wgpu::TextureView>,
+    msaa_texture_view: Option<wgpu::TextureView>,
     pub texture_id: egui::TextureId,
 
     // 视口大小
@@ -438,7 +445,7 @@ impl GraphicsResources {
                 bias: wgpu::DepthBiasState::default(),
             }),
             // depth_stencil: None,
-            multisample: wgpu::MultisampleState::default(),
+            multisample: MULTISAMPLE_STATE,
             multiview: None,
         });
 
@@ -491,7 +498,7 @@ impl GraphicsResources {
                 bias: wgpu::DepthBiasState::default(),
             }),
             // depth_stencil: None,
-            multisample: wgpu::MultisampleState::default(),
+            multisample: MULTISAMPLE_STATE,
             multiview: None,
         });
 
@@ -546,7 +553,7 @@ impl GraphicsResources {
                 bias: wgpu::DepthBiasState::default(),
             }),
             // depth_stencil: None,
-            multisample: wgpu::MultisampleState::default(),
+            multisample: MULTISAMPLE_STATE,
             multiview: None,
         });
 
@@ -763,6 +770,7 @@ impl GraphicsResources {
             render_state,
             depth_texture: None,
             texture_view: None,
+            msaa_texture_view: None,
             texture_id: Default::default(),
             viewport_size: Default::default(),
             camera,
@@ -880,15 +888,16 @@ impl GraphicsResources {
         let queue = &self.render_state.queue;
 
         let view = &self.texture_view.as_ref().unwrap();
+        let msaa_view = &self.msaa_texture_view.as_ref().unwrap();
 
 
         // create render pass descriptor and its color attachments
         let color_attachments = [Some(wgpu::RenderPassColorAttachment {
-            view,
-            resolve_target: None,
+            view: msaa_view,
+            resolve_target: Some(view),
             ops: wgpu::Operations {
                 load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
-                store: true,
+                store: false,
             },
         })];
         let render_pass_descriptor = wgpu::RenderPassDescriptor {
@@ -905,14 +914,11 @@ impl GraphicsResources {
             // depth_stencil_attachment: None,
         };
 
-        // let time: f32 = self.frame_num as f32 * 0.003;
-        // self.camera.set_position(glam::Vec3::new(time.sin() * 10.0, 0.0, time.cos() * 10.0));
-
         update_transform_matrix(queue, &mut self.camera, &self.render_uniform_buffer, glam::Vec2::new(self.viewport_size.x, self.viewport_size.y));
 
         // get command encoder
         let mut command_encoder =
-            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Label::from("qwe") });
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         command_encoder.push_debug_group("render boids");
         {
             // render pass
@@ -969,7 +975,20 @@ impl GraphicsResources {
                 label: None,
             });
 
+            let msaa_texture = device.create_texture(&wgpu::TextureDescriptor {
+                size: texture_extent.clone(),
+                mip_level_count: 1,
+                sample_count: 4,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Bgra8UnormSrgb,
+                usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                    | wgpu::TextureUsages::COPY_SRC
+                    | wgpu::TextureUsages::TEXTURE_BINDING,
+                label: None,
+            });
+
             let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+            let mass_texture_view = msaa_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
             drop(texture);
 
@@ -981,6 +1000,7 @@ impl GraphicsResources {
             self.depth_texture = Some(Texture::create_depth_texture(&device, &texture_extent, "depth_texture"));
 
             self.texture_view = Option::from(texture_view);
+            self.msaa_texture_view = Option::from(mass_texture_view);
             self.texture_id = texture_id;
 
             return true;
