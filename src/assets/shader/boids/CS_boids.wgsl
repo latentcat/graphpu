@@ -18,11 +18,17 @@ struct Uniforms {
     frame_num: u32,
 };
 
+struct Bound {
+    bound_min: vec3<f32>,
+    bound_max: vec3<f32>,
+}
+
 @group(0) @binding(0) var<uniform> params: SimParams;
 @group(0) @binding(1) var<uniform> uniforms: Uniforms;
 @group(0) @binding(2) var<storage, read_write> nodeSrc: array<Node>;
 @group(0) @binding(3) var<storage, read> edgeSrc: array<vec2<u32>>;
 @group(0) @binding(4) var<storage, read_write> springForceSrc: array<atomic<i32>>;
+@group(0) @binding(5) var<storage, read_write> bounding: array<Bound>;
 
 
 fn hash(s: u32) -> u32 {
@@ -138,6 +144,48 @@ fn attractive_force(@builtin(global_invocation_id) global_invocation_id: vec3<u3
 
 }
 
+var<workgroup> smin: array<vec3<f32>, 128>;
+var<workgroup> smax: array<vec3<f32>, 128>;
+
+@compute
+@workgroup_size(128)
+fn reduction_bounding(
+    @builtin(local_invocation_id) local_id: vec3<u32>,
+    @builtin(local_invocation_index) local_index: u32,
+    @builtin(global_invocation_id) global_id: vec3<u32>,
+) {
+    let index = global_id.x;
+    
+    smin[local_index] = nodeSrc[index].position;
+    smax[local_index] = nodeSrc[index].position;
+    workgroupBarrier();
+
+    for (var s = 64u; s > 0u; s >>= 1u) {
+        if (local_index < s) {
+            let k = local_index + s;
+            smin[local_index] = min(smin[local_index], smin[k]);
+            smax[local_index] = max(smax[local_index], smax[k]);
+        }
+        workgroupBarrier();
+    }
+
+    if (local_index == 0u) {
+        bounding[local_id.x].bound_min = smin[0];
+        bounding[local_id.x].bound_max = smax[0];
+    }
+}
+
+@compute
+@workgroup_size(128)
+fn bounding_box() {
+    var bound_min_min = bounding[0].bound_min;
+    var bound_max_max = bounding[0].bound_max;
+    let node_group_count = arrayLength(&nodeSrc) / 128u;
+    for (var i = 0u; i < node_group_count; i++) {
+        bound_min_min = min(bound_min_min, bounding[i].bound_min);
+        bound_max_max = max(bound_max_max, bounding[i].bound_max);
+    }
+}
 
 @compute
 @workgroup_size(128)
