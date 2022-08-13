@@ -7,6 +7,8 @@ pub struct Controls {
     // 鼠标指针位置，存在时为 Some
     pointer_pos: Option<Pos2>,
 
+    is_pointer_press_inside: bool,
+
     // 鼠标事件
     primary_clicked: bool,
     primary_down: bool,
@@ -28,6 +30,7 @@ impl Controls {
     pub fn new() -> Self {
         Self {
             pointer_pos: None,
+            is_pointer_press_inside: false,
             primary_clicked: false,
             primary_down: false,
             secondary_down: false,
@@ -66,6 +69,8 @@ impl Controls {
         // 仅当鼠标指针在应用窗口范围内，或拖动至 native 应用外是为 Some
         if let Some(pos) = ui.input().pointer.interact_pos() {
 
+            let mut is_pointer_press_inside = false;
+
             // 如果鼠标指针在绘图区域内
             if viewport_rect.contains(pos) && !is_hover_toolbar {
 
@@ -73,15 +78,32 @@ impl Controls {
                 // 范围是 0, 0 至 width, height
                 self.pointer_pos = Some(pos - viewport_rect.min.to_vec2());
 
-                // 鼠标事件记录
-                // 若有事件，标记交互已更新
-
-                if ui.input().pointer.primary_clicked() { self.primary_clicked = true; is_updated = true; }
-                if ui.input().pointer.primary_down()    { self.primary_down = true;    is_updated = true; }
-                if ui.input().pointer.secondary_down()  { self.secondary_down = true;  is_updated = true; }
-                if self.scroll_delta != Vec2::ZERO      { is_updated = true; }
+                is_pointer_press_inside = true;
 
             }
+
+            // 鼠标事件记录
+            // 若有事件，标记交互已更新
+
+            if ui.input().pointer.primary_clicked() { is_updated = true; self.primary_clicked = true; }
+
+            if ui.input().pointer.primary_down() {
+                is_updated = true;
+                if !self.primary_down {
+                    self.is_pointer_press_inside = is_pointer_press_inside;
+                    self.primary_down = true;
+                }
+            }
+
+            if ui.input().pointer.secondary_down() {
+                is_updated = true;
+                if !self.secondary_down {
+                    self.is_pointer_press_inside = is_pointer_press_inside;
+                    self.secondary_down = true;
+                }
+            }
+
+            if self.scroll_delta != Vec2::ZERO      { is_updated = true; }
         }
 
         // 鼠标事件归零
@@ -110,6 +132,8 @@ impl Controls {
             camera.zoom(f32::powf(1.2, -self.scroll_delta.y * 0.03) );
 
         }
+
+        if !self.is_pointer_press_inside { return; }
 
         // 右键上下缩放
         // 如果鼠标右键在绘图区域内按下，且鼠标指针纵向 delta 不为零

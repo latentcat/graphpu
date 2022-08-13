@@ -140,9 +140,9 @@ impl AppView for GraphicsView {
                             ui.with_layout(egui::Layout::right_to_left(), |ui| {
                                 ui.horizontal(|ui| {
 
-                                    let _ = ui.button("🗁");
-                                    let _ = ui.button("🗁");
-                                    let _ = ui.button("🗁");
+                                    let _ = ui.button("⏺");
+                                    let _ = ui.button("⏺");
+                                    let _ = ui.button("⏺");
                                 }).response.hovered().then(||{is_hover_toolbar = true});
                             });
 
