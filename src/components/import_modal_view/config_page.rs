@@ -20,9 +20,9 @@ pub fn show(parent: &mut ImportModal, models: &mut Models, ui: &mut Ui) {
             ui.add(egui::Label::new("Edge Source*"));
             ui.horizontal(|ui| {
                 egui::ComboBox::from_id_source("Edge Source")
-                    .selected_text(&models.graphic_model.edge_data.headers_index_str[parent.edge_source])
+                    .selected_text(&models.data_model.edge_data.headers_index_str[parent.edge_source])
                     .show_ui(ui, |ui| {
-                        for (i, s) in models.graphic_model.edge_data.headers_index_str.iter().enumerate() {
+                        for (i, s) in models.data_model.edge_data.headers_index_str.iter().enumerate() {
                             ui.selectable_value(&mut parent.edge_source, i, s);
                         }
                     });
@@ -33,9 +33,9 @@ pub fn show(parent: &mut ImportModal, models: &mut Models, ui: &mut Ui) {
             ui.add(egui::Label::new("Edge Target*"));
             ui.horizontal(|ui| {
                 egui::ComboBox::from_id_source("Edge Target")
-                    .selected_text(&models.graphic_model.edge_data.headers_index_str[parent.edge_target])
+                    .selected_text(&models.data_model.edge_data.headers_index_str[parent.edge_target])
                     .show_ui(ui, |ui| {
-                        for (i, s) in models.graphic_model.edge_data.headers_index_str.iter().enumerate() {
+                        for (i, s) in models.data_model.edge_data.headers_index_str.iter().enumerate() {
                             ui.selectable_value(&mut parent.edge_target, i, s);
                         }
                     });

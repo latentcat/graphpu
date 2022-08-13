@@ -17,8 +17,8 @@ impl AppView for DetailView {
                         egui::RichText::new(
                             format!(
                                 "Nodes: {}  |  Edges: {}",
-                                models.graphic_model.status.node_count,
-                                models.graphic_model.status.edge_count
+                                models.data_model.status.node_count,
+                                models.data_model.status.edge_count
                             )
                         ).weak()
                     );

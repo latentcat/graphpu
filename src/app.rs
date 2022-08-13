@@ -37,7 +37,7 @@ impl MainApp {
                                egui::FontData::from_static(include_bytes!("./assets/fonts/droidsans.ttf")));
 
         fonts.font_data.insert("mono_font".to_owned(),
-                               egui::FontData::from_static(include_bytes!("./assets/fonts/droidsans.ttf"))); // .ttf and .otf supported
+                               egui::FontData::from_static(include_bytes!("./assets/fonts/bmonofont-i18n.ttf"))); // .ttf and .otf supported
 
         fonts.families.get_mut(&egui::FontFamily::Proportional).unwrap()
             .insert(0, "prop_font".to_owned());
@@ -48,10 +48,12 @@ impl MainApp {
 
         cc.egui_ctx.set_fonts(fonts);
 
+        // cc.egui_ctx.set_debug_on_hover(true);
+
         let mut main_app = MainApp {
             models: Models { 
-                compute_model: GraphicsModel::init(cc),
-                graphic_model: DataModel::default(),
+                graphics_model: GraphicsModel::init(cc),
+                data_model: DataModel::default(),
                 app_model: AppModel::default(),
             },
             inspector_view: InspectorView::default(),

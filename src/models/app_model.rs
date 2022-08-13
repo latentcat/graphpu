@@ -16,10 +16,18 @@ pub enum Stage {
 }
 
 #[derive(Default, PartialEq)]
-pub enum NodeEdgeTab {
+pub enum TableTab {
     #[default]
     Node,
     Edge,
+}
+
+#[derive(Default, PartialEq)]
+pub enum InspectorTab {
+    #[default]
+    Node,
+    Edge,
+    Render,
 }
 
 pub struct AppModel {
@@ -28,7 +36,8 @@ pub struct AppModel {
     pub node_file_path: Option<PathBuf>,
     pub edge_file_path: Option<PathBuf>,
     pub stage: Stage,
-    pub ne_tab: NodeEdgeTab,
+    pub table_tab: TableTab,
+    pub inspector_tab: InspectorTab,
     pub message: String,
     pub pixels_per_point: f32,
 }
@@ -38,11 +47,12 @@ impl Default for AppModel {
 
         Self { 
             import_visible: false,
-            import_state: ImportState::default(),
+            import_state: Default::default(),
             node_file_path: None,
             edge_file_path: None,
-            stage: Stage::default(),
-            ne_tab: NodeEdgeTab::default(),
+            stage: Default::default(),
+            table_tab: Default::default(),
+            inspector_tab: Default::default(),
             message: String::from("中文消息测试"),
             pixels_per_point: 1.0
         }

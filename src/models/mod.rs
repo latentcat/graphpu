@@ -9,8 +9,8 @@ pub mod graphics_lib;
 pub mod graphics_model;
 
 pub struct Models {
-    pub compute_model: graphics_model::GraphicsModel,
-    pub graphic_model: data_model::DataModel,
+    pub graphics_model: graphics_model::GraphicsModel,
+    pub data_model: data_model::DataModel,
     pub app_model: app_model::AppModel,
 }
 
@@ -40,20 +40,20 @@ impl Models {
             source_target_list,
             max_id,
         } = data;
-        self.graphic_model.node_data = node_data;
-        self.graphic_model.edge_data = edge_data;
-        self.graphic_model.edge_source = Some(source_index);
-        self.graphic_model.edge_target = Some(target_index);
-        self.graphic_model.source_target_list = Some(source_target_list);
-        self.graphic_model.max_id = max_id;
-        self.graphic_model.set_status();
+        self.data_model.node_data = node_data;
+        self.data_model.edge_data = edge_data;
+        self.data_model.edge_source = Some(source_index);
+        self.data_model.edge_target = Some(target_index);
+        self.data_model.source_target_list = Some(source_target_list);
+        self.data_model.max_id = max_id;
+        self.data_model.set_status();
         self.app_model.node_file_path = Some(PathBuf::from(node_file_path));
         self.app_model.edge_file_path = Some(PathBuf::from(edge_file_path));
         self.app_model.import_state = ImportState::Success;
         self.app_model.import_visible = false;
-        self.compute_model.graphics_resources = Some(GraphicsResources::new(
-            self.compute_model.compute_render_state.clone(),
-            &mut self.graphic_model,
+        self.graphics_model.graphics_resources = Some(GraphicsResources::new(
+            self.graphics_model.compute_render_state.clone(),
+            &mut self.data_model,
         ));
     }
 
@@ -61,11 +61,11 @@ impl Models {
         self.app_model.import_state = ImportState::Initial;
         self.app_model.node_file_path = None;
         self.app_model.edge_file_path = None;
-        self.graphic_model.node_data = ExternalData::default();
-        self.graphic_model.edge_data = ExternalData::default();
-        self.graphic_model.max_id = 0;
-        self.compute_model.reset();
-        self.compute_model.graphics_resources = None;
-        self.graphic_model.status = GraphicsStatus::default();
+        self.data_model.node_data = ExternalData::default();
+        self.data_model.edge_data = ExternalData::default();
+        self.data_model.max_id = 0;
+        self.graphics_model.reset();
+        self.graphics_model.graphics_resources = None;
+        self.data_model.status = GraphicsStatus::default();
     }
 }

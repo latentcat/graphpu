@@ -43,7 +43,7 @@ impl Controls {
 
     // 传入 egui Ui，更新交互
     // 该函数在 viewport 更新后，渲染开始前调用
-    pub fn update_interaction(&mut self, ui: &mut Ui) -> bool {
+    pub fn update_interaction(&mut self, ui: &mut Ui, is_hover_toolbar: bool) -> bool {
 
         // 归零参数
         self.pointer_pos = None;
@@ -67,7 +67,7 @@ impl Controls {
         if let Some(pos) = ui.input().pointer.interact_pos() {
 
             // 如果鼠标指针在绘图区域内
-            if viewport_rect.contains(pos) {
+            if viewport_rect.contains(pos) && !is_hover_toolbar {
 
                 // 记录鼠标指针在绘图区域的相对位置
                 // 范围是 0, 0 至 width, height

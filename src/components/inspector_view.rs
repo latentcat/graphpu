@@ -4,7 +4,7 @@ use egui::Ui;
 use egui::collapsing_header::HeaderResponse;
 
 use crate::models::Models;
-use crate::models::app_model::{ImportState, NodeEdgeTab};
+use crate::models::app_model::{ImportState, InspectorTab, TableTab};
 use crate::models::graphics_model::ComputeMethod;
 use crate::models::graphics_model::ComputeMethodType;
 use crate::models::data_model::{PositionType, ColorType, ColorRamp, ColorPalette, SizeType};
@@ -37,7 +37,7 @@ impl AppView for InspectorView {
                         }
 
                         ui.with_layout(egui::Layout::right_to_left(), |ui| {
-                            let _ = ui.button("⛭");
+                            let _ = ui.button("🗁");
 
                             ui.vertical_centered_justified(|ui| {
                                 let render_button = ui.button("Render Image");
@@ -95,12 +95,15 @@ impl AppView for InspectorView {
                         button_group_style(ui.style()).show(ui, |ui| {
                             ui.set_style(ui.ctx().style());
                             ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
-                            ui.columns(2, |columns| {
+                            ui.columns(3, |columns| {
                                 columns[0].vertical_centered_justified(|ui| {
-                                    ui.selectable_value(&mut models.app_model.ne_tab, NodeEdgeTab::Node, "Node Style");
+                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Node, "Node");
                                 });
                                 columns[1].vertical_centered_justified(|ui| {
-                                    ui.selectable_value(&mut models.app_model.ne_tab, NodeEdgeTab::Edge, "Edge Style");
+                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Edge, "Edge");
+                                });
+                                columns[2].vertical_centered_justified(|ui| {
+                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Render, "Camera");
                                 });
                             });
                         });
@@ -113,9 +116,10 @@ impl AppView for InspectorView {
                             .auto_shrink([false, false])
                             .id_source("source")
                             .show(ui, |ui| {
-                                match models.app_model.ne_tab {
-                                    NodeEdgeTab::Node => self.node_inspector(models, ui),
-                                    NodeEdgeTab::Edge => self.edge_inspector(models, ui),
+                                match models.app_model.inspector_tab {
+                                    InspectorTab::Node => self.node_inspector(models, ui),
+                                    InspectorTab::Edge => self.edge_inspector(models, ui),
+                                    InspectorTab::Render => {},
                                 };
 
                             });
@@ -129,7 +133,7 @@ impl AppView for InspectorView {
 
 impl InspectorView {
     fn node_inspector(&mut self, models: &mut Models, ui: &mut Ui) {
-        let node_settings = &mut models.graphic_model.node_settings;
+        let node_settings = &mut models.data_model.node_settings;
         // TODO: constant editor
 
         let (header, _) = grid_header(ui, true, "Position", &node_settings.position_type.to_string());
@@ -159,15 +163,15 @@ impl InspectorView {
 
                             grid_label(ui, "");
                             if node_settings.position_compute.1 == ComputeMethodType::Continuous {
-                                let continuous_button = ui.button(if !models.compute_model.is_computing { "Start Computing" } else { "Pause Computing" });
+                                let continuous_button = ui.button(if !models.graphics_model.is_computing { "Start Computing" } else { "Pause Computing" });
                                 if continuous_button.clicked() {
-                                    models.compute_model.switch_computing();
+                                    models.graphics_model.switch_computing();
                                 }
                             } else {
-                                models.compute_model.set_computing(false);
+                                models.graphics_model.set_computing(false);
                                 let one_step_button = ui.button("⏩ Dispatch");
                                 if one_step_button.clicked() {
-                                    models.compute_model.set_dispatching(true);
+                                    models.graphics_model.set_dispatching(true);
                                 }
                             }
                             ui.end_row();
@@ -208,7 +212,7 @@ impl InspectorView {
                         },
                         ColorType::Ramp => {
                             let (source, ramp) = &mut node_settings.color_ramp;
-                            source_combox("Color Ramp Source", &models.graphic_model.node_data.headers_index_str, source, ui);
+                            source_combox("Color Ramp Source", &models.data_model.node_data.headers_index_str, source, ui);
                             grid_label(ui, "Picker");
                             egui::ComboBox::from_id_source("Color Ramp")
                                 .selected_text(&ramp.to_string())
@@ -224,7 +228,7 @@ impl InspectorView {
                         },
                         ColorType::Partition => {
                             let (source, platte) = &mut node_settings.color_partition;
-                            source_combox("Color Partition Source", &models.graphic_model.node_data.headers_index_str, source, ui);
+                            source_combox("Color Partition Source", &models.data_model.node_data.headers_index_str, source, ui);
                             grid_label(ui, "Platte");
                             egui::ComboBox::from_id_source("Color Partition")
                                 .selected_text(&platte.to_string())
@@ -264,7 +268,7 @@ impl InspectorView {
                         },
                         SizeType::Ramp => {
                             let (source, _) = &mut node_settings.size_ramp;
-                            source_combox("Size Ramp Source", &models.graphic_model.node_data.headers_index_str, source, ui);
+                            source_combox("Size Ramp Source", &models.data_model.node_data.headers_index_str, source, ui);
                             grid_label(ui, "Range");
                             ui.horizontal(|ui| {
                                 ui.add(egui::DragValue::new(&mut node_settings.size_ramp.1[0]).speed(0.1));

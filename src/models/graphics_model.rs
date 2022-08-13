@@ -59,6 +59,7 @@ impl ComputeMethod {
 pub struct GraphicsModel {
     pub is_computing: bool,
     pub is_dispatching: bool,
+    pub is_hover_toolbar: bool,
     pub compute_render_state: egui_wgpu::RenderState,
     pub graphics_resources: Option<GraphicsResources>,
 }
@@ -71,6 +72,7 @@ impl GraphicsModel {
         Self {
             is_computing: false,
             is_dispatching: false,
+            is_hover_toolbar: false,
             compute_render_state: cc.render_state.as_ref().unwrap().clone(),
             graphics_resources: None,
         }
@@ -724,7 +726,7 @@ impl GraphicsResources {
         self.frame_num += 1;
     }
 
-    pub unsafe fn render(&mut self) {
+    pub fn render(&mut self) {
 
         let device = &self.render_state.device;
         let queue = &self.render_state.queue;
@@ -850,9 +852,9 @@ impl GraphicsResources {
         return false;
     }
 
-    pub fn update_control(&mut self, ui: &mut Ui) -> bool {
+    pub fn update_control(&mut self, ui: &mut Ui, is_hover_toolbar: bool) -> bool {
 
-        let is_updated = self.control.update_interaction(ui);
+        let is_updated = self.control.update_interaction(ui, is_hover_toolbar);
         self.control.update_camera(&mut self.camera);
 
         is_updated

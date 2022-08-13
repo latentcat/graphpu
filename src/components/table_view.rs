@@ -1,7 +1,7 @@
 use egui_extras::{TableBuilder, Size};
 
 use crate::{
-    models::{app_model::NodeEdgeTab, data_model::ExternalData, Models},
+    models::{app_model::TableTab, data_model::ExternalData, Models},
     widgets::frames::button_group_style,
 };
 use crate::models::app_model::ImportState;
@@ -24,23 +24,23 @@ impl AppView for TableView {
                     button_group_style(ui.style()).show(ui, |ui| {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
-                        ui.selectable_value(&mut models.app_model.ne_tab, NodeEdgeTab::Node, "  Node Data  ");
-                        ui.selectable_value(&mut models.app_model.ne_tab, NodeEdgeTab::Edge, "  Edge Data  ");
+                        ui.selectable_value(&mut models.app_model.table_tab, TableTab::Node, "  Node Data  ");
+                        ui.selectable_value(&mut models.app_model.table_tab, TableTab::Edge, "  Edge Data  ");
                     });
                 });
 
                 ui.separator();
 
-                let ExternalData { headers_index_str: data_headers, data, .. } = match models.app_model.ne_tab {
-                    NodeEdgeTab::Node => &models.graphic_model.node_data,
-                    NodeEdgeTab::Edge => &models.graphic_model.edge_data,
+                let ExternalData { headers_index_str: data_headers, data, .. } = match models.app_model.table_tab {
+                    TableTab::Node => &models.data_model.node_data,
+                    TableTab::Edge => &models.data_model.edge_data,
                 };
 
                 if models.app_model.import_state != ImportState::Success {
                     ui.centered_and_justified(|ui| {
-                        let empty_hint_text = match models.app_model.ne_tab {
-                            NodeEdgeTab::Node => "Import node data to display.",
-                            NodeEdgeTab::Edge => "Import edge data to display.",
+                        let empty_hint_text = match models.app_model.table_tab {
+                            TableTab::Node => "Import node data to display.",
+                            TableTab::Edge => "Import edge data to display.",
                         };
                         ui.label(egui::RichText::new(empty_hint_text).weak());
                     });
@@ -71,7 +71,7 @@ impl AppView for TableView {
                                 }
                             })
                             .body(|body| {
-                                body.rows(text_height, models.graphic_model.status.node_count, |row_index, mut row| {
+                                body.rows(text_height, models.data_model.status.node_count, |row_index, mut row| {
                                     row.col(|ui| {
                                         ui.label(egui::RichText::new(row_index.to_string()).weak());
                                     });
