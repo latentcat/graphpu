@@ -155,12 +155,15 @@ impl AppView for GraphicsView {
                                     if let Some(graphics_resources) = &mut models.graphics_model.graphics_resources {
 
                                         toggle_button(ui, &mut graphics_resources.render_options.is_rendering_axis, "⛶")
+                                            .on_hover_text("Show Axis")
                                             .clicked().then(|| { need_update(ui, graphics_resources) });
 
                                         toggle_button(ui, &mut graphics_resources.render_options.is_rendering_edge, "➖")
+                                            .on_hover_text("Show Edges")
                                             .clicked().then(|| { need_update(ui, graphics_resources) });
 
                                         toggle_button(ui, &mut graphics_resources.render_options.is_rendering_node, "⚫")
+                                            .on_hover_text("Show Nodes")
                                             .clicked().then(|| { need_update(ui, graphics_resources) });
 
                                     } else {
