@@ -155,7 +155,7 @@ impl AppView for GraphicsView {
                                     if let Some(graphics_resources) = &mut models.graphics_model.graphics_resources {
 
                                         toggle_button(ui, &mut graphics_resources.render_options.is_rendering_axis, "⛶")
-                                            .on_hover_text("Show Axis")
+                                            .on_hover_text("Show Axes")
                                             .clicked().then(|| { need_update(ui, graphics_resources) });
 
                                         toggle_button(ui, &mut graphics_resources.render_options.is_rendering_edge, "➖")
