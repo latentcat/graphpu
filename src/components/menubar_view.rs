@@ -54,14 +54,14 @@ impl AppView for MenuBarView {
                         match models.app_model.import_state {
                             ImportState::Initial => {
                                 if ui.button("Import Data").clicked() {
-                                    models.app_model.import_visible = true;
+                                    models.app_model.is_import_visible = true;
                                     ui.close_menu();
                                 }
                             },
                             ImportState::Success => {
                                 if ui.button("Reimport Data").clicked() {
                                     models.clear_data();
-                                    models.app_model.import_visible = true;
+                                    models.app_model.is_import_visible = true;
                                     ui.close_menu();
                                 }
                             },

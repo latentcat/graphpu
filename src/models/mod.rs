@@ -50,7 +50,7 @@ impl Models {
         self.app_model.node_file_path = Some(PathBuf::from(node_file_path));
         self.app_model.edge_file_path = Some(PathBuf::from(edge_file_path));
         self.app_model.import_state = ImportState::Success;
-        self.app_model.import_visible = false;
+        self.app_model.is_import_visible = false;
         self.graphics_model.graphics_resources = Some(GraphicsResources::new(
             self.graphics_model.compute_render_state.clone(),
             &mut self.data_model,

@@ -67,7 +67,7 @@ impl ImportModal {
                                         }
                                     });
                                     if ui.button("   Cancel   ").clicked() {
-                                        models.app_model.import_visible = false;
+                                        models.app_model.is_import_visible = false;
                                     }
                                 }
                                 Page::Config => {

@@ -31,7 +31,8 @@ pub enum InspectorTab {
 }
 
 pub struct AppModel {
-    pub import_visible: bool,
+    pub is_import_visible: bool,
+    pub is_timeline_expand: bool,
     pub import_state: ImportState,
     pub node_file_path: Option<PathBuf>,
     pub edge_file_path: Option<PathBuf>,
@@ -46,7 +47,8 @@ impl Default for AppModel {
     fn default() -> Self {
 
         Self { 
-            import_visible: false,
+            is_import_visible: false,
+            is_timeline_expand: false,
             import_state: Default::default(),
             node_file_path: None,
             edge_file_path: None,

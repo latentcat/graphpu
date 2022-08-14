@@ -84,7 +84,7 @@ impl eframe::App for MainApp {
                 };
             });
 
-        if self.models.app_model.import_visible {
+        if self.models.app_model.is_import_visible {
             self.import_modal.show(ctx, &mut self.models);
         }
     }

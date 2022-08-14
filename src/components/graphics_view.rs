@@ -1,9 +1,10 @@
 use std::borrow::BorrowMut;
 use std::ops::Mul;
-use egui::{Ui, Vec2, Widget};
+use egui::{Response, Ui, Vec2, Widget, WidgetText};
+use crate::models::graphics_model::GraphicsResources;
 
 use crate::models::Models;
-use crate::widgets::frames::{DEFAULT_BUTTON_MARGIN, graphics_frame, toolbar_inner_frame, toolbar_timeline_frame};
+use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_MARGIN, graphics_frame, toolbar_inner_frame, toolbar_inner_frame_bottom, toolbar_timeline_frame};
 use crate::widgets::toolbar_modal::ToolbarModal;
 
 use super::AppView;
@@ -86,22 +87,27 @@ impl AppView for GraphicsView {
 
                     let mut is_hover_toolbar = false;
 
-                    egui::TopBottomPanel::bottom("toolbar-bottom")
-                        .frame(toolbar_inner_frame(ui.style()))
-                        .show_inside(ui, |ui| {
-                            toolbar_timeline_frame(ui.style())
-                                .show(ui, |ui| {
-                                    ui.set_style(ui.ctx().style());
-                                    ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
-                                    // ui.spacing_mut().button_padding = DEFAULT_BUTTON_MARGIN;
+                    if models.app_model.is_timeline_expand {
 
-                                    ui.centered_and_justified(|ui| {
-                                        ui.set_min_height(60.0);
-                                        ui.label(egui::RichText::new("Timeline View").weak());
-                                    }).response.hovered().then(||{is_hover_toolbar = true});
-                                });
+                        egui::TopBottomPanel::bottom("toolbar-bottom")
+                            .frame(toolbar_inner_frame_bottom(ui.style()))
+                            .show_inside(ui, |ui| {
+                                toolbar_timeline_frame(ui.style())
+                                    .show(ui, |ui| {
+                                        ui.set_style(ui.ctx().style());
+                                        ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
+                                        // ui.spacing_mut().button_padding = DEFAULT_BUTTON_MARGIN;
 
-                        });
+                                        ui.centered_and_justified(|ui| {
+                                            ui.set_min_height(100.0);
+                                            ui.label(egui::RichText::new("Timeline View").weak());
+                                        }).response.hovered().then(||{is_hover_toolbar = true});
+                                    });
+
+                            });
+
+
+                    }
 
                     egui::SidePanel::left("toolbar-left")
                         .frame(toolbar_inner_frame(ui.style()))
@@ -140,18 +146,45 @@ impl AppView for GraphicsView {
                             ui.with_layout(egui::Layout::right_to_left(), |ui| {
                                 ui.horizontal(|ui| {
                                     if let Some(graphics_resources) = &mut models.graphics_model.graphics_resources {
-                                        ui.toggle_value(graphics_resources.render_options.is_rendering_node.borrow_mut(), "⏺")
-                                            .clicked().then(||{ graphics_resources.need_update = true; ui.ctx().request_repaint(); });
-                                        ui.toggle_value(graphics_resources.render_options.is_rendering_edge.borrow_mut(), "⏺")
-                                            .clicked().then(||{ graphics_resources.need_update = true; ui.ctx().request_repaint(); });
-                                        ui.toggle_value(graphics_resources.render_options.is_rendering_axis.borrow_mut(), "⏺")
-                                            .clicked().then(||{ graphics_resources.need_update = true; ui.ctx().request_repaint(); });
+
+                                        toggle_button(ui, &mut graphics_resources.render_options.is_rendering_axis, "⛶")
+                                            .clicked().then(|| { need_update(ui, graphics_resources) });
+
+                                        toggle_button(ui, &mut graphics_resources.render_options.is_rendering_edge, "➖")
+                                            .clicked().then(|| { need_update(ui, graphics_resources) });
+
+                                        toggle_button(ui, &mut graphics_resources.render_options.is_rendering_node, "⚫")
+                                            .clicked().then(|| { need_update(ui, graphics_resources) });
+
                                     } else {
                                         ui.set_enabled(false);
-                                        ui.toggle_value(&mut false, "⏺");
-                                        ui.toggle_value(&mut false, "⏺");
-                                        ui.toggle_value(&mut false, "⏺");
+                                        toggle_button(ui, &mut false, "⛶");
+                                        toggle_button(ui, &mut false, "➖");
+                                        toggle_button(ui, &mut false, "⚫");
                                     }
+                                }).response.hovered().then(||{is_hover_toolbar = true});
+                            });
+
+                        });
+
+                    egui::TopBottomPanel::bottom("toolbar-bottom-2")
+                        .frame(toolbar_inner_frame_bottom(ui.style()))
+                        .show_inside(ui, |ui| {
+                            ui.set_style(ui.ctx().style());
+                            ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
+                            // ui.spacing_mut().button_padding = DEFAULT_BUTTON_MARGIN;
+
+                            ui.with_layout(egui::Layout::right_to_left(), |ui| {
+                                ui.horizontal(|ui| {
+
+                                    let is_timeline_expand = models.app_model.is_timeline_expand;
+
+                                    toggle_button(
+                                        ui,
+                                        &mut models.app_model.is_timeline_expand,
+                                        if is_timeline_expand { "⏷ Timeline"} else { "⏶ Timeline" }
+                                    ).changed().then(|| {ui.ctx().request_repaint()});
+
                                 }).response.hovered().then(||{is_hover_toolbar = true});
                             });
 
@@ -168,4 +201,17 @@ impl AppView for GraphicsView {
 
 
     }
+}
+
+
+fn toggle_button(ui: &mut egui::Ui, selected: &mut bool, text: impl Into<WidgetText>) -> Response {
+    button_group_style(ui.style()).show(ui, |ui| {
+        ui.toggle_value(selected.borrow_mut(), text)
+            // .clicked().then(||{ graphics_resources.need_update = true; ui.ctx().request_repaint(); });
+    }).inner
+}
+
+fn need_update(ui: &mut egui::Ui, graphics_resources: &mut GraphicsResources) {
+    graphics_resources.need_update = true;
+    ui.ctx().request_repaint()
 }

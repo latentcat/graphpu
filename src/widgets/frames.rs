@@ -77,6 +77,19 @@ pub fn toolbar_inner_frame(_style: &egui::Style) -> egui::Frame {
     }
 }
 
+pub fn toolbar_inner_frame_bottom(_style: &egui::Style) -> egui::Frame {
+    egui::Frame {
+        inner_margin: egui::style::Margin {
+            left:   8.0,
+            right:  8.0,
+            top:    0.0,
+            bottom: 8.0,
+        },
+        rounding: egui::Rounding::none(),
+        ..Default::default()
+    }
+}
+
 pub fn toolbar_timeline_frame(style: &egui::Style) -> egui::Frame {
     egui::Frame {
         inner_margin: egui::style::Margin::symmetric(8.0, 8.0),
