@@ -206,21 +206,34 @@ impl BufferDimensions {
     }
 }
 
+<<<<<<< Updated upstream
 pub struct capture{
 
 }
 
 impl capture{
+=======
+pub struct Capture {
+
+}
+
+impl Capture{
+>>>>>>> Stashed changes
     pub fn new() -> Self {
         Self {
         }
     }
+<<<<<<< Updated upstream
 
     pub fn execute_capture() {
+=======
+    pub fn execute_capture(&mut self) {
+>>>>>>> Stashed changes
         {
             env_logger::init();
             pollster::block_on(run("red.png"));
         }
+<<<<<<< Updated upstream
         {
             std::panic::set_hook(Box::new(console_error_panic_hook::hook));
             console_log::init().expect("could not initialize logger");
@@ -266,3 +279,13 @@ mod tests {
             });
     }
 }
+=======
+        //{
+            //std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+           // console_log::init().expect("could not initialize logger");
+           // wasm_bindgen_futures::spawn_local(run("red.png"));
+        //}
+    }
+}
+
+>>>>>>> Stashed changes

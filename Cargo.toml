@@ -44,3 +44,12 @@ serde = { version = "1.0.140", features = ["derive"] }
 strum = { version = "0.24.1", features = ["derive"] }
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
 
+<<<<<<< Updated upstream
+=======
+futures-intrusive = "0.4"
+png = "0.17"
+env_logger = "0.9"
+console_error_panic_hook = "0.1.6"
+console_log = "0.1.2"
+wasm-bindgen-futures = "0.4.31"
+>>>>>>> Stashed changes

@@ -5,7 +5,7 @@ use glam::Vec3;
 use wgpu::{Queue, ShaderModule};
 use wgpu::util::DeviceExt;
 use crate::models::data_model::GraphicsStatus;
-use crate::models::graphics_lib::{Camera, Controls, RenderPipeline, Texture};
+use crate::models::graphics_lib::{Camera, Controls, RenderPipeline, Texture, Capture};
 
 use rayon::prelude::*;
 
@@ -136,6 +136,9 @@ pub struct GraphicsResources {
     // 相机
     camera: Camera,
     control: Controls,
+
+    //截图
+    capture: Capture,
 
     // Buffers
     uniform_buffer: wgpu::Buffer,                   // 传递 Frame Num 等参数
@@ -532,6 +535,8 @@ impl GraphicsResources {
         let camera = Camera::from(Vec3::new(3.0, 3.0, 6.0));
         let control = Controls::new();
 
+        let capture = Capture::new();
+
         let uniform_data = generate_uniform_data(&camera);
 
         // 指定大小，创建 Node Buffer，不初始化数据
@@ -628,6 +633,7 @@ impl GraphicsResources {
             texture_id: Default::default(),
             viewport_size: Default::default(),
             camera,
+            capture,
             control,
             uniform_buffer,
             quad_buffer,
@@ -890,7 +896,10 @@ impl GraphicsResources {
         self.edge_buffer.destroy();
     }
 
-
+    pub fn capture(&mut self){
+        let mut cap = Capture::new();
+        cap.execute_capture();
+    }
 }
 
 fn update_transform_matrix(queue: &Queue, camera: &mut Camera, render_uniform_buffer: &wgpu::Buffer, viewport_size: glam::Vec2) {

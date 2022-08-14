@@ -5,6 +5,7 @@ use egui::collapsing_header::HeaderResponse;
 
 use crate::models::Models;
 use crate::models::app_model::{ImportState, InspectorTab, TableTab};
+use crate::models::graphics_model::GraphicsResources;
 use crate::models::graphics_model::ComputeMethod;
 use crate::models::graphics_model::ComputeMethodType;
 use crate::models::data_model::{PositionType, ColorType, ColorRamp, ColorPalette, SizeType};
@@ -43,6 +44,9 @@ impl AppView for InspectorView {
                                 let render_button = ui.button("Render Image");
                                 if render_button.clicked() {
                                     //
+                                    if let Some(resources) = &mut models.graphics_model.graphics_resources {
+                                        resources.capture();
+                                    }
                                 }
                             });
                         });
