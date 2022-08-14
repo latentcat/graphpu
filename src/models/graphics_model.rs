@@ -108,6 +108,12 @@ impl GraphicsModel {
     }
 }
 
+pub struct RenderOptions {
+    pub is_rendering_node: bool,
+    pub is_rendering_edge: bool,
+    pub is_rendering_axis: bool,
+}
+
 // 绘图资源 Model，存放和计算和绘图相关的一切资源
 pub struct GraphicsResources {
 
@@ -161,6 +167,9 @@ pub struct GraphicsResources {
     node_work_group_count:   u32,
     edge_work_group_count:   u32,
     frame_num:          usize,                      // 帧计数器
+
+    pub render_options: RenderOptions,
+    pub need_update: bool,
 
 }
 
@@ -641,6 +650,12 @@ impl GraphicsResources {
             node_work_group_count,
             edge_work_group_count,
             frame_num: 0,
+            render_options: RenderOptions {
+                is_rendering_node: true,
+                is_rendering_edge: true,
+                is_rendering_axis: false,
+            },
+            need_update: true,
         };
 
         boids_resources.gen_node();
@@ -768,22 +783,30 @@ impl GraphicsResources {
             // render pass
             let mut rpass = command_encoder.begin_render_pass(&render_pass_descriptor);
 
-            rpass.set_pipeline(&self.axis_render_pipeline);
-            rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
-            rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
-            rpass.draw(0..4, 0..2);
+            if self.render_options.is_rendering_axis {
+                rpass.set_pipeline(&self.axis_render_pipeline);
+                rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
+                rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
+                rpass.draw(0..4, 0..2);
+            }
 
-            rpass.set_pipeline(&self.node_render_pipeline);
-            rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
-            rpass.set_bind_group(1, &self.node_render_bind_group, &[]);
-            rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
-            rpass.draw(0..4, 0..self.status.node_count as u32);
+            if self.render_options.is_rendering_node {
+                rpass.set_pipeline(&self.node_render_pipeline);
+                rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
+                rpass.set_bind_group(1, &self.node_render_bind_group, &[]);
+                rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
+                rpass.draw(0..4, 0..self.status.node_count as u32);
+            }
 
-            rpass.set_pipeline(&self.edge_render_pipeline);
-            rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
-            rpass.set_bind_group(1, &self.edge_render_bind_group, &[]);
-            rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
-            rpass.draw(0..2, 0..self.status.edge_count as u32);
+
+            if self.render_options.is_rendering_edge {
+                rpass.set_pipeline(&self.edge_render_pipeline);
+                rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
+                rpass.set_bind_group(1, &self.edge_render_bind_group, &[]);
+                rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
+                rpass.draw(0..2, 0..self.status.edge_count as u32);
+            }
+
         }
         command_encoder.pop_debug_group();
 
@@ -791,7 +814,7 @@ impl GraphicsResources {
 
     }
 
-    pub fn update_viewport(&mut self, new_size: Vec2) -> bool {
+    pub fn update_viewport(&mut self, new_size: Vec2) {
 
         let device = &self.render_state.device;
         let _queue = &self.render_state.queue;
@@ -847,17 +870,18 @@ impl GraphicsResources {
             self.msaa_texture_view = Option::from(mass_texture_view);
             self.texture_id = texture_id;
 
-            return true;
+            self.need_update = true;
         }
-        return false;
     }
 
-    pub fn update_control(&mut self, ui: &mut Ui, is_hover_toolbar: bool) -> bool {
+    pub fn update_control(&mut self, ui: &mut Ui, is_hover_toolbar: bool) {
 
         let is_updated = self.control.update_interaction(ui, is_hover_toolbar);
         self.control.update_camera(&mut self.camera);
 
-        is_updated
+        if is_updated {
+            self.need_update = true;
+        }
 
     }
 

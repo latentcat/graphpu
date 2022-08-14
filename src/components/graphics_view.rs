@@ -1,3 +1,4 @@
+use std::borrow::BorrowMut;
 use std::ops::Mul;
 use egui::{Ui, Vec2, Widget};
 
@@ -49,16 +50,15 @@ impl AppView for GraphicsView {
                             // 若发生变化，则更新材质视图，注册 egui 材质 ID，并返回 true
                             // 若无变化，不更新材质视图，返回 false
                             // 其中，pixels_per_point 代表当前每点像素密度
-                            let is_viewport_updated = compute_resources.update_viewport(
-                                max_rect.size()
-                                    .mul(Vec2::from([models.app_model.pixels_per_point; 2])
-                                )
+                            compute_resources.update_viewport(
+                                max_rect.size().mul(Vec2::from([models.app_model.pixels_per_point; 2]))
                             );
 
-                            let is_control_updated = compute_resources.update_control(ui, models.graphics_model.is_hover_toolbar);
+                            compute_resources.update_control(ui, models.graphics_model.is_hover_toolbar);
 
                             // 若有任何变化，渲染并请求 egui UI 更新
-                            if is_computing || is_dispatching || is_viewport_updated || is_control_updated {
+                            if is_computing || is_dispatching || compute_resources.need_update {
+                                compute_resources.need_update = false;
                                 compute_resources.render();
                                 ui.ctx().request_repaint();
                             }
@@ -139,10 +139,19 @@ impl AppView for GraphicsView {
 
                             ui.with_layout(egui::Layout::right_to_left(), |ui| {
                                 ui.horizontal(|ui| {
-
-                                    let _ = ui.button("⏺");
-                                    let _ = ui.button("⏺");
-                                    let _ = ui.button("⏺");
+                                    if let Some(graphics_resources) = &mut models.graphics_model.graphics_resources {
+                                        ui.toggle_value(graphics_resources.render_options.is_rendering_node.borrow_mut(), "⏺")
+                                            .clicked().then(||{ graphics_resources.need_update = true; ui.ctx().request_repaint(); });
+                                        ui.toggle_value(graphics_resources.render_options.is_rendering_edge.borrow_mut(), "⏺")
+                                            .clicked().then(||{ graphics_resources.need_update = true; ui.ctx().request_repaint(); });
+                                        ui.toggle_value(graphics_resources.render_options.is_rendering_axis.borrow_mut(), "⏺")
+                                            .clicked().then(||{ graphics_resources.need_update = true; ui.ctx().request_repaint(); });
+                                    } else {
+                                        ui.set_enabled(false);
+                                        ui.toggle_value(&mut false, "⏺");
+                                        ui.toggle_value(&mut false, "⏺");
+                                        ui.toggle_value(&mut false, "⏺");
+                                    }
                                 }).response.hovered().then(||{is_hover_toolbar = true});
                             });
 
