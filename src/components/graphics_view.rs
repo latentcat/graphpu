@@ -120,14 +120,21 @@ impl AppView for GraphicsView {
 
                             ui.vertical(|ui| {
                                 ui.vertical_centered_justified(|ui| {
-                                    let render_button = ui.button("Button 1");
+                                    let render_button = ui.button("Select");
                                     if render_button.clicked() {
                                         //
                                     }
                                 });
 
                                 ui.vertical_centered_justified(|ui| {
-                                    let render_button = ui.button("Button 2");
+                                    let render_button = ui.button("Handle");
+                                    if render_button.clicked() {
+                                        //
+                                    }
+                                });
+
+                                ui.vertical_centered_justified(|ui| {
+                                    let render_button = ui.button("Camera");
                                     if render_button.clicked() {
                                         //
                                     }
