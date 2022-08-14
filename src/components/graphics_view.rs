@@ -1,10 +1,11 @@
 use std::borrow::BorrowMut;
 use std::ops::Mul;
-use egui::{Response, Ui, Vec2, Widget, WidgetText};
+use egui::{InnerResponse, Response, Sense, Ui, Vec2, Widget, WidgetText};
+use crate::models::app_model::Tool;
 use crate::models::graphics_model::GraphicsResources;
 
 use crate::models::Models;
-use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_MARGIN, graphics_frame, toolbar_inner_frame, toolbar_inner_frame_bottom, toolbar_timeline_frame};
+use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_PADDING, graphics_frame, TOOL_BUTTON_PADDING, tool_item_group_style, toolbar_inner_frame, toolbar_inner_frame_bottom, toolbar_timeline_frame};
 use crate::widgets::toolbar_modal::ToolbarModal;
 
 use super::AppView;
@@ -109,37 +110,53 @@ impl AppView for GraphicsView {
 
                     }
 
-                    egui::SidePanel::left("toolbar-left")
+                    egui::SidePanel::left("toolbar-left-11")
                         .frame(toolbar_inner_frame(ui.style()))
-                        .default_width(100.0)
+                        .default_width(46.0)
                         .resizable(false)
                         .show_inside(ui, |ui| {
                             ui.set_style(ui.ctx().style());
                             ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
-                            // ui.spacing_mut().button_padding = DEFAULT_BUTTON_MARGIN;
+                            ui.spacing_mut().button_padding = TOOL_BUTTON_PADDING;
 
-                            ui.vertical(|ui| {
-                                ui.vertical_centered_justified(|ui| {
-                                    let render_button = ui.button("Select");
-                                    if render_button.clicked() {
-                                        //
-                                    }
-                                });
+                            tool_item_group_style(ui.style()).show(ui, |ui| {
+                                ui.vertical(|ui| {
 
-                                ui.vertical_centered_justified(|ui| {
-                                    let render_button = ui.button("Handle");
-                                    if render_button.clicked() {
-                                        //
-                                    }
-                                });
+                                    ui.spacing_mut().item_spacing = egui::vec2(0.0, 2.0);
 
-                                ui.vertical_centered_justified(|ui| {
-                                    let render_button = ui.button("Camera");
-                                    if render_button.clicked() {
-                                        //
-                                    }
-                                });
-                            }).response.hovered().then(||{is_hover_toolbar = true});
+                                    tool_item_box(ui, |ui| {
+                                        let button = ui.selectable_label(
+                                            models.app_model.current_tool == Tool::Select,
+                                            egui::RichText::new("☉").size(24.0)
+                                        ).on_hover_text("Select");
+                                        if button.clicked() {
+                                            models.app_model.current_tool = Tool::Select;
+                                        }
+                                    });
+
+                                    tool_item_box(ui, |ui| {
+                                        let button = ui.selectable_label(
+                                            models.app_model.current_tool == Tool::Handle,
+                                            egui::RichText::new("🕂").size(24.0)
+                                        ).on_hover_text("Handle");
+                                        if button.clicked() {
+                                            models.app_model.current_tool = Tool::Handle;
+                                        }
+                                    });
+
+                                    tool_item_box(ui, |ui| {
+                                        let button = ui.selectable_label(
+                                            models.app_model.current_tool == Tool::View,
+                                            egui::RichText::new("🎥").size(24.0)
+                                        ).on_hover_text("View");
+                                        if button.clicked() {
+                                            models.app_model.current_tool = Tool::View;
+                                        }
+                                    });
+
+                                }).response.hovered().then(||{is_hover_toolbar = true});
+                            });
+
 
                         });
 
@@ -148,7 +165,7 @@ impl AppView for GraphicsView {
                         .show_inside(ui, |ui| {
                             ui.set_style(ui.ctx().style());
                             ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
-                            ui.spacing_mut().button_padding = DEFAULT_BUTTON_MARGIN;
+                            ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
 
                             ui.with_layout(egui::Layout::right_to_left(), |ui| {
                                 ui.horizontal(|ui| {
@@ -224,4 +241,19 @@ fn toggle_button(ui: &mut egui::Ui, selected: &mut bool, text: impl Into<WidgetT
 fn need_update(ui: &mut egui::Ui, graphics_resources: &mut GraphicsResources) {
     graphics_resources.need_update = true;
     ui.ctx().request_repaint()
+}
+
+fn tool_item_box<R>(
+    ui: &mut egui::Ui,
+    add_contents: impl FnOnce(&mut Ui) -> R,
+) -> InnerResponse<R> {
+
+    ui.allocate_ui(Vec2::splat(40.0), |ui| {
+        button_group_style(ui.style()).show(ui, |ui| {
+            ui.centered_and_justified(|ui| {
+                add_contents(ui)
+            }).inner
+        }).inner
+    })
+
 }

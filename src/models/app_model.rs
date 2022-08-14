@@ -30,6 +30,14 @@ pub enum InspectorTab {
     Render,
 }
 
+#[derive(Default, PartialEq)]
+pub enum Tool {
+    Select,
+    Handle,
+    #[default]
+    View,
+}
+
 pub struct AppModel {
     pub is_import_visible: bool,
     pub is_timeline_expand: bool,
@@ -41,6 +49,7 @@ pub struct AppModel {
     pub inspector_tab: InspectorTab,
     pub message: String,
     pub pixels_per_point: f32,
+    pub current_tool: Tool,
 }
 
 impl Default for AppModel {
@@ -56,7 +65,8 @@ impl Default for AppModel {
             table_tab: Default::default(),
             inspector_tab: Default::default(),
             message: String::from("中文消息测试"),
-            pixels_per_point: 1.0
+            pixels_per_point: 1.0,
+            current_tool: Default::default(),
         }
     }
 }

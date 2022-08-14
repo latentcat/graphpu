@@ -4,7 +4,7 @@ use egui::Ui;
 
 use crate::models::{Models};
 use crate::utils::csv_loader::pick_csv;
-use crate::widgets::frames::DEFAULT_BUTTON_MARGIN;
+use crate::widgets::frames::DEFAULT_BUTTON_PADDING;
 
 use super::ImportModal;
 
@@ -35,7 +35,7 @@ pub fn show(parent: &mut ImportModal, _: &mut Models, ui: &mut Ui) {
             ui.horizontal(|ui| {
                 ui.with_layout(egui::Layout::right_to_left(), |ui| {
 
-                    ui.spacing_mut().button_padding = DEFAULT_BUTTON_MARGIN;
+                    ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
 
                     if ui.button("•••").clicked() {
                         parent.node_file_path = path_to_string(&pick_csv()).unwrap_or("".to_owned());
@@ -57,7 +57,7 @@ pub fn show(parent: &mut ImportModal, _: &mut Models, ui: &mut Ui) {
             ui.horizontal(|ui| {
                 ui.with_layout(egui::Layout::right_to_left(), |ui| {
 
-                    ui.spacing_mut().button_padding = DEFAULT_BUTTON_MARGIN;
+                    ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
 
                     if ui.button("•••").clicked() {
                         parent.edge_file_path = path_to_string(&pick_csv()).unwrap_or("".to_owned());

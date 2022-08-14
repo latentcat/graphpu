@@ -8,7 +8,7 @@ use crate::models::app_model::{ImportState, InspectorTab, TableTab};
 use crate::models::graphics_model::ComputeMethod;
 use crate::models::graphics_model::ComputeMethodType;
 use crate::models::data_model::{PositionType, ColorType, ColorRamp, ColorPalette, SizeType};
-use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_MARGIN, inspector_frame, inspector_inner_frame};
+use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_PADDING, inspector_frame, inspector_inner_frame};
 
 use super::AppView;
 
@@ -30,7 +30,7 @@ impl AppView for InspectorView {
                     .show_inside(ui, |ui| {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
-                        ui.spacing_mut().button_padding = DEFAULT_BUTTON_MARGIN;
+                        ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
 
                         if models.app_model.import_state != ImportState::Success {
                             ui.set_enabled(false);
@@ -61,7 +61,7 @@ impl AppView for InspectorView {
                             ui.horizontal(|ui| {
                                 ui.with_layout(egui::Layout::right_to_left(), |ui| {
 
-                                    ui.spacing_mut().button_padding = DEFAULT_BUTTON_MARGIN;
+                                    ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
                                     let remove_data_button = ui.button("🗑");
                                     if remove_data_button.clicked() {
                                         models.clear_data()

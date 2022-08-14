@@ -1,7 +1,8 @@
 use eframe::epaint::Stroke;
 use egui::{Color32, Vec2};
 
-pub const DEFAULT_BUTTON_MARGIN: Vec2 = egui::vec2(4.0, 1.0);
+pub const DEFAULT_BUTTON_PADDING: Vec2 = egui::vec2(4.0, 1.0);
+pub const TOOL_BUTTON_PADDING: Vec2 = egui::vec2(0.0, 0.0);
 
 pub fn window_frame(style: &egui::Style) -> egui::Frame {
   egui::Frame {
@@ -35,10 +36,23 @@ pub fn button_group_style(_: &egui::Style) -> egui::Frame {
   egui::Frame {
       inner_margin: egui::style::Margin::symmetric(0.0, 0.0),
       rounding: egui::Rounding::same(2.0),
-      fill: Color32::from_white_alpha(10),
+      fill: Color32::from_gray(60),
       stroke: egui::Stroke::none(),
       ..Default::default()
   }
+}
+
+pub fn tool_item_group_style(style: &egui::Style) -> egui::Frame {
+    egui::Frame {
+        inner_margin: egui::style::Margin::symmetric(0.0, 0.0),
+        rounding: egui::Rounding::same(2.0),
+        fill: Color32::from_gray(30),
+        stroke: Stroke {
+            width: 4.0,
+            color: Color32::from_gray(30),
+        },
+        ..Default::default()
+    }
 }
 
 pub fn inspector_frame(style: &egui::Style) -> egui::Frame {
