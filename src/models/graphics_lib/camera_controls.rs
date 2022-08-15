@@ -22,6 +22,8 @@ pub struct Controls {
 
     // 视图大小
     viewport_size: Vec2,
+
+    pub is_update: bool,
     
 }
 
@@ -37,6 +39,7 @@ impl Controls {
             scroll_delta: Vec2::ZERO,
             pointer_delta: Vec2::ZERO,
             viewport_size: Vec2::ZERO,
+            is_update: true,
         }
     }
 
@@ -46,7 +49,7 @@ impl Controls {
 
     // 传入 egui Ui，更新交互
     // 该函数在 viewport 更新后，渲染开始前调用
-    pub fn update_interaction(&mut self, ui: &mut Ui, is_hover_toolbar: bool) -> bool {
+    pub fn update_interaction(&mut self, ui: &mut Ui, is_hover_toolbar: bool) {
 
         // 归零参数
         self.pointer_pos = None;
@@ -60,9 +63,6 @@ impl Controls {
         // viewport_rect 记录了绘图区域的左上角、右下角
         let viewport_rect = ui.max_rect();
         self.viewport_size = viewport_rect.size();
-
-        // 假设交互无更新...
-        let mut is_updated = false;
 
         // 如果鼠标指针在应用区域内，获取指针位置
         // 注：egui 的 interact_pos 是 Option<Pos2> 类型
@@ -85,10 +85,11 @@ impl Controls {
             // 鼠标事件记录
             // 若有事件，标记交互已更新
 
-            if ui.input().pointer.primary_clicked() { is_updated = true; self.primary_clicked = true; }
+            if ui.input().pointer.primary_clicked() {
+                self.primary_clicked = true;
+            }
 
             if ui.input().pointer.primary_down() {
-                is_updated = true;
                 if !self.primary_down {
                     self.is_pointer_press_inside = is_pointer_press_inside;
                     self.primary_down = true;
@@ -96,14 +97,12 @@ impl Controls {
             }
 
             if ui.input().pointer.secondary_down() {
-                is_updated = true;
                 if !self.secondary_down {
                     self.is_pointer_press_inside = is_pointer_press_inside;
                     self.secondary_down = true;
                 }
             }
 
-            if self.scroll_delta != Vec2::ZERO      { is_updated = true; }
         }
 
         // 鼠标事件归零
@@ -116,8 +115,6 @@ impl Controls {
             self.secondary_down = false;
         }
 
-        // 返回交互是否更新
-        return is_updated;
     }
 
     pub fn update_camera(&mut self, camera: &mut Camera) {
@@ -130,6 +127,7 @@ impl Controls {
             // 相机 zoom 函数的传入参数为缩放比例
             // 须满足偏移量累加时缩放比例累乘，故偏移量为常量的指数
             camera.zoom(f32::powf(1.2, -self.scroll_delta.y * 0.03) );
+            self.is_update = true;
 
         }
 
@@ -142,13 +140,14 @@ impl Controls {
 
             // 原理同滚轮缩放
             camera.zoom(f32::powf(1.2, -self.pointer_delta.y * 0.03) );
+            self.is_update = true;
 
         }
 
         // 左键旋转
         // 如果鼠标左键在绘图区域内按下
         // 用鼠标指针的 x、y delta 在绘图区域的占比计算旋转角度，旋转相机
-        if self.primary_down {
+        if self.primary_down && (self.pointer_delta.x != 0.0 || self.pointer_delta.y != 0.0) {
 
             let mut angles = glam::Vec2::new(self.pointer_delta.x, self.pointer_delta.y);
 
@@ -157,6 +156,7 @@ impl Controls {
             angles = angles / glam::Vec2::new(self.viewport_size.x, self.viewport_size.y) * PI;
 
             camera.rotate(angles);
+            self.is_update = true;
 
         }
     }

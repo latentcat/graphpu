@@ -50,6 +50,7 @@ pub struct AppModel {
     pub message: String,
     pub pixels_per_point: f32,
     pub current_tool: Tool,
+    pub ui_frame_count: u32,
 }
 
 impl Default for AppModel {
@@ -67,6 +68,7 @@ impl Default for AppModel {
             message: String::from("中文消息测试"),
             pixels_per_point: 1.0,
             current_tool: Default::default(),
+            ui_frame_count: 0,
         }
     }
 }

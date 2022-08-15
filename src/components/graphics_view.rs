@@ -5,7 +5,7 @@ use crate::models::app_model::Tool;
 use crate::models::graphics_model::GraphicsResources;
 
 use crate::models::Models;
-use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_PADDING, graphics_frame, TOOL_BUTTON_PADDING, tool_item_group_style, toolbar_inner_frame, toolbar_inner_frame_bottom, toolbar_timeline_frame};
+use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_PADDING, graphics_frame, TOOL_BUTTON_PADDING, tool_item_group_style, toolbar_inner_frame, toolbar_inner_frame_bottom, toolbar_inner_frame_top, toolbar_timeline_frame};
 use crate::widgets::toolbar_modal::ToolbarModal;
 
 use super::AppView;
@@ -29,6 +29,7 @@ impl AppView for GraphicsView {
             .show_inside(ui, |ui| {
 
                 let max_rect = ui.max_rect();
+
                 // 新建一个空 Frame，用于存放 Image
                 egui::Frame::none()
                     .show(ui, |ui| {
@@ -52,6 +53,7 @@ impl AppView for GraphicsView {
                             // 若发生变化，则更新材质视图，注册 egui 材质 ID，并返回 true
                             // 若无变化，不更新材质视图，返回 false
                             // 其中，pixels_per_point 代表当前每点像素密度
+
                             compute_resources.update_viewport(
                                 max_rect.size().mul(Vec2::from([models.app_model.pixels_per_point; 2]))
                             );
@@ -60,8 +62,8 @@ impl AppView for GraphicsView {
 
                             // 若有任何变化，渲染并请求 egui UI 更新
                             if is_computing || is_dispatching || compute_resources.need_update {
-                                compute_resources.need_update = false;
                                 compute_resources.render();
+                                compute_resources.need_update = false;
                                 ui.ctx().request_repaint();
                             }
 
@@ -112,7 +114,7 @@ impl AppView for GraphicsView {
 
                     egui::SidePanel::left("toolbar-left-11")
                         .frame(toolbar_inner_frame(ui.style()))
-                        .default_width(46.0)
+                        .width_range(0.0..=0.0)
                         .resizable(false)
                         .show_inside(ui, |ui| {
                             ui.set_style(ui.ctx().style());
@@ -161,7 +163,7 @@ impl AppView for GraphicsView {
                         });
 
                     egui::TopBottomPanel::top("toolbar-top")
-                        .frame(toolbar_inner_frame(ui.style()))
+                        .frame(toolbar_inner_frame_top(ui.style()))
                         .show_inside(ui, |ui| {
                             ui.set_style(ui.ctx().style());
                             ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
@@ -170,6 +172,11 @@ impl AppView for GraphicsView {
                             ui.with_layout(egui::Layout::right_to_left(), |ui| {
                                 ui.horizontal(|ui| {
                                     if let Some(graphics_resources) = &mut models.graphics_model.graphics_resources {
+
+                                        toggle_button(ui, &mut graphics_resources.render_options.is_showing_debug, "＃")
+                                            .on_hover_text("Show Debug");
+
+                                        ui.add_space(15.0);
 
                                         toggle_button(ui, &mut graphics_resources.render_options.is_rendering_axis, "⛶")
                                             .on_hover_text("Show Axes")
@@ -185,6 +192,9 @@ impl AppView for GraphicsView {
 
                                     } else {
                                         ui.set_enabled(false);
+
+                                        toggle_button(ui, &mut false, "＃");
+                                        ui.add_space(15.0);
                                         toggle_button(ui, &mut false, "⛶");
                                         toggle_button(ui, &mut false, "➖");
                                         toggle_button(ui, &mut false, "⚫");
@@ -216,6 +226,40 @@ impl AppView for GraphicsView {
                             });
 
                         });
+
+                    if let Some(graphics_resources) = &mut models.graphics_model.graphics_resources {
+                        if graphics_resources.render_options.is_showing_debug {
+
+                            egui::TopBottomPanel::top("toolbar-top-2")
+                                .frame(toolbar_inner_frame_top(ui.style()))
+                                .show_inside(ui, |ui| {
+                                    ui.set_style(ui.ctx().style());
+                                    ui.spacing_mut().item_spacing = egui::vec2(4.0, 0.0);
+                                    ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
+
+                                    ui.with_layout(egui::Layout::from_main_dir_and_cross_align(egui::Direction::TopDown, egui::Align::Max).with_cross_align(egui::Align::Max), |ui| {
+
+                                        ui.horizontal(|ui| {
+                                            ui.label(format!("{}", graphics_resources.compute_frame_count));
+                                            ui.label(egui::RichText::new("Compute frames: ").weak());
+                                        });
+
+                                        ui.horizontal(|ui| {
+                                            ui.label(format!("{}", graphics_resources.render_frame_count));
+                                            ui.label(egui::RichText::new("Render frames: ").weak());
+                                        });
+
+                                        ui.horizontal(|ui| {
+                                            ui.label(format!("{}", models.app_model.ui_frame_count));
+                                            ui.label(egui::RichText::new("UI frames: ").weak());
+                                        });
+
+                                    });
+
+                                });
+
+                        }
+                    }
 
                     models.graphics_model.is_hover_toolbar = is_hover_toolbar;
 

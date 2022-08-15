@@ -103,7 +103,7 @@ impl AppView for InspectorView {
                                     ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Edge, "Edge");
                                 });
                                 columns[2].vertical_centered_justified(|ui| {
-                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Render, "Camera");
+                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Render, "Scene");
                                 });
                             });
                         });
@@ -145,13 +145,13 @@ impl InspectorView {
                         .selected_text(&node_settings.position_type.to_string())
                         .show_ui(ui, |ui| {
                             ui.selectable_value(&mut node_settings.position_type, PositionType::Compute, "Compute");
-                            ui.selectable_value(&mut node_settings.position_type, PositionType::Set, "Set");
+                            ui.selectable_value(&mut node_settings.position_type, PositionType::Set, "Set from data");
                         });
                     ui.end_row();
 
                     match node_settings.position_type {
                         PositionType::Compute => {
-                            grid_label(ui, "Compute");
+                            grid_label(ui, "Method");
                             egui::ComboBox::from_id_source("Position Compute")
                                 .selected_text(node_settings.position_compute.0)
                                 .show_ui(ui, |ui| {
@@ -199,8 +199,8 @@ impl InspectorView {
                         .selected_text(&node_settings.color_type.to_string())
                         .show_ui(ui, |ui| {
                             ui.selectable_value(&mut node_settings.color_type, ColorType::Constant, "Constant");
-                            ui.selectable_value(&mut node_settings.color_type, ColorType::Ramp, "Ramp");
-                            ui.selectable_value(&mut node_settings.color_type, ColorType::Partition, "Partition");
+                            ui.selectable_value(&mut node_settings.color_type, ColorType::Ramp, "Ramp from data");
+                            ui.selectable_value(&mut node_settings.color_type, ColorType::Partition, "Partition from data");
                         });
                     ui.end_row();
 
@@ -256,7 +256,7 @@ impl InspectorView {
                         .selected_text(&node_settings.size_type.to_string())
                         .show_ui(ui, |ui| {
                             ui.selectable_value(&mut node_settings.size_type, SizeType::Constant, "Constant");
-                            ui.selectable_value(&mut node_settings.size_type, SizeType::Ramp, "Ramp");
+                            ui.selectable_value(&mut node_settings.size_type, SizeType::Ramp, "Ramp from data");
                         });
                     ui.end_row();
 

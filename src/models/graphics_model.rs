@@ -112,6 +112,7 @@ pub struct RenderOptions {
     pub is_rendering_node: bool,
     pub is_rendering_edge: bool,
     pub is_rendering_axis: bool,
+    pub is_showing_debug:  bool,
 }
 
 // 绘图资源 Model，存放和计算和绘图相关的一切资源
@@ -166,7 +167,8 @@ pub struct GraphicsResources {
     // 线程组数 = 线程数 / 每组线程数
     node_work_group_count:   u32,
     edge_work_group_count:   u32,
-    frame_num:          usize,                      // 帧计数器
+    pub compute_frame_count:          u32,                      // 帧计数器
+    pub render_frame_count:          u32,                      // 帧计数器
 
     pub render_options: RenderOptions,
     pub need_update: bool,
@@ -649,11 +651,13 @@ impl GraphicsResources {
             copy_pipeline,
             node_work_group_count,
             edge_work_group_count,
-            frame_num: 0,
+            compute_frame_count: 0,
+            render_frame_count: 0,
             render_options: RenderOptions {
                 is_rendering_node: true,
                 is_rendering_edge: true,
                 is_rendering_axis: false,
+                is_showing_debug: false
             },
             need_update: true,
         };
@@ -687,7 +691,7 @@ impl GraphicsResources {
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));
-        self.frame_num += 1;
+        self.compute_frame_count += 1;
     }
 
 
@@ -712,7 +716,7 @@ impl GraphicsResources {
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));
-        self.frame_num += 1;
+        self.compute_frame_count += 1;
     }
 
     pub fn randomize(&mut self) {
@@ -723,7 +727,7 @@ impl GraphicsResources {
         let mut command_encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
-        queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[self.frame_num as u32]));
+        queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[self.compute_frame_count as u32]));
         command_encoder.push_debug_group("randomize boids position");
         {
             // compute pass
@@ -738,10 +742,12 @@ impl GraphicsResources {
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));
-        self.frame_num += 1;
+        self.compute_frame_count += 1;
     }
 
     pub fn render(&mut self) {
+
+        self.render_frame_count += 1u32;
 
         let device = &self.render_state.device;
         let queue = &self.render_state.queue;
@@ -876,12 +882,14 @@ impl GraphicsResources {
 
     pub fn update_control(&mut self, ui: &mut Ui, is_hover_toolbar: bool) {
 
-        let is_updated = self.control.update_interaction(ui, is_hover_toolbar);
+        self.control.update_interaction(ui, is_hover_toolbar);
         self.control.update_camera(&mut self.camera);
 
-        if is_updated {
+        if self.control.is_update {
             self.need_update = true;
         }
+
+        self.control.is_update = false;
 
     }
 
