@@ -173,21 +173,22 @@ impl AppView for GraphicsView {
                                 ui.horizontal(|ui| {
                                     if let Some(graphics_resources) = &mut models.graphics_model.graphics_resources {
 
-                                        toggle_button(ui, &mut graphics_resources.render_options.is_showing_debug, "＃")
-                                            .on_hover_text("Show Debug");
+                                        let is_showing_debug = graphics_resources.render_options.is_showing_debug;
+                                        toggle_button(ui, &mut graphics_resources.render_options.is_showing_debug, if is_showing_debug { "⏶" } else { "⏷" })
+                                            .on_hover_text("Toggle Debug");
 
                                         ui.add_space(15.0);
 
                                         toggle_button(ui, &mut graphics_resources.render_options.is_rendering_axis, "⛶")
-                                            .on_hover_text("Show Axes")
+                                            .on_hover_text("Toggle Axes")
                                             .clicked().then(|| { need_update(ui, graphics_resources) });
 
                                         toggle_button(ui, &mut graphics_resources.render_options.is_rendering_edge, "➖")
-                                            .on_hover_text("Show Edges")
+                                            .on_hover_text("Toggle Edges")
                                             .clicked().then(|| { need_update(ui, graphics_resources) });
 
                                         toggle_button(ui, &mut graphics_resources.render_options.is_rendering_node, "⚫")
-                                            .on_hover_text("Show Nodes")
+                                            .on_hover_text("Toggle Nodes")
                                             .clicked().then(|| { need_update(ui, graphics_resources) });
 
                                     } else {
