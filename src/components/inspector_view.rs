@@ -1,4 +1,6 @@
 use std::hash::Hash;
+use std::{collections::HashMap, path::PathBuf};
+
 
 use egui::Ui;
 use egui::collapsing_header::HeaderResponse;
@@ -14,7 +16,14 @@ use super::AppView;
 
 #[derive(Default)]
 pub struct InspectorView;
-
+pub fn pick_output() -> Option<PathBuf> {
+    rfd::FileDialog::new()
+        .set_directory("/")
+        .pick_folder()
+}
+fn path_to_string(path: &Option<PathBuf>) -> Option<String> {
+    path.as_ref().map(|path| path.display().to_string())
+}
 impl AppView for InspectorView {
     fn show(&mut self, models: &mut Models, ui: &mut Ui, _frame: &mut eframe::Frame) {
         egui::SidePanel::right("inspector_view")
@@ -42,7 +51,8 @@ impl AppView for InspectorView {
                             ui.vertical_centered_justified(|ui| {
                                 let render_button = ui.button("Render Image");
                                 if render_button.clicked() {
-                                    models.graphics_model.render_output();
+                                    let tempOutput=& models.app_model.output_folder;
+                                    models.graphics_model.render_output(String::from(tempOutput));
                                 }
                             });
                         });
@@ -103,6 +113,7 @@ impl AppView for InspectorView {
                                     ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Edge, "Edge");
                                 });
                                 columns[2].vertical_centered_justified(|ui| {
+                                    //t1
                                     ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Render, "Scene");
                                 });
                             });
@@ -119,7 +130,7 @@ impl AppView for InspectorView {
                                 match models.app_model.inspector_tab {
                                     InspectorTab::Node => self.node_inspector(models, ui),
                                     InspectorTab::Edge => self.edge_inspector(models, ui),
-                                    InspectorTab::Render => {},
+                                    InspectorTab::Render => self.scene_inspector(models, ui),
                                 };
 
                             });
@@ -287,6 +298,31 @@ impl InspectorView {
     }
 
     fn edge_inspector(&mut self, _models: &mut Models, _ui: &mut Ui) {
+    }
+    fn scene_inspector(&mut self, models: &mut Models, ui: &mut Ui) {
+
+        ui.add(egui::Label::new("Output Forlder"));
+        ui.horizontal(|ui| {
+            ui.with_layout(egui::Layout::right_to_left(), |ui| {
+
+                ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
+
+                if ui.button("•••").clicked() {
+                    models.app_model.output_folder= path_to_string(&pick_output()).unwrap_or("".to_owned());
+                }
+
+                ui.vertical_centered_justified(|ui| {
+                    ui.add(
+                        egui::TextEdit::singleline(&mut models.app_model.output_folder)
+                            .hint_text("未识别的路径")
+                            .desired_width(200.)
+                    );
+                });
+
+            });
+        });
+
+        ui.end_row();
     }
 }
 

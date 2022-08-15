@@ -5,7 +5,7 @@ use std::mem;
 use std::sync::Arc;
 use egui::{Ui, Vec2};
 use glam::Vec3;
-use wgpu::{Queue, ShaderModule};
+use wgpu::{Buffer, Device, Queue, ShaderModule, SubmissionIndex};
 use wgpu::util::DeviceExt;
 use crate::models::data_model::GraphicsStatus;
 use crate::models::graphics_lib::{BufferDimensions, Camera, Controls, RenderPipeline, Texture};
@@ -116,11 +116,11 @@ impl GraphicsModel {
         self.is_dispatching = state;
     }
 
-    pub fn render_output(&mut self) {
+    pub fn render_output(&mut self,outfolder:String) {
         if let Some(graphics_resources) = &mut self.graphics_resources {
             graphics_resources.prepare_output();
             graphics_resources.render();
-            graphics_resources.output_png_after_render();
+            graphics_resources.output_png_after_render(outfolder);
         }
     }
 }
@@ -1040,7 +1040,7 @@ impl GraphicsResources {
 
     }
 
-    pub fn output_png_after_render(&mut self) {
+    pub fn output_png_after_render(&mut self,outfolder:String) {
 
         let device = &self.render_state.device;
         let queue = &self.render_state.queue;
@@ -1079,7 +1079,10 @@ impl GraphicsResources {
 
         let index = queue.submit(Some(command_buffer));
 
-        pollster::block_on(create_png("/Users/ciaochaos/Projects/graphpu/123.png", device, output_buffer, &buffer_dimensions, index));
+        let mut outputFolder = outfolder;
+        let pngName=format!("/{}.png", "123");
+        outputFolder+=&pngName;
+        pollster::block_on(create_png(outputFolder, device, output_buffer, &buffer_dimensions, index));
     }
 
     pub fn update_control(&mut self, ui: &mut Ui, is_hover_toolbar: bool) {
@@ -1141,7 +1144,7 @@ fn pad_size(node_struct_size: usize, num_particles: u32) -> wgpu::BufferAddress 
 }
 
 async fn create_png(
-    png_output_path: &str,
+    png_output_path: String,
     device: &Arc<wgpu::Device>,
     output_buffer: wgpu::Buffer,
     buffer_dimensions: &BufferDimensions,
