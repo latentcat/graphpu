@@ -579,7 +579,7 @@ impl GraphicsResources {
             mapped_at_creation: false
         });
 
-        let bounding_buffer_size = node_work_group_count * 6 * 4;
+        let bounding_buffer_size = node_work_group_count * 8 * 4;
 
         let bounding_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Bounding Buffer"),
