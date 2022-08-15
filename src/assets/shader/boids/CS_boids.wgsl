@@ -153,9 +153,11 @@ fn reduction_bounding(
     @builtin(local_invocation_id) local_id: vec3<u32>,
     @builtin(local_invocation_index) local_index: u32,
     @builtin(global_invocation_id) global_id: vec3<u32>,
+    @builtin(workgroup_id) group_id: vec3<u32>,
 ) {
+
     let index = global_id.x;
-    
+
     smin[local_index] = nodeSrc[index].position;
     smax[local_index] = nodeSrc[index].position;
     workgroupBarrier();
@@ -170,8 +172,8 @@ fn reduction_bounding(
     }
 
     if (local_index == 0u) {
-        bounding[local_id.x].bound_min = smin[0];
-        bounding[local_id.x].bound_max = smax[0];
+        bounding[group_id.x].bound_min = smin[0];
+        bounding[group_id.x].bound_max = smax[0];
     }
 }
 
@@ -185,6 +187,8 @@ fn bounding_box() {
         bound_min_min = min(bound_min_min, bounding[i].bound_min);
         bound_max_max = max(bound_max_max, bounding[i].bound_max);
     }
+    bounding[0].bound_min = bound_min_min;
+    bounding[0].bound_max = bound_max_max;
 }
 
 @compute
