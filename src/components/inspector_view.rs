@@ -42,7 +42,7 @@ impl AppView for InspectorView {
                             ui.vertical_centered_justified(|ui| {
                                 let render_button = ui.button("Render Image");
                                 if render_button.clicked() {
-                                    //
+                                    models.graphics_model.render_output();
                                 }
                             });
                         });

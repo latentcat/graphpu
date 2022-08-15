@@ -36,6 +36,8 @@ image = "0.23"
 anyhow = "1.0"
 
 rayon = "1.5.3"
+png = "0.17"
+futures-intrusive = "0.4.0"
 
 nanorand = { version = "0.7", default-features = false, features = ["wyrand"] }
 rfd = "0.9.1"

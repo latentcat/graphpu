@@ -1,11 +1,14 @@
 use std::borrow::Cow;
+use std::fs::File;
+use std::io::Write;
 use std::mem;
+use std::sync::Arc;
 use egui::{Ui, Vec2};
 use glam::Vec3;
 use wgpu::{Queue, ShaderModule};
 use wgpu::util::DeviceExt;
 use crate::models::data_model::GraphicsStatus;
-use crate::models::graphics_lib::{Camera, Controls, RenderPipeline, Texture};
+use crate::models::graphics_lib::{BufferDimensions, Camera, Controls, RenderPipeline, Texture};
 
 use rayon::prelude::*;
 
@@ -106,6 +109,14 @@ impl GraphicsModel {
     pub fn set_dispatching(&mut self, state: bool) {
         self.is_dispatching = state;
     }
+
+    pub fn render_output(&mut self) {
+        if let Some(graphics_resources) = &mut self.graphics_resources {
+            graphics_resources.prepare_output();
+            graphics_resources.render();
+            graphics_resources.output_png_after_render();
+        }
+    }
 }
 
 pub struct RenderOptions {
@@ -125,14 +136,23 @@ pub struct GraphicsResources {
     render_state: egui_wgpu::RenderState,
 
     depth_texture: Option<Texture>,
+    output_depth_texture: Option<Texture>,
 
     // 用于呈现渲染结果的 Texture View，在 egui 中注册后用 Texture ID 在 Image 组件显示
+    texture: Option<wgpu::Texture>,
     texture_view: Option<wgpu::TextureView>,
     msaa_texture_view: Option<wgpu::TextureView>,
+    output_texture: Option<wgpu::Texture>,
+    output_texture_view: Option<wgpu::TextureView>,
+    msaa_output_texture_view: Option<wgpu::TextureView>,
     pub texture_id: egui::TextureId,
 
     // 视口大小
     viewport_size: egui::Vec2,
+    texture_extent: wgpu::Extent3d,
+    output_texture_extent: wgpu::Extent3d,
+
+    is_render_output: bool,
 
     // 相机
     camera: Camera,
@@ -625,10 +645,18 @@ impl GraphicsResources {
             status: model.status.clone(),
             render_state,
             depth_texture: None,
+            output_depth_texture: None,
+            texture: None,
             texture_view: None,
             msaa_texture_view: None,
+            output_texture: None,
+            output_texture_view: None,
+            msaa_output_texture_view: None,
             texture_id: Default::default(),
             viewport_size: Default::default(),
+            texture_extent: Default::default(),
+            output_texture_extent: Default::default(),
+            is_render_output: false,
             camera,
             control,
             uniform_buffer,
@@ -752,24 +780,45 @@ impl GraphicsResources {
         let device = &self.render_state.device;
         let queue = &self.render_state.queue;
 
-        let view = &self.texture_view.as_ref().unwrap();
-        let msaa_view = &self.msaa_texture_view.as_ref().unwrap();
+        let is_render_output = self.is_render_output;
+        self.is_render_output = false;
 
+        let resolve_target = if !is_render_output {
+            Some(self.texture_view.as_ref().unwrap())
+        } else {
+            Some(self.output_texture_view.as_ref().unwrap())
+        };
 
-        // create render pass descriptor and its color attachments
-        let color_attachments = [Some(wgpu::RenderPassColorAttachment {
-            view: msaa_view,
-            resolve_target: Some(view),
+        let view = if !is_render_output {
+            self.msaa_texture_view.as_ref().unwrap()
+        } else {
+            self.msaa_output_texture_view.as_ref().unwrap()
+        };
+
+        let depth_view = if !is_render_output {
+            &self.depth_texture.as_ref().unwrap().view
+        } else {
+            &self.output_depth_texture.as_ref().unwrap().view
+        };
+
+        let color_attachment;
+
+        color_attachment = Some(wgpu::RenderPassColorAttachment {
+            view,
+            resolve_target,
             ops: wgpu::Operations {
                 load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                 store: false,
             },
-        })];
+        });
+
+
+
         let render_pass_descriptor = wgpu::RenderPassDescriptor {
             label: None,
-            color_attachments: &color_attachments,
+            color_attachments: &[color_attachment],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
-                view: &self.depth_texture.as_ref().unwrap().view,
+                view: &depth_view,
                 depth_ops: Some(wgpu::Operations {
                     load: wgpu::LoadOp::Clear(1.0),
                     store: true,
@@ -778,6 +827,7 @@ impl GraphicsResources {
             }),
             // depth_stencil_attachment: None,
         };
+
 
         update_transform_matrix(queue, &mut self.camera, &self.render_uniform_buffer, glam::Vec2::new(self.viewport_size.x, self.viewport_size.y));
 
@@ -863,21 +913,113 @@ impl GraphicsResources {
             let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
             let mass_texture_view = msaa_texture.create_view(&wgpu::TextureViewDescriptor::default());
 
-            drop(texture);
-
             if self.texture_view.is_some() {
                 self.render_state.egui_rpass.write().free_texture(&self.texture_id);
             }
             let texture_id = self.render_state.egui_rpass.write().register_native_texture(device, &texture_view, wgpu::FilterMode::Linear);
 
+            self.texture_extent = texture_extent;
+
             self.depth_texture = Some(Texture::create_depth_texture(&device, &texture_extent, "depth_texture"));
 
+            self.texture = Option::from(texture);
             self.texture_view = Option::from(texture_view);
             self.msaa_texture_view = Option::from(mass_texture_view);
             self.texture_id = texture_id;
 
             self.need_update = true;
         }
+    }
+
+    pub fn prepare_output(&mut self) {
+
+        self.is_render_output = true;
+
+        let device = &self.render_state.device;
+        // let queue = &self.render_state.queue;
+
+        let output_texture_extent = wgpu::Extent3d {
+            width: (self.texture_extent.width * 2) as u32,
+            height: (self.texture_extent.height * 2) as u32,
+            depth_or_array_layers: 1,
+        };
+
+        let output_texture = device.create_texture(&wgpu::TextureDescriptor {
+            size: output_texture_extent.clone(),
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Bgra8UnormSrgb,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::COPY_SRC
+                | wgpu::TextureUsages::TEXTURE_BINDING,
+            label: None,
+        });
+
+        let msaa_output_texture = device.create_texture(&wgpu::TextureDescriptor {
+            size: output_texture_extent.clone(),
+            mip_level_count: 1,
+            sample_count: 4,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Bgra8UnormSrgb,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::COPY_SRC
+                | wgpu::TextureUsages::TEXTURE_BINDING,
+            label: None,
+        });
+
+        let output_texture_view = output_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let msaa_output_texture_view = msaa_output_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
+        self.output_texture = Some(output_texture);
+        self.output_texture_view = Some(output_texture_view);
+        self.msaa_output_texture_view = Some(msaa_output_texture_view);
+        self.output_depth_texture = Some(Texture::create_depth_texture(&device, &output_texture_extent, "depth_texture"));
+
+        self.output_texture_extent = output_texture_extent;
+
+    }
+
+    pub fn output_png_after_render(&mut self) {
+
+        let device = &self.render_state.device;
+        let queue = &self.render_state.queue;
+
+        let buffer_dimensions = BufferDimensions::new(self.output_texture_extent.width as usize, self.output_texture_extent.height as usize);
+
+        let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: (buffer_dimensions.padded_bytes_per_row * buffer_dimensions.height) as u64,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let command_buffer = {
+            let mut encoder =
+                device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+            encoder.copy_texture_to_buffer(
+                self.output_texture.as_ref().unwrap().as_image_copy(),
+                wgpu::ImageCopyBuffer {
+                    buffer: &output_buffer,
+                    layout: wgpu::ImageDataLayout {
+                        offset: 0,
+                        bytes_per_row: Some(
+                            std::num::NonZeroU32::new(buffer_dimensions.padded_bytes_per_row as u32)
+                                .unwrap(),
+                        ),
+                        rows_per_image: None,
+                    },
+                },
+                self.output_texture_extent,
+            );
+
+            encoder.finish()
+        };
+
+        let index = queue.submit(Some(command_buffer));
+
+        pollster::block_on(create_png("/Users/ciaochaos/Projects/graphpu/123.png", device, output_buffer, &buffer_dimensions, index));
     }
 
     pub fn update_control(&mut self, ui: &mut Ui, is_hover_toolbar: bool) {
@@ -936,4 +1078,61 @@ fn pad_size(node_struct_size: usize, num_particles: u32) -> wgpu::BufferAddress 
     let padded_size = (padded_size * num_particles as u64) as wgpu::BufferAddress;
 
     padded_size
+}
+
+async fn create_png(
+    png_output_path: &str,
+    device: &Arc<wgpu::Device>,
+    output_buffer: wgpu::Buffer,
+    buffer_dimensions: &BufferDimensions,
+    submission_index: wgpu::SubmissionIndex,
+) {
+    // Note that we're not calling `.await` here.
+    let buffer_slice = output_buffer.slice(..);
+    // Sets the buffer up for mapping, sending over the result of the mapping back to us when it is finished.
+    let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
+    buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
+
+    // Poll the device in a blocking manner so that our future resolves.
+    // In an actual application, `device.poll(...)` should
+    // be called in an event loop or on another thread.
+    //
+    // We pass our submission index so we don't need to wait for any other possible submissions.
+    device.poll(wgpu::Maintain::WaitForSubmissionIndex(submission_index));
+    // If a file system is available, write the buffer as a PNG
+    let has_file_system_available = cfg!(not(target_arch = "wasm32"));
+    if !has_file_system_available {
+        return;
+    }
+
+    if let Some(Ok(())) = receiver.receive().await {
+        let padded_buffer = buffer_slice.get_mapped_range();
+
+        let mut png_encoder = png::Encoder::new(
+            File::create(png_output_path).unwrap(),
+            buffer_dimensions.width as u32,
+            buffer_dimensions.height as u32,
+        );
+        png_encoder.set_depth(png::BitDepth::Eight);
+        png_encoder.set_color(png::ColorType::Rgba);
+        let mut png_writer = png_encoder
+            .write_header()
+            .unwrap()
+            .into_stream_writer_with_size(buffer_dimensions.unpadded_bytes_per_row)
+            .unwrap();
+
+        // from the padded_buffer we write just the unpadded bytes into the image
+        for chunk in padded_buffer.chunks(buffer_dimensions.padded_bytes_per_row) {
+            png_writer
+                .write_all(&chunk[..buffer_dimensions.unpadded_bytes_per_row])
+                .unwrap();
+        }
+        png_writer.finish().unwrap();
+
+        // With the current interface, we have to make sure all mapped views are
+        // dropped before we unmap the buffer.
+        drop(padded_buffer);
+
+        output_buffer.unmap();
+    }
 }
