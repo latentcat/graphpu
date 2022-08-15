@@ -129,3 +129,21 @@ pub fn toolbar_timeline_frame(style: &egui::Style) -> egui::Frame {
         ..Default::default()
     }
 }
+
+pub fn dock_frame(style: &egui::Style) -> egui::Frame {
+    egui::Frame {
+        inner_margin: egui::style::Margin::symmetric(8.0, 0.0),
+        rounding: egui::Rounding::none(),
+        fill: style.visuals.window_fill(),
+        stroke: style.visuals.window_stroke(),
+        ..Default::default()
+    }
+}
+
+pub fn drawer_title_frame(style: &egui::Style) -> egui::Frame {
+    egui::Frame {
+        inner_margin: egui::style::Margin::symmetric(4.0, 4.0),
+        rounding: egui::Rounding::none(),
+        ..Default::default()
+    }
+}

@@ -1,6 +1,6 @@
 use egui::Ui;
 
-use crate::{models::{app_model::{Stage, ImportState}, Models}, widgets::frames::button_group_style};
+use crate::{models::{app_model::{MainStage, ImportState}, Models}, widgets::frames::button_group_style};
 
 use super::AppView;
 
@@ -148,8 +148,8 @@ impl AppView for MenuBarView {
                         .show(ui, |ui| {
                             ui.set_style(ui.ctx().style());
                             ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
-                            ui.selectable_value(&mut models.app_model.stage, Stage::Graphics, "  Graphics  ");
-                            ui.selectable_value(&mut models.app_model.stage, Stage::Table, "  Table  ");
+                            ui.selectable_value(&mut models.app_model.main_stage, MainStage::Graphics, "  Graphics  ");
+                            ui.selectable_value(&mut models.app_model.main_stage, MainStage::Table, "  Table  ");
                         });
                 });
             });

@@ -27,7 +27,7 @@ impl AppView for DetailView {
                         ui.available_size(),
                         egui::Layout::left_to_right(),
                         |ui| {
-                            ui.label(egui::RichText::new(format!("Message: {}", &models.app_model.message)).weak());
+                            ui.label(egui::RichText::new(format!("{}", &models.app_model.message)).weak());
                         },
                     );
 

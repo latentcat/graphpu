@@ -3,9 +3,12 @@ use crate::{
         detail_view::DetailView, graphics_view::GraphicsView, inspector_view::InspectorView,
         menubar_view::MenuBarView, AppView, import_modal_view::ImportModal, table_view::TableView,
     },
-    models::{app_model::{AppModel, Stage}, graphics_model::GraphicsModel, data_model::DataModel, Models},
+    models::{app_model::{AppModel, MainStage}, graphics_model::GraphicsModel, data_model::DataModel, Models},
 };
 use egui::{Color32, TextStyle};
+use crate::components::dock_view::DockView;
+use crate::components::drawer_view::DrawerView;
+use crate::models::app_model::DockStage;
 
 pub struct MainApp {
     pub models: Models,
@@ -20,6 +23,8 @@ impl MainApp {
         style.visuals.widgets.active.fg_stroke.color = Color32::from_white_alpha(220);
         style.visuals.widgets.inactive.fg_stroke.color = Color32::from_white_alpha(190);
         style.visuals.widgets.noninteractive.fg_stroke.color = Color32::from_white_alpha(170);
+        style.visuals.selection.bg_fill = Color32::from_rgb(86, 89, 225);
+        style.visuals.selection.stroke.color = Color32::from_white_alpha(240);
 
         style.spacing.icon_width = 12.0;
         style.spacing.indent = 16.0;
@@ -81,9 +86,13 @@ impl eframe::App for MainApp {
                 MenuBarView::default().show(&mut self.models, ui, frame);
                 DetailView::default().show(&mut self.models, ui, frame);
                 self.inspector_view.show(&mut self.models, ui, frame);
-                match self.models.app_model.stage {
-                    Stage::Graphics => GraphicsView::default().show(&mut self.models, ui, frame),
-                    Stage::Table => TableView::default().show(&mut self.models, ui, frame),
+                DockView::default().show(&mut self.models, ui, frame);
+                if self.models.app_model.dock_stage != DockStage::None {
+                    DrawerView::default().show(&mut self.models, ui, frame);
+                }
+                match self.models.app_model.main_stage {
+                    MainStage::Graphics => GraphicsView::default().show(&mut self.models, ui, frame),
+                    MainStage::Table => TableView::default().show(&mut self.models, ui, frame),
                 };
             });
 

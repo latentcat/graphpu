@@ -90,28 +90,6 @@ impl AppView for GraphicsView {
 
                     let mut is_hover_toolbar = false;
 
-                    if models.app_model.is_timeline_expand {
-
-                        egui::TopBottomPanel::bottom("toolbar-bottom")
-                            .frame(toolbar_inner_frame_bottom(ui.style()))
-                            .show_inside(ui, |ui| {
-                                toolbar_timeline_frame(ui.style())
-                                    .show(ui, |ui| {
-                                        ui.set_style(ui.ctx().style());
-                                        ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
-                                        // ui.spacing_mut().button_padding = DEFAULT_BUTTON_MARGIN;
-
-                                        ui.centered_and_justified(|ui| {
-                                            ui.set_min_height(100.0);
-                                            ui.label(egui::RichText::new("Timeline View").weak());
-                                        }).response.hovered().then(||{is_hover_toolbar = true});
-                                    });
-
-                            });
-
-
-                    }
-
                     egui::SidePanel::left("toolbar-left-11")
                         .frame(toolbar_inner_frame(ui.style()))
                         .width_range(0.0..=0.0)
@@ -173,12 +151,6 @@ impl AppView for GraphicsView {
                                 ui.horizontal(|ui| {
                                     if let Some(graphics_resources) = &mut models.graphics_model.graphics_resources {
 
-                                        let is_showing_debug = graphics_resources.render_options.is_showing_debug;
-                                        toggle_button(ui, &mut graphics_resources.render_options.is_showing_debug, if is_showing_debug { "⏶" } else { "⏷" })
-                                            .on_hover_text("Toggle Debug");
-
-                                        ui.add_space(15.0);
-
                                         toggle_button(ui, &mut graphics_resources.render_options.is_rendering_axis, "⛶")
                                             .on_hover_text("Toggle Axes")
                                             .clicked().then(|| { need_update(ui, graphics_resources) });
@@ -194,8 +166,6 @@ impl AppView for GraphicsView {
                                     } else {
                                         ui.set_enabled(false);
 
-                                        toggle_button(ui, &mut false, "＃");
-                                        ui.add_space(15.0);
                                         toggle_button(ui, &mut false, "⛶");
                                         toggle_button(ui, &mut false, "➖");
                                         toggle_button(ui, &mut false, "⚫");
@@ -205,61 +175,40 @@ impl AppView for GraphicsView {
 
                         });
 
-                    egui::TopBottomPanel::bottom("toolbar-bottom-2")
-                        .frame(toolbar_inner_frame_bottom(ui.style()))
-                        .show_inside(ui, |ui| {
-                            ui.set_style(ui.ctx().style());
-                            ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
-                            // ui.spacing_mut().button_padding = DEFAULT_BUTTON_MARGIN;
-
-                            ui.with_layout(egui::Layout::right_to_left(), |ui| {
-                                ui.horizontal(|ui| {
-
-                                    let is_timeline_expand = models.app_model.is_timeline_expand;
-
-                                    toggle_button(
-                                        ui,
-                                        &mut models.app_model.is_timeline_expand,
-                                        if is_timeline_expand { "⏷ Timeline"} else { "⏶ Timeline" }
-                                    ).changed().then(|| {ui.ctx().request_repaint()});
-
-                                }).response.hovered().then(||{is_hover_toolbar = true});
-                            });
-
-                        });
-
                     if let Some(graphics_resources) = &mut models.graphics_model.graphics_resources {
-                        if graphics_resources.render_options.is_showing_debug {
+                        if !graphics_resources.render_options.is_showing_debug {
+                            ui.set_visible(false);
+                        }
 
-                            egui::TopBottomPanel::top("toolbar-top-2")
-                                .frame(toolbar_inner_frame_top(ui.style()))
-                                .show_inside(ui, |ui| {
-                                    ui.set_style(ui.ctx().style());
-                                    ui.spacing_mut().item_spacing = egui::vec2(4.0, 0.0);
-                                    ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
+                        egui::TopBottomPanel::bottom("toolbar-top-2")
+                            .frame(toolbar_inner_frame_bottom(ui.style()))
+                            .show_inside(ui, |ui| {
+                                ui.set_style(ui.ctx().style());
+                                ui.spacing_mut().item_spacing = egui::vec2(4.0, 0.0);
+                                ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
 
-                                    ui.with_layout(egui::Layout::from_main_dir_and_cross_align(egui::Direction::TopDown, egui::Align::Max).with_cross_align(egui::Align::Max), |ui| {
+                                ui.with_layout(egui::Layout::from_main_dir_and_cross_align(egui::Direction::TopDown, egui::Align::Max), |ui| {
 
-                                        ui.horizontal(|ui| {
-                                            ui.label(format!("{}", graphics_resources.compute_frame_count));
-                                            ui.label(egui::RichText::new("Compute frames: ").weak());
-                                        });
+                                    ui.horizontal(|ui| {
+                                        ui.label(format!("{}", graphics_resources.compute_frame_count));
+                                        ui.label(egui::RichText::new("Compute frames: ").weak());
+                                    });
 
-                                        ui.horizontal(|ui| {
-                                            ui.label(format!("{}", graphics_resources.render_frame_count));
-                                            ui.label(egui::RichText::new("Render frames: ").weak());
-                                        });
+                                    ui.horizontal(|ui| {
+                                        ui.label(format!("{}", graphics_resources.render_frame_count));
+                                        ui.label(egui::RichText::new("Render frames: ").weak());
+                                    });
 
-                                        ui.horizontal(|ui| {
-                                            ui.label(format!("{}", models.app_model.ui_frame_count));
-                                            ui.label(egui::RichText::new("UI frames: ").weak());
-                                        });
-
+                                    ui.horizontal(|ui| {
+                                        ui.label(format!("{}", models.app_model.ui_frame_count));
+                                        ui.label(egui::RichText::new("UI frames: ").weak());
                                     });
 
                                 });
 
-                        }
+                            });
+
+
                     }
 
                     models.graphics_model.is_hover_toolbar = is_hover_toolbar;

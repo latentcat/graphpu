@@ -1,4 +1,7 @@
 use std::path::PathBuf;
+use std::sync::Arc;
+use egui::{Color32, Rounding, Stroke, Style, Vec2, Visuals};
+use egui::style::{Selection, Spacing, Widgets, WidgetVisuals};
 
 #[derive(Debug, Default, PartialEq)]
 pub enum ImportState {
@@ -9,10 +12,18 @@ pub enum ImportState {
 }
 
 #[derive(Default, PartialEq)]
-pub enum Stage {
+pub enum MainStage {
     #[default]
     Graphics,
     Table,
+}
+
+#[derive(Default, PartialEq)]
+pub enum DockStage {
+    #[default]
+    None,
+    Messages,
+    Timeline,
 }
 
 #[derive(Default, PartialEq)]
@@ -44,17 +55,62 @@ pub struct AppModel {
     pub import_state: ImportState,
     pub node_file_path: Option<PathBuf>,
     pub edge_file_path: Option<PathBuf>,
-    pub stage: Stage,
+    pub main_stage: MainStage,
+    pub dock_stage: DockStage,
     pub table_tab: TableTab,
     pub inspector_tab: InspectorTab,
     pub message: String,
     pub pixels_per_point: f32,
     pub current_tool: Tool,
     pub ui_frame_count: u32,
+    pub dock_style: Arc<Style>,
 }
 
 impl Default for AppModel {
     fn default() -> Self {
+
+        let dock_style = Style {
+            spacing: Spacing {
+                button_padding: Vec2::from([8.0, 3.0]),
+                interact_size: Vec2::from([0.0, 0.0]),
+                ..Default::default()
+            },
+            visuals: Visuals {
+                widgets: Widgets {
+
+                    inactive: WidgetVisuals {
+                        bg_fill: Color32::from_gray(60), // button background
+                        bg_stroke: Default::default(),
+                        fg_stroke: Stroke::new(1.0, Color32::from_white_alpha(120)), // button text
+                        rounding: Rounding::none(),
+                        expansion: 0.0,
+                    },
+                    hovered: WidgetVisuals {
+                        bg_fill: Color32::from_gray(45),
+                        bg_stroke: Stroke::none(), // e.g. hover over window edge or button
+                        fg_stroke: Stroke::new(1.5, Color32::from_gray(240)),
+                        rounding: Rounding::none(),
+                        expansion: 0.0,
+                    },
+                    active: WidgetVisuals {
+                        bg_fill: Color32::from_gray(70),
+                        bg_stroke: Stroke::none(),
+                        fg_stroke: Stroke::new(2.0, Color32::WHITE),
+                        rounding: Rounding::none(),
+                        expansion: 0.0,
+                    },
+
+                    ..Default::default()
+                },
+                selection: Selection {
+                    bg_fill: Color32::from_gray(60),
+                    stroke: Stroke::new(1.0, Color32::from_white_alpha(220)), // button text
+
+                },
+                ..Default::default()
+            },
+            ..Default::default()
+        };
 
         Self { 
             is_import_visible: false,
@@ -62,13 +118,15 @@ impl Default for AppModel {
             import_state: Default::default(),
             node_file_path: None,
             edge_file_path: None,
-            stage: Default::default(),
+            main_stage: Default::default(),
+            dock_stage: Default::default(),
             table_tab: Default::default(),
             inspector_tab: Default::default(),
             message: String::from("中文消息测试"),
             pixels_per_point: 1.0,
             current_tool: Default::default(),
             ui_frame_count: 0,
+            dock_style: Arc::new(dock_style)
         }
     }
 }
