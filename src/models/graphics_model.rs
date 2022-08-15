@@ -39,6 +39,12 @@ pub struct RenderUniform {
     project_matrix: glam::Mat4,
 }
 
+#[repr(C)]
+pub struct Bound {
+    _bound_min: [f32; 3],
+    _bound_max: [f32; 3],
+}
+
 // 计算方法的类型
 // Continuous 为需要连续迭代模拟的方法，如 Force Atlas 2
 // OneStep 为单次方法，如 Randomize
@@ -180,6 +186,8 @@ pub struct GraphicsResources {
     gen_node_pipeline:   wgpu::ComputePipeline,
     cal_mass_pipeline:   wgpu::ComputePipeline,
     attractive_force_pipeline:   wgpu::ComputePipeline,
+    reduction_bounding_pipeline:   wgpu::ComputePipeline,
+    bounding_box_pipeline:   wgpu::ComputePipeline,
     compute_pipeline:   wgpu::ComputePipeline,      // 计算
     randomize_pipeline: wgpu::ComputePipeline,      // 随机位置
     copy_pipeline:      wgpu::ComputePipeline,      // 拷贝
@@ -323,6 +331,16 @@ impl GraphicsResources {
                         },
                         count: None,
                     },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 5,
+                        visibility: wgpu::ShaderStages::COMPUTE,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Storage { read_only: false },
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    }
                 ],
                 label: None,
             });
@@ -459,6 +477,22 @@ impl GraphicsResources {
             entry_point: "attractive_force",
         });
 
+        // attractive_force Pipeline
+        let reduction_bounding_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some("Reduction Bounding Pipeline"),
+            layout: Some(&compute_pipeline_layout),
+            module: &compute_shader,
+            entry_point: "reduction_bounding",
+        });
+
+        // attractive_force Pipeline
+        let bounding_box_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some("Bounding Box Pipeline"),
+            layout: Some(&compute_pipeline_layout),
+            module: &compute_shader,
+            entry_point: "bounding_box",
+        });
+
         // Compute Pipeline
         let compute_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
             label: Some("Compute pipeline"),
@@ -482,6 +516,13 @@ impl GraphicsResources {
             module: &compute_shader,
             entry_point: "copy",
         });
+
+        // 计算线程组数
+        // 线程组数 = 线程数 / 每组线程数（取整）
+        let node_work_group_count =
+            ((node_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
+        let edge_work_group_count =
+            ((edge_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
 
         // Buffer 创建
 
@@ -532,6 +573,17 @@ impl GraphicsResources {
         let spring_force_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Node Buffer"),
             size: spring_force_buffer_size as wgpu::BufferAddress,
+            usage: wgpu::BufferUsages::VERTEX
+                | wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false
+        });
+
+        let bounding_buffer_size = node_work_group_count * 6 * 4;
+
+        let bounding_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Bounding Buffer"),
+            size: bounding_buffer_size as wgpu::BufferAddress,
             usage: wgpu::BufferUsages::VERTEX
                 | wgpu::BufferUsages::STORAGE
                 | wgpu::BufferUsages::COPY_DST,
@@ -591,6 +643,10 @@ impl GraphicsResources {
                     binding: 4,
                     resource: spring_force_buffer.as_entire_binding(),
                 },
+                wgpu::BindGroupEntry {
+                    binding: 5,
+                    resource: bounding_buffer.as_entire_binding(),
+                },
             ],
             label: None,
         });
@@ -634,13 +690,6 @@ impl GraphicsResources {
             label: None,
         });
 
-        // 计算线程组数
-        // 线程组数 = 线程数 / 每组线程数（取整）
-        let node_work_group_count =
-            ((node_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
-        let edge_work_group_count =
-            ((edge_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
-
         let mut boids_resources = GraphicsResources {
             status: model.status.clone(),
             render_state,
@@ -674,6 +723,8 @@ impl GraphicsResources {
             gen_node_pipeline,
             cal_mass_pipeline,
             attractive_force_pipeline,
+            reduction_bounding_pipeline,
+            bounding_box_pipeline,
             compute_pipeline,
             randomize_pipeline,
             copy_pipeline,
@@ -713,9 +764,18 @@ impl GraphicsResources {
             cpass.set_pipeline(&self.compute_pipeline);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+
             cpass.set_pipeline(&self.attractive_force_pipeline);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
+
+            cpass.set_pipeline(&self.reduction_bounding_pipeline);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+
+            cpass.set_pipeline(&self.bounding_box_pipeline);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(1, 1, 1);
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));

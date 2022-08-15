@@ -176,7 +176,7 @@ fn reduction_bounding(
 }
 
 @compute
-@workgroup_size(128)
+@workgroup_size(1)
 fn bounding_box() {
     var bound_min_min = bounding[0].bound_min;
     var bound_max_max = bounding[0].bound_max;
