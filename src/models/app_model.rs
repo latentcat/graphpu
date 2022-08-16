@@ -55,7 +55,7 @@ pub struct AppModel {
     pub import_state: ImportState,
     pub node_file_path: Option<PathBuf>,
     pub edge_file_path: Option<PathBuf>,
-    pub output_folder:String,
+    pub output_folder: String,
     pub main_stage: MainStage,
     pub dock_stage: DockStage,
     pub table_tab: TableTab,
@@ -69,7 +69,6 @@ pub struct AppModel {
 
 impl Default for AppModel {
     fn default() -> Self {
-
         let dock_style = Style {
             spacing: Spacing {
                 button_padding: Vec2::from([8.0, 3.0]),
@@ -78,7 +77,6 @@ impl Default for AppModel {
             },
             visuals: Visuals {
                 widgets: Widgets {
-
                     inactive: WidgetVisuals {
                         bg_fill: Color32::from_gray(60), // button background
                         bg_stroke: Default::default(),
@@ -106,20 +104,19 @@ impl Default for AppModel {
                 selection: Selection {
                     bg_fill: Color32::from_gray(60),
                     stroke: Stroke::new(1.0, Color32::from_white_alpha(220)), // button text
-
                 },
                 ..Default::default()
             },
             ..Default::default()
         };
 
-        Self { 
+        Self {
             is_import_visible: false,
             is_timeline_expand: false,
             import_state: Default::default(),
             node_file_path: None,
             edge_file_path: None,
-            output_folder:String::from(""),
+            output_folder: String::from(""),
             main_stage: Default::default(),
             dock_stage: Default::default(),
             table_tab: Default::default(),
@@ -128,7 +125,7 @@ impl Default for AppModel {
             pixels_per_point: 1.0,
             current_tool: Default::default(),
             ui_frame_count: 0,
-            dock_style: Arc::new(dock_style)
+            dock_style: Arc::new(dock_style),
         }
     }
 }

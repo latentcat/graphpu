@@ -1,6 +1,6 @@
 use std::hash::Hash;
 use std::{collections::HashMap, path::PathBuf};
-
+use std::process::Command;
 
 use egui::Ui;
 use egui::collapsing_header::HeaderResponse;
@@ -16,14 +16,31 @@ use super::AppView;
 
 #[derive(Default)]
 pub struct InspectorView;
+
 pub fn pick_output() -> Option<PathBuf> {
     rfd::FileDialog::new()
         .set_directory("/")
         .pick_folder()
 }
+
 fn path_to_string(path: &Option<PathBuf>) -> Option<String> {
     path.as_ref().map(|path| path.display().to_string())
 }
+
+fn openOutFolder(tempOutput: &String) {
+    if cfg!(windows) {
+        Command::new("explorer")
+            .arg(tempOutput) // <- Specify the directory you'd like to open.
+            .spawn()
+            .unwrap();
+    } else if cfg!(macos) {
+        Command::new("open")
+            .arg(tempOutput) // <- Specify the directory you'd like to open.
+            .spawn()
+            .unwrap();
+    }
+}
+
 impl AppView for InspectorView {
     fn show(&mut self, models: &mut Models, ui: &mut Ui, _frame: &mut eframe::Frame) {
         egui::SidePanel::right("inspector_view")
@@ -45,19 +62,36 @@ impl AppView for InspectorView {
                             ui.set_enabled(false);
                         }
 
-                        ui.with_layout(egui::Layout::right_to_left(), |ui| {
-                            let _ = ui.button("🗁");
-
-                            ui.vertical_centered_justified(|ui| {
-                                let render_button = ui.button("Render Image");
-                                if render_button.clicked() {
-                                    let tempOutput=& models.app_model.output_folder;
-                                    models.graphics_model.render_output(String::from(tempOutput));
+                        ui.with_layout(
+                            egui::Layout::right_to_left(),
+                            |ui| {
+                                let folderOpen = ui.button("🗁");
+                                if folderOpen.clicked() {
+                                    if &models.app_model.output_folder != "" {
+                                        openOutFolder(&models.app_model.output_folder);
+                                    } else {
+                                        models.app_model.output_folder = path_to_string(&pick_output()).unwrap_or("".to_owned());
+                                        if &models.app_model.output_folder != "" {
+                                            openOutFolder(&models.app_model.output_folder);
+                                        }
+                                    }
                                 }
-                            });
-                        });
-
-                });
+                                ui.vertical_centered_justified(|ui| {
+                                    let render_button = ui.button("Render Image");
+                                    if render_button.clicked() {
+                                        if &models.app_model.output_folder != "" {
+                                            models.graphics_model.render_output(String::from(&models.app_model.output_folder));
+                                        } else {
+                                            models.app_model.output_folder = path_to_string(&pick_output()).unwrap_or("".to_owned());
+                                            if &models.app_model.output_folder != "" {
+                                                models.graphics_model.render_output(String::from(&models.app_model.output_folder));
+                                            }
+                                        }
+                                    }
+                                });
+                            },
+                        );
+                    });
 
                 // Main Section
                 egui::CentralPanel::default()
@@ -70,7 +104,6 @@ impl AppView for InspectorView {
                         if matches!(models.app_model.import_state, ImportState::Success) {
                             ui.horizontal(|ui| {
                                 ui.with_layout(egui::Layout::right_to_left(), |ui| {
-
                                     ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
                                     let remove_data_button = ui.button("🗑");
                                     if remove_data_button.clicked() {
@@ -132,12 +165,10 @@ impl AppView for InspectorView {
                                     InspectorTab::Edge => self.edge_inspector(models, ui),
                                     InspectorTab::Render => self.scene_inspector(models, ui),
                                 };
-
                             });
 
                         ui.separator();
-                });
-
+                    });
             });
     }
 }
@@ -186,7 +217,7 @@ impl InspectorView {
                                 }
                             }
                             ui.end_row();
-                        },
+                        }
                         PositionType::Set => {
                             grid_label(ui, "Set");
                             ui.text_edit_singleline(&mut "".to_owned());
@@ -220,7 +251,7 @@ impl InspectorView {
                             grid_label(ui, "Constant");
                             ui.color_edit_button_srgba(&mut node_settings.color_constant);
                             ui.end_row();
-                        },
+                        }
                         ColorType::Ramp => {
                             let (source, ramp) = &mut node_settings.color_ramp;
                             source_combox("Color Ramp Source", &models.data_model.node_data.headers_index_str, source, ui);
@@ -236,7 +267,7 @@ impl InspectorView {
                             grid_label(ui, "");
                             let _ = ui.button("Set Color");
                             ui.end_row();
-                        },
+                        }
                         ColorType::Partition => {
                             let (source, platte) = &mut node_settings.color_partition;
                             source_combox("Color Partition Source", &models.data_model.node_data.headers_index_str, source, ui);
@@ -252,7 +283,7 @@ impl InspectorView {
                             grid_label(ui, "");
                             let _ = ui.button("Set Color");
                             ui.end_row();
-                        },
+                        }
                     }
                 });
         });
@@ -276,7 +307,7 @@ impl InspectorView {
                             grid_label(ui, "Constant");
                             ui.add(egui::Slider::new(&mut node_settings.size_constant, 0.1..=10.0));
                             ui.end_row();
-                        },
+                        }
                         SizeType::Ramp => {
                             let (source, _) = &mut node_settings.size_ramp;
                             source_combox("Size Ramp Source", &models.data_model.node_data.headers_index_str, source, ui);
@@ -297,18 +328,15 @@ impl InspectorView {
         });
     }
 
-    fn edge_inspector(&mut self, _models: &mut Models, _ui: &mut Ui) {
-    }
+    fn edge_inspector(&mut self, _models: &mut Models, _ui: &mut Ui) {}
     fn scene_inspector(&mut self, models: &mut Models, ui: &mut Ui) {
-
-        ui.add(egui::Label::new("Output Forlder"));
+        ui.add(egui::Label::new("Output Folder"));
         ui.horizontal(|ui| {
             ui.with_layout(egui::Layout::right_to_left(), |ui| {
-
                 ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
 
                 if ui.button("•••").clicked() {
-                    models.app_model.output_folder= path_to_string(&pick_output()).unwrap_or("".to_owned());
+                    models.app_model.output_folder = path_to_string(&pick_output()).unwrap_or("".to_owned());
                 }
 
                 ui.vertical_centered_justified(|ui| {
@@ -318,7 +346,6 @@ impl InspectorView {
                             .desired_width(200.)
                     );
                 });
-
             });
         });
 
@@ -362,16 +389,16 @@ fn grid_header<'a>(ui: &'a mut egui::Ui, default_open: bool, title: &str, hint: 
     let header = egui::collapsing_header::CollapsingState::load_with_default_open(ui.ctx(), id, default_open);
     let is_header_open = header.is_open();
     return (header
-        .show_header(ui, |ui| {
-            if is_header_open {
-                ui.strong(title);
-            } else {
-                ui.horizontal(|ui| {
-                    ui.strong(title);
-                    ui.with_layout(egui::Layout::right_to_left(), |ui| {
-                        ui.weak(hint);
-                    });
-                });
-            }
-        }), is_header_open)
+                .show_header(ui, |ui| {
+                    if is_header_open {
+                        ui.strong(title);
+                    } else {
+                        ui.horizontal(|ui| {
+                            ui.strong(title);
+                            ui.with_layout(egui::Layout::right_to_left(), |ui| {
+                                ui.weak(hint);
+                            });
+                        });
+                    }
+                }), is_header_open);
 }
