@@ -1,6 +1,8 @@
-use egui::Ui;
+use egui::{Sense, Ui};
+use crate::models::app_model::DockStage;
 
 use crate::models::Models;
+use crate::utils::message::messenger;
 
 use super::AppView;
 
@@ -27,7 +29,14 @@ impl AppView for DetailView {
                         ui.available_size(),
                         egui::Layout::left_to_right(),
                         |ui| {
-                            ui.label(egui::RichText::new(format!("{}", &models.app_model.message)).weak());
+                            let messages = messenger();
+                            if messages.len() > 0 {
+                                let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::click());
+                                ui.allocate_ui_at_rect(rect, |ui| {
+                                    ui.label(egui::RichText::new(format!("{}", messages[0])).weak())
+                                });
+                                response.clicked().then(||{ models.app_model.dock_stage = DockStage::Messages });
+                            }
                         },
                     );
 
