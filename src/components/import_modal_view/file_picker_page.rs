@@ -1,16 +1,10 @@
-use std::path::PathBuf;
-
 use egui::Ui;
 
 use crate::models::{Models};
-use crate::utils::csv_loader::pick_csv;
+use crate::utils::file::{path_to_string, pick_csv};
 use crate::widgets::frames::DEFAULT_BUTTON_PADDING;
 
 use super::ImportModal;
-
-fn path_to_string(path: &Option<PathBuf>) -> Option<String> {
-    path.as_ref().map(|path| path.display().to_string())
-}
 
 pub fn show(parent: &mut ImportModal, _: &mut Models, ui: &mut Ui) {
 
@@ -38,7 +32,7 @@ pub fn show(parent: &mut ImportModal, _: &mut Models, ui: &mut Ui) {
                     ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
 
                     if ui.button("•••").clicked() {
-                        parent.node_file_path = path_to_string(&pick_csv()).unwrap_or("".to_owned());
+                        parent.node_file_path = path_to_string(&pick_csv()).unwrap_or(parent.node_file_path.clone());
                     }
 
                     ui.vertical_centered_justified(|ui| {
@@ -60,7 +54,7 @@ pub fn show(parent: &mut ImportModal, _: &mut Models, ui: &mut Ui) {
                     ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
 
                     if ui.button("•••").clicked() {
-                        parent.edge_file_path = path_to_string(&pick_csv()).unwrap_or("".to_owned());
+                        parent.edge_file_path = path_to_string(&pick_csv()).unwrap_or(parent.edge_file_path.clone());
                     }
 
                     ui.vertical_centered_justified(|ui| {

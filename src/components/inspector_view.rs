@@ -1,6 +1,4 @@
 use std::hash::Hash;
-use std::path::PathBuf;
-use std::process::Command;
 
 use egui::Ui;
 use egui::collapsing_header::HeaderResponse;
@@ -10,33 +8,14 @@ use crate::models::app_model::{ImportState, InspectorTab};
 use crate::models::graphics_model::ComputeMethod;
 use crate::models::graphics_model::ComputeMethodType;
 use crate::models::data_model::{PositionType, ColorType, ColorRamp, ColorPalette, SizeType};
+use crate::utils::file::{path_to_string, pick_folder, system_open_directory};
 use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_PADDING, inspector_frame, inspector_inner_frame};
 
 use super::AppView;
 
 #[derive(Default)]
 pub struct InspectorView;
-pub fn pick_output() -> Option<PathBuf> {
-    rfd::FileDialog::new()
-        .set_directory("/")
-        .pick_folder()
-}
-fn path_to_string(path: &Option<PathBuf>) -> Option<String> {
-    path.as_ref().map(|path| path.display().to_string())
-}
-fn system_open_output_directory(output_directory: &String) {
-    if cfg!(windows) {
-        Command::new("explorer")
-            .arg(output_directory) // <- Specify the directory you'd like to open.
-            .spawn()
-            .unwrap();
-    } else if cfg!(unix) {
-        Command::new("open")
-            .arg(output_directory) // <- Specify the directory you'd like to open.
-            .spawn()
-            .unwrap();
-    }
-}
+
 impl AppView for InspectorView {
     fn show(&mut self, models: &mut Models, ui: &mut Ui, _frame: &mut eframe::Frame) {
         egui::SidePanel::right("inspector_view")
@@ -63,26 +42,16 @@ impl AppView for InspectorView {
                             |ui| {
                                 let folder_open = ui.button("🗁");
                                 if folder_open.clicked() {
-                                    if &models.app_model.output_folder != "" {
-                                        system_open_output_directory(&models.app_model.output_folder);
-                                    } else {
-                                        models.app_model.output_folder = path_to_string(&pick_output()).unwrap_or("".to_owned());
-                                        if &models.app_model.output_folder != "" {
-                                            system_open_output_directory(&models.app_model.output_folder);
-                                        }
-                                    }
+                                    self.pick_output_folder_and_then(&mut models.app_model.output_folder, |folder| {
+                                        system_open_directory(folder);
+                                    });
                                 }
                                 ui.vertical_centered_justified(|ui| {
                                     let render_button = ui.button("Render Image");
                                     if render_button.clicked() {
-                                        if &models.app_model.output_folder != "" {
-                                            models.graphics_model.render_output(String::from(&models.app_model.output_folder));
-                                        } else {
-                                            models.app_model.output_folder = path_to_string(&pick_output()).unwrap_or("".to_owned());
-                                            if &models.app_model.output_folder != "" {
-                                                models.graphics_model.render_output(String::from(&models.app_model.output_folder));
-                                            }
-                                        }
+                                        self.pick_output_folder_and_then(&mut models.app_model.output_folder, |folder| {
+                                            models.graphics_model.render_output(String::from(folder));
+                                        });
                                     }
                                 });
                             },
@@ -351,7 +320,7 @@ impl InspectorView {
                             ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
 
                             if ui.button("•••").clicked() {
-                                models.app_model.output_folder= path_to_string(&pick_output()).unwrap_or("".to_owned());
+                                models.app_model.output_folder = path_to_string(&pick_folder()).unwrap_or(models.app_model.output_folder.clone());
                             }
 
                             ui.vertical_centered_justified(|ui| {
@@ -369,6 +338,17 @@ impl InspectorView {
                 });
         });
 
+    }
+}
+
+impl InspectorView {
+    fn pick_output_folder_and_then(&self, output_folder: &mut String, mut then: impl FnMut(&str) -> ()) {
+        if output_folder.is_empty() {
+            *output_folder = path_to_string(&pick_folder()).unwrap_or(output_folder.clone());
+        }
+        if !output_folder.is_empty() {
+            then(output_folder);
+        }
     }
 }
 

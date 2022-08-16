@@ -4,12 +4,6 @@ use rayon::prelude::{IntoParallelIterator, IntoParallelRefIterator, ParallelIter
 
 use crate::models::{data_model::ExternalData, ImportedData};
 
-pub fn pick_csv() -> Option<PathBuf> {
-    rfd::FileDialog::new()
-        .add_filter("Text File", &["txt", "csv"])
-        .pick_file()
-}
-
 pub fn read_headers_from_csv(
     path: &Option<PathBuf>,
 ) -> Result<(HashMap<String, usize>, Vec<String>), String> {
