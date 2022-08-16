@@ -74,7 +74,6 @@ pub struct GraphicsModel {
 }
 
 impl GraphicsModel {
-
     // 初始化计算 Model，传入 eframe 初始化中的 render_state
     // 仅启动时调用一次
     pub fn init(cc: &eframe::CreationContext) -> Self {
@@ -97,7 +96,6 @@ impl GraphicsModel {
 }
 
 impl GraphicsModel {
-
     // 切换是否持续计算
     // 仅对 ComputeMethodType::Continuous 生效
     pub fn switch_computing(&mut self) {
@@ -116,7 +114,7 @@ impl GraphicsModel {
         self.is_dispatching = state;
     }
 
-    pub fn render_output(&mut self,outfolder:String) {
+    pub fn render_output(&mut self, outfolder: String) {
         if let Some(graphics_resources) = &mut self.graphics_resources {
             graphics_resources.prepare_output();
             graphics_resources.render();
@@ -129,12 +127,11 @@ pub struct RenderOptions {
     pub is_rendering_node: bool,
     pub is_rendering_edge: bool,
     pub is_rendering_axis: bool,
-    pub is_showing_debug:  bool,
+    pub is_showing_debug: bool,
 }
 
 // 绘图资源 Model，存放和计算和绘图相关的一切资源
 pub struct GraphicsResources {
-
     // 包含 Node / Edge Count
     status: GraphicsStatus,
 
@@ -165,14 +162,16 @@ pub struct GraphicsResources {
     control: Controls,
 
     // Buffers
-    uniform_buffer: wgpu::Buffer,                   // 传递 Frame Num 等参数
-    quad_buffer:    wgpu::Buffer,                   // Quad 四个顶点数据
-    node_buffer:    wgpu::Buffer,
-    edge_buffer:    wgpu::Buffer,
-    render_uniform_buffer:    wgpu::Buffer,
+    uniform_buffer: wgpu::Buffer,
+    // 传递 Frame Num 等参数
+    quad_buffer: wgpu::Buffer,
+    // Quad 四个顶点数据
+    node_buffer: wgpu::Buffer,
+    edge_buffer: wgpu::Buffer,
+    render_uniform_buffer: wgpu::Buffer,
 
     // Bind Group
-    compute_bind_group:     wgpu::BindGroup,
+    compute_bind_group: wgpu::BindGroup,
     node_render_bind_group: wgpu::BindGroup,
     edge_render_bind_group: wgpu::BindGroup,
     render_uniform_bind_group: wgpu::BindGroup,
@@ -183,20 +182,23 @@ pub struct GraphicsResources {
     axis_render_pipeline: wgpu::RenderPipeline,
 
     // 计算管线
-    gen_node_pipeline:   wgpu::ComputePipeline,
-    cal_mass_pipeline:   wgpu::ComputePipeline,
-    attractive_force_pipeline:   wgpu::ComputePipeline,
-    reduction_bounding_pipeline:   wgpu::ComputePipeline,
-    bounding_box_pipeline:   wgpu::ComputePipeline,
-    compute_pipeline:   wgpu::ComputePipeline,      // 计算
-    randomize_pipeline: wgpu::ComputePipeline,      // 随机位置
-    copy_pipeline:      wgpu::ComputePipeline,      // 拷贝
+    gen_node_pipeline: wgpu::ComputePipeline,
+    cal_mass_pipeline: wgpu::ComputePipeline,
+    attractive_force_pipeline: wgpu::ComputePipeline,
+    reduction_bounding_pipeline: wgpu::ComputePipeline,
+    bounding_box_pipeline: wgpu::ComputePipeline,
+    compute_pipeline: wgpu::ComputePipeline,
+    // 计算
+    randomize_pipeline: wgpu::ComputePipeline,
+    // 随机位置
+    copy_pipeline: wgpu::ComputePipeline,      // 拷贝
 
     // 线程组数 = 线程数 / 每组线程数
-    node_work_group_count:   u32,
-    edge_work_group_count:   u32,
-    pub compute_frame_count:          u32,                      // 帧计数器
-    pub render_frame_count:          u32,                      // 帧计数器
+    node_work_group_count: u32,
+    edge_work_group_count: u32,
+    pub compute_frame_count: u32,
+    // 帧计数器
+    pub render_frame_count: u32,                      // 帧计数器
 
     pub render_options: RenderOptions,
     pub need_update: bool,
@@ -204,7 +206,6 @@ pub struct GraphicsResources {
 }
 
 impl GraphicsResources {
-
     // 在导入数据后调用的方法，初始化计算和绘图的资源
     pub fn new(render_state: egui_wgpu::RenderState, model: &mut DataModel) -> Self {
 
@@ -229,14 +230,12 @@ impl GraphicsResources {
         ];
 
         let shaders = shader_files.par_iter().map(|shader_file| {
-
             let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
                 label: None,
                 source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(shader_file)),
             });
 
             shader
-
         }).collect::<Vec<ShaderModule>>();
 
         // Compute Shader
@@ -280,70 +279,70 @@ impl GraphicsResources {
         // 2 - Node Buffer
         // 3 - Edge Buffer
         let compute_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::COMPUTE,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
                     },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::COMPUTE,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
                     },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 2,
-                        visibility: wgpu::ShaderStages::COMPUTE,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage { read_only: false },
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
                     },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 3,
-                        visibility: wgpu::ShaderStages::COMPUTE,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage { read_only: true },
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 3,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: true },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
                     },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 4,
-                        visibility: wgpu::ShaderStages::COMPUTE,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage { read_only: false },
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 4,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
                     },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 5,
-                        visibility: wgpu::ShaderStages::COMPUTE,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage { read_only: false },
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    }
-                ],
-                label: None,
-            });
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 5,
+                    visibility: wgpu::ShaderStages::COMPUTE,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Storage { read_only: false },
+                        has_dynamic_offset: false,
+                        min_binding_size: None,
+                    },
+                    count: None,
+                }
+            ],
+            label: None,
+        });
 
         // Node Render Bind Group Layout
         // 0 - Node Buffer
@@ -450,7 +449,6 @@ impl GraphicsResources {
         // Node Render Pipeline
         // 拓扑结构：Triangle Strip
         let axis_render_pipeline = RenderPipeline::create_axis_render_pipeline(device, axis_render_pipeline_layout, axis_shader).render_pipeline;
-
 
 
         // Gen Node Pipeline
@@ -565,7 +563,7 @@ impl GraphicsResources {
             usage: wgpu::BufferUsages::VERTEX
                 | wgpu::BufferUsages::STORAGE
                 | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false
+            mapped_at_creation: false,
         });
 
         let spring_force_buffer_size = node_count * 3 * 4;
@@ -576,7 +574,7 @@ impl GraphicsResources {
             usage: wgpu::BufferUsages::VERTEX
                 | wgpu::BufferUsages::STORAGE
                 | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false
+            mapped_at_creation: false,
         });
 
         let bounding_buffer_size = node_work_group_count * 8 * 4;
@@ -587,7 +585,7 @@ impl GraphicsResources {
             usage: wgpu::BufferUsages::VERTEX
                 | wgpu::BufferUsages::STORAGE
                 | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false
+            mapped_at_creation: false,
         });
 
         // 新建 Edge Buffer 并传入数据
@@ -736,7 +734,7 @@ impl GraphicsResources {
                 is_rendering_node: true,
                 is_rendering_edge: true,
                 is_rendering_axis: false,
-                is_showing_debug: false
+                is_showing_debug: false,
             },
             need_update: true,
         };
@@ -746,11 +744,9 @@ impl GraphicsResources {
         // boids_resources.render();
 
         boids_resources
-
     }
 
     pub fn compute(&mut self) {
-
         let device = &self.render_state.device;
         let queue = &self.render_state.queue;
 
@@ -784,7 +780,6 @@ impl GraphicsResources {
 
 
     pub fn gen_node(&mut self) {
-
         let device = &self.render_state.device;
         let queue = &self.render_state.queue;
 
@@ -808,7 +803,6 @@ impl GraphicsResources {
     }
 
     pub fn randomize(&mut self) {
-
         let device = &self.render_state.device;
         let queue = &self.render_state.queue;
 
@@ -834,7 +828,6 @@ impl GraphicsResources {
     }
 
     pub fn render(&mut self) {
-
         self.render_frame_count += 1u32;
 
         let device = &self.render_state.device;
@@ -871,7 +864,6 @@ impl GraphicsResources {
                 store: false,
             },
         });
-
 
 
         let render_pass_descriptor = wgpu::RenderPassDescriptor {
@@ -922,16 +914,13 @@ impl GraphicsResources {
                 rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
                 rpass.draw(0..2, 0..self.status.edge_count as u32);
             }
-
         }
         command_encoder.pop_debug_group();
 
         queue.submit(Some(command_encoder.finish()));
-
     }
 
     pub fn update_viewport(&mut self, new_size: Vec2) {
-
         let device = &self.render_state.device;
         let _queue = &self.render_state.queue;
 
@@ -992,7 +981,6 @@ impl GraphicsResources {
     }
 
     pub fn prepare_output(&mut self) {
-
         self.is_render_output = true;
 
         let device = &self.render_state.device;
@@ -1037,11 +1025,9 @@ impl GraphicsResources {
         self.output_depth_texture = Some(Texture::create_depth_texture(&device, &output_texture_extent, "depth_texture"));
 
         self.output_texture_extent = output_texture_extent;
-
     }
 
-    pub fn output_png_after_render(&mut self,outfolder:String) {
-
+    pub fn output_png_after_render(&mut self, outfolder: String) {
         let device = &self.render_state.device;
         let queue = &self.render_state.queue;
 
@@ -1080,13 +1066,12 @@ impl GraphicsResources {
         let index = queue.submit(Some(command_buffer));
 
         let mut outputFolder = outfolder;
-        let pngName=format!("/{}.png", "123");
-        outputFolder+=&pngName;
+        let pngName = format!("/{}.png", "123");
+        outputFolder += &pngName;
         pollster::block_on(create_png(outputFolder, device, output_buffer, &buffer_dimensions, index));
     }
 
     pub fn update_control(&mut self, ui: &mut Ui, is_hover_toolbar: bool) {
-
         self.control.update_interaction(ui, is_hover_toolbar);
         self.control.update_camera(&mut self.camera);
 
@@ -1095,47 +1080,37 @@ impl GraphicsResources {
         }
 
         self.control.is_update = false;
-
     }
 
     pub fn dispose(&mut self) {
         self.node_buffer.destroy();
         self.edge_buffer.destroy();
     }
-
-
 }
 
 fn update_transform_matrix(queue: &Queue, camera: &mut Camera, render_uniform_buffer: &wgpu::Buffer, viewport_size: glam::Vec2) {
-
     if camera.is_updated {
-
         camera.update_projection_matrix();
 
         let uniform_data = generate_uniform_data(camera);
 
         queue.write_buffer(&render_uniform_buffer, 0, bytemuck::cast_slice(&uniform_data));
         camera.is_updated = false;
-
     }
-
 }
 
 fn generate_uniform_data(camera: &Camera) -> Vec<f32> {
-
     let mut uniform_data: Vec<f32> = camera.view_matrix.as_ref().to_vec();
     uniform_data.append(&mut camera.projection_matrix.as_ref().to_vec());
     uniform_data.append(&mut [camera.aspect_ratio, camera.zoom_factor].to_vec());
     uniform_data.append(&mut camera.near_far.to_array().to_vec());
 
     uniform_data
-
 }
 
 // 计算对齐后的 Buffer 长度
 // 结构体 Buffer 须向 16 byte 对齐，也就是 4 个 32 位变量
 fn pad_size(node_struct_size: usize, num_particles: u32) -> wgpu::BufferAddress {
-
     let align_mask = wgpu::COPY_BUFFER_ALIGNMENT * 4 - 1;
     let padded_size = ((node_struct_size as u64 + align_mask) & !align_mask).max(wgpu::COPY_BUFFER_ALIGNMENT);
     let padded_size = (padded_size * num_particles as u64) as wgpu::BufferAddress;
