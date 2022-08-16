@@ -1,6 +1,6 @@
 use std::hash::Hash;
 use std::{collections::HashMap, path::PathBuf};
-
+use std::process::Command;
 
 use egui::Ui;
 use egui::collapsing_header::HeaderResponse;
@@ -24,6 +24,19 @@ pub fn pick_output() -> Option<PathBuf> {
 fn path_to_string(path: &Option<PathBuf>) -> Option<String> {
     path.as_ref().map(|path| path.display().to_string())
 }
+fn openOutFolder(tempOutput: &String) {
+    if cfg!(windows) {
+        Command::new("explorer")
+            .arg(tempOutput) // <- Specify the directory you'd like to open.
+            .spawn()
+            .unwrap();
+    } else if cfg!(macos) {
+        Command::new("open")
+            .arg(tempOutput) // <- Specify the directory you'd like to open.
+            .spawn()
+            .unwrap();
+    }
+}
 impl AppView for InspectorView {
     fn show(&mut self, models: &mut Models, ui: &mut Ui, _frame: &mut eframe::Frame) {
         egui::SidePanel::right("inspector_view")
@@ -45,19 +58,36 @@ impl AppView for InspectorView {
                             ui.set_enabled(false);
                         }
 
-                        ui.with_layout(egui::Layout::right_to_left(), |ui| {
-                            let _ = ui.button("🗁");
-
-                            ui.vertical_centered_justified(|ui| {
-                                let render_button = ui.button("Render Image");
-                                if render_button.clicked() {
-                                    let tempOutput=& models.app_model.output_folder;
-                                    models.graphics_model.render_output(String::from(tempOutput));
+                        ui.with_layout(
+                            egui::Layout::right_to_left(),
+                            |ui| {
+                                let folderOpen = ui.button("🗁");
+                                if folderOpen.clicked() {
+                                    if &models.app_model.output_folder != "" {
+                                        openOutFolder(&models.app_model.output_folder);
+                                    } else {
+                                        models.app_model.output_folder = path_to_string(&pick_output()).unwrap_or("".to_owned());
+                                        if &models.app_model.output_folder != "" {
+                                            openOutFolder(&models.app_model.output_folder);
+                                        }
+                                    }
                                 }
-                            });
-                        });
-
-                });
+                                ui.vertical_centered_justified(|ui| {
+                                    let render_button = ui.button("Render Image");
+                                    if render_button.clicked() {
+                                        if &models.app_model.output_folder != "" {
+                                            models.graphics_model.render_output(String::from(&models.app_model.output_folder));
+                                        } else {
+                                            models.app_model.output_folder = path_to_string(&pick_output()).unwrap_or("".to_owned());
+                                            if &models.app_model.output_folder != "" {
+                                                models.graphics_model.render_output(String::from(&models.app_model.output_folder));
+                                            }
+                                        }
+                                    }
+                                });
+                            },
+                        );
+                    });
 
                 // Main Section
                 egui::CentralPanel::default()
@@ -308,7 +338,7 @@ impl InspectorView {
                 ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
 
                 if ui.button("•••").clicked() {
-                    models.app_model.output_folder= path_to_string(&pick_output()).unwrap_or("".to_owned());
+                    models.app_model.output_folder = path_to_string(&pick_output()).unwrap_or("".to_owned());
                 }
 
                 ui.vertical_centered_justified(|ui| {
