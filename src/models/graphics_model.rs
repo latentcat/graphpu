@@ -9,6 +9,7 @@ use wgpu::{ Queue, ShaderModule };
 use wgpu::util::DeviceExt;
 use crate::models::data_model::GraphicsStatus;
 use crate::models::graphics_lib::{BufferDimensions, Camera, Controls, RenderPipeline, Texture};
+use crate::utils::message::error;
 
 use rayon::prelude::*;
 
@@ -1171,31 +1172,38 @@ async fn create_png(
     if let Some(Ok(())) = receiver.receive().await {
         let padded_buffer = buffer_slice.get_mapped_range();
 
-        let mut png_encoder = png::Encoder::new(
-            File::create(png_output_path).unwrap(),
-            buffer_dimensions.width as u32,
-            buffer_dimensions.height as u32,
-        );
-        png_encoder.set_depth(png::BitDepth::Eight);
-        png_encoder.set_color(png::ColorType::Rgba);
-        let mut png_writer = png_encoder
-            .write_header()
-            .unwrap()
-            .into_stream_writer_with_size(buffer_dimensions.unpadded_bytes_per_row)
-            .unwrap();
-
-        // from the padded_buffer we write just the unpadded bytes into the image
-        for chunk in padded_buffer.chunks(buffer_dimensions.padded_bytes_per_row) {
-            png_writer
-                .write_all(&chunk[..buffer_dimensions.unpadded_bytes_per_row])
-                .unwrap();
+        match File::create(png_output_path) {
+            Ok(file) => {
+                let mut png_encoder = png::Encoder::new(
+                    file,
+                    buffer_dimensions.width as u32,
+                    buffer_dimensions.height as u32,
+                );
+                png_encoder.set_depth(png::BitDepth::Eight);
+                png_encoder.set_color(png::ColorType::Rgba);
+                let mut png_writer = png_encoder
+                    .write_header()
+                    .unwrap()
+                    .into_stream_writer_with_size(buffer_dimensions.unpadded_bytes_per_row)
+                    .unwrap();
+        
+                // from the padded_buffer we write just the unpadded bytes into the image
+                for chunk in padded_buffer.chunks(buffer_dimensions.padded_bytes_per_row) {
+                    png_writer
+                        .write_all(&chunk[..buffer_dimensions.unpadded_bytes_per_row])
+                        .unwrap();
+                }
+                png_writer.finish().unwrap();
+        
+                // With the current interface, we have to make sure all mapped views are
+                // dropped before we unmap the buffer.
+                drop(padded_buffer);
+        
+                output_buffer.unmap();
+            },
+            Err(err) => {
+                error("create_png", &err.to_string());
+            }
         }
-        png_writer.finish().unwrap();
-
-        // With the current interface, we have to make sure all mapped views are
-        // dropped before we unmap the buffer.
-        drop(padded_buffer);
-
-        output_buffer.unmap();
     }
 }

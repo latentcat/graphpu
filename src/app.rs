@@ -3,7 +3,7 @@ use crate::{
         detail_view::DetailView, graphics_view::GraphicsView, inspector_view::InspectorView,
         menubar_view::MenuBarView, AppView, import_modal_view::ImportModal, table_view::TableView,
     },
-    models::{app_model::{AppModel, MainStage}, graphics_model::GraphicsModel, data_model::DataModel, Models},
+    models::{app_model::{AppModel, MainStage}, graphics_model::GraphicsModel, data_model::DataModel, Models}, utils::message::info,
 };
 use egui::{Color32, TextStyle};
 use crate::components::dock_view::DockView;
@@ -19,7 +19,6 @@ pub struct MainApp {
 impl MainApp {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let mut style = (*cc.egui_ctx.style()).clone();
-
         style.visuals.widgets.active.fg_stroke.color = Color32::from_white_alpha(220);
         style.visuals.widgets.inactive.fg_stroke.color = Color32::from_white_alpha(190);
         style.visuals.widgets.noninteractive.fg_stroke.color = Color32::from_white_alpha(170);

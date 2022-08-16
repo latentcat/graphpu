@@ -3,6 +3,7 @@ use egui::{Response, Ui, Vec2};
 use crate::models::app_model::DockStage;
 
 use crate::models::Models;
+use crate::utils::message::messenger;
 use crate::widgets::frames::drawer_title_frame;
 
 use super::AppView;
@@ -60,10 +61,19 @@ impl AppView for DrawerView {
                     .auto_shrink([false, false])
                     .id_source("source")
                     .show(ui, |ui| {
-                        ui.centered_and_justified(|ui| {
-                            ui.set_min_height(100.0);
-                            ui.label(egui::RichText::new("Drawer View").weak());
-                        })
+                        match models.app_model.dock_stage {
+                            DockStage::Messages => {
+                                for message in messenger().iter() {
+                                    ui.label(egui::RichText::new(message.to_string()));
+                                }
+                            },
+                            _ => {
+                                ui.centered_and_justified(|ui| {
+                                    ui.set_min_height(100.0);
+                                    ui.label(egui::RichText::new("Drawer View").weak());
+                                });
+                            }
+                        }
                     });
 
         });

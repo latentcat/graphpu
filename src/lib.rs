@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate lazy_static;
+
 mod app;
 pub mod widgets;
 pub mod components;

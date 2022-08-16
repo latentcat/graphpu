@@ -1,8 +1,14 @@
 use std::{path::PathBuf, process::Command};
 
 pub fn pick_folder() -> Option<PathBuf> {
+    let desktop_path = if cfg!(window) {
+        "%USERPROFILE%/Desktop"
+    } else {
+        "~/Desktop"
+    };
+
     rfd::FileDialog::new()
-        .set_directory("/")
+        .set_directory(desktop_path)
         .pick_folder()
 }
 
