@@ -24,15 +24,15 @@ pub fn pick_output() -> Option<PathBuf> {
 fn path_to_string(path: &Option<PathBuf>) -> Option<String> {
     path.as_ref().map(|path| path.display().to_string())
 }
-fn openOutFolder(tempOutput: &String) {
+fn system_open_output_directory(output_directory: &String) {
     if cfg!(windows) {
         Command::new("explorer")
-            .arg(tempOutput) // <- Specify the directory you'd like to open.
+            .arg(output_directory) // <- Specify the directory you'd like to open.
             .spawn()
             .unwrap();
-    } else if cfg!(macos) {
+    } else if cfg!(unix) {
         Command::new("open")
-            .arg(tempOutput) // <- Specify the directory you'd like to open.
+            .arg(output_directory) // <- Specify the directory you'd like to open.
             .spawn()
             .unwrap();
     }
@@ -61,14 +61,14 @@ impl AppView for InspectorView {
                         ui.with_layout(
                             egui::Layout::right_to_left(),
                             |ui| {
-                                let folderOpen = ui.button("🗁");
-                                if folderOpen.clicked() {
+                                let folder_open = ui.button("🗁");
+                                if folder_open.clicked() {
                                     if &models.app_model.output_folder != "" {
-                                        openOutFolder(&models.app_model.output_folder);
+                                        system_open_output_directory(&models.app_model.output_folder);
                                     } else {
                                         models.app_model.output_folder = path_to_string(&pick_output()).unwrap_or("".to_owned());
                                         if &models.app_model.output_folder != "" {
-                                            openOutFolder(&models.app_model.output_folder);
+                                            system_open_output_directory(&models.app_model.output_folder);
                                         }
                                     }
                                 }
@@ -135,7 +135,7 @@ impl AppView for InspectorView {
                         button_group_style(ui.style()).show(ui, |ui| {
                             ui.set_style(ui.ctx().style());
                             ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
-                            ui.columns(3, |columns| {
+                            ui.columns(4, |columns| {
                                 columns[0].vertical_centered_justified(|ui| {
                                     ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Node, "Node");
                                 });
@@ -143,8 +143,10 @@ impl AppView for InspectorView {
                                     ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Edge, "Edge");
                                 });
                                 columns[2].vertical_centered_justified(|ui| {
-                                    //t1
-                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Render, "Scene");
+                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Scene, "Scene");
+                                });
+                                columns[3].vertical_centered_justified(|ui| {
+                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Setting, "Setting");
                                 });
                             });
                         });
@@ -160,7 +162,8 @@ impl AppView for InspectorView {
                                 match models.app_model.inspector_tab {
                                     InspectorTab::Node => self.node_inspector(models, ui),
                                     InspectorTab::Edge => self.edge_inspector(models, ui),
-                                    InspectorTab::Render => self.scene_inspector(models, ui),
+                                    InspectorTab::Scene => self.scene_inspector(models, ui),
+                                    InspectorTab::Setting => self.setting_inspector(models, ui),
                                 };
 
                             });
@@ -328,31 +331,44 @@ impl InspectorView {
     }
 
     fn edge_inspector(&mut self, _models: &mut Models, _ui: &mut Ui) {
+
     }
-    fn scene_inspector(&mut self, models: &mut Models, ui: &mut Ui) {
 
-        ui.add(egui::Label::new("Output Forlder"));
-        ui.horizontal(|ui| {
-            ui.with_layout(egui::Layout::right_to_left(), |ui| {
+    fn scene_inspector(&mut self, _models: &mut Models, _ui: &mut Ui) {
 
-                ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
+    }
 
-                if ui.button("•••").clicked() {
-                    models.app_model.output_folder= path_to_string(&pick_output()).unwrap_or("".to_owned());
-                }
+    fn setting_inspector(&mut self, models: &mut Models, ui: &mut Ui) {
 
-                ui.vertical_centered_justified(|ui| {
-                    ui.add(
-                        egui::TextEdit::singleline(&mut models.app_model.output_folder)
-                            .hint_text("未识别的路径")
-                            .desired_width(200.)
-                    );
+        let (header, _) = grid_header(ui, true, "Output", "");
+        header.body(|ui| {
+            inspector_grid("Output")
+                .show(ui, |ui| {
+                    grid_label(ui, "Folder");
+                    ui.horizontal(|ui| {
+                        ui.with_layout(egui::Layout::right_to_left(), |ui| {
+
+                            ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
+
+                            if ui.button("•••").clicked() {
+                                models.app_model.output_folder= path_to_string(&pick_output()).unwrap_or("".to_owned());
+                            }
+
+                            ui.vertical_centered_justified(|ui| {
+                                ui.add(
+                                    egui::TextEdit::singleline(&mut models.app_model.output_folder)
+                                        // .hint_text("未识别的路径")
+                                        .desired_width(200.)
+                                );
+                            });
+
+                        });
+                    });
+                    ui.end_row();
+
                 });
-
-            });
         });
 
-        ui.end_row();
     }
 }
 

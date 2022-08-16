@@ -116,11 +116,11 @@ impl GraphicsModel {
         self.is_dispatching = state;
     }
 
-    pub fn render_output(&mut self, outFolder:String) {
+    pub fn render_output(&mut self, out_folder:String) {
         if let Some(graphics_resources) = &mut self.graphics_resources {
             graphics_resources.prepare_output();
             graphics_resources.render();
-            graphics_resources.output_png_after_render(outFolder);
+            graphics_resources.output_png_after_render(out_folder);
         }
     }
 }
@@ -1079,10 +1079,10 @@ impl GraphicsResources {
 
         let index = queue.submit(Some(command_buffer));
 
-        let mut outputFolder = outfolder;
-        let pngName=format!("/{}.png", "123");
-        outputFolder += &pngName;
-        pollster::block_on(create_png(outputFolder, device, output_buffer, &buffer_dimensions, index));
+        let mut output_folder = outfolder;
+        let png_name =format!("/{}.png", "123");
+        output_folder += &png_name;
+        pollster::block_on(create_png(output_folder, device, output_buffer, &buffer_dimensions, index));
     }
 
     pub fn update_control(&mut self, ui: &mut Ui, is_hover_toolbar: bool) {

@@ -38,7 +38,8 @@ pub enum InspectorTab {
     #[default]
     Node,
     Edge,
-    Render,
+    Scene,
+    Setting,
 }
 
 #[derive(Default, PartialEq)]
