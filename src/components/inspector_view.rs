@@ -1,12 +1,12 @@
 use std::hash::Hash;
-use std::{collections::HashMap, path::PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 
 use egui::Ui;
 use egui::collapsing_header::HeaderResponse;
 
 use crate::models::Models;
-use crate::models::app_model::{ImportState, InspectorTab, TableTab};
+use crate::models::app_model::{ImportState, InspectorTab};
 use crate::models::graphics_model::ComputeMethod;
 use crate::models::graphics_model::ComputeMethodType;
 use crate::models::data_model::{PositionType, ColorType, ColorRamp, ColorPalette, SizeType};

@@ -42,7 +42,7 @@ pub fn button_group_style(_: &egui::Style) -> egui::Frame {
   }
 }
 
-pub fn tool_item_group_style(style: &egui::Style) -> egui::Frame {
+pub fn tool_item_group_style(_style: &egui::Style) -> egui::Frame {
     egui::Frame {
         inner_margin: egui::style::Margin::symmetric(0.0, 0.0),
         rounding: egui::Rounding::same(2.0),
@@ -140,7 +140,7 @@ pub fn dock_frame(style: &egui::Style) -> egui::Frame {
     }
 }
 
-pub fn drawer_title_frame(style: &egui::Style) -> egui::Frame {
+pub fn drawer_title_frame(_style: &egui::Style) -> egui::Frame {
     egui::Frame {
         inner_margin: egui::style::Margin::symmetric(4.0, 4.0),
         rounding: egui::Rounding::none(),

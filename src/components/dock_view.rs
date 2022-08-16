@@ -1,5 +1,5 @@
 use std::borrow::BorrowMut;
-use egui::{Color32, Rounding, Stroke, Ui, Vec2};
+use egui::{Ui, Vec2};
 use crate::models::app_model::DockStage;
 
 use crate::models::Models;
@@ -32,7 +32,6 @@ impl AppView for DockView {
                         |ui| {
 
                             if let Some(graphics_resources) = &mut models.graphics_model.graphics_resources  {
-                                let is_showing_debug = graphics_resources.render_options.is_showing_debug;
                                 toggle_button(ui, &mut graphics_resources.render_options.is_showing_debug, "ℹ State");
                             } else {
                                 toggle_button(ui, &mut false, "ℹ State");

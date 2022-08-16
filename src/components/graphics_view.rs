@@ -1,12 +1,11 @@
 use std::borrow::BorrowMut;
 use std::ops::Mul;
-use egui::{InnerResponse, Response, Sense, Ui, Vec2, Widget, WidgetText};
+use egui::{InnerResponse, Response, Ui, Vec2, Widget, WidgetText};
 use crate::models::app_model::Tool;
 use crate::models::graphics_model::GraphicsResources;
 
 use crate::models::Models;
-use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_PADDING, graphics_frame, TOOL_BUTTON_PADDING, tool_item_group_style, toolbar_inner_frame, toolbar_inner_frame_bottom, toolbar_inner_frame_top, toolbar_timeline_frame};
-use crate::widgets::toolbar_modal::ToolbarModal;
+use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_PADDING, graphics_frame, TOOL_BUTTON_PADDING, tool_item_group_style, toolbar_inner_frame, toolbar_inner_frame_bottom, toolbar_inner_frame_top};
 
 use super::AppView;
 

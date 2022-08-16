@@ -5,7 +5,7 @@ use std::mem;
 use std::sync::Arc;
 use egui::{Ui, Vec2};
 use glam::Vec3;
-use wgpu::{Buffer, Device, Queue, ShaderModule, SubmissionIndex};
+use wgpu::{ Queue, ShaderModule };
 use wgpu::util::DeviceExt;
 use crate::models::data_model::GraphicsStatus;
 use crate::models::graphics_lib::{BufferDimensions, Camera, Controls, RenderPipeline, Texture};
@@ -1106,7 +1106,7 @@ impl GraphicsResources {
 
 }
 
-fn update_transform_matrix(queue: &Queue, camera: &mut Camera, render_uniform_buffer: &wgpu::Buffer, viewport_size: glam::Vec2) {
+fn update_transform_matrix(queue: &Queue, camera: &mut Camera, render_uniform_buffer: &wgpu::Buffer, _viewport_size: glam::Vec2) {
 
     if camera.is_updated {
 
