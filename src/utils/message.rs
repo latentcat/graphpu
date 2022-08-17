@@ -1,6 +1,6 @@
 use std::{fmt::Display, sync::{Mutex, MutexGuard}};
 
-use chrono::Utc;
+use chrono::{DateTime, Local, Timelike, Utc};
 
 use strum::Display;
 
@@ -50,6 +50,17 @@ impl Display for Message {
         }
             .replace("\n", "  ");
         f.write_str(&format_message)
+    }
+}
+
+impl Message {
+    pub fn display_time(&self) -> String {
+        let time = chrono::NaiveDateTime::from_timestamp(self.time, 0);
+        let time: DateTime<Local> = DateTime::from_utc(time, Local::now().offset().to_owned());
+        let time_text = format!("{:02}:{:02}:{:02}", time.hour(), time.minute(), time.second());
+
+        time_text
+
     }
 }
 

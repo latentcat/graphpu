@@ -76,9 +76,7 @@ impl AppView for DrawerView {
                                     for row in row_range {
                                         let message = &messages[row];
                                         let title_text = egui::RichText::new(&message.title);
-                                        let time = chrono::NaiveDateTime::from_timestamp(message.time, 0);
-                                        let time: DateTime<Local> = DateTime::from_utc(time, Local::now().offset().to_owned());
-                                        let time_text = egui::RichText::new(format!("{}:{}:{}", time.hour(), time.minute(), time.second())).weak();
+                                        let time_text = egui::RichText::new(message.display_time()).weak();
                                         let content_text = &message.content;
                                         ui.vertical(|ui| {
 

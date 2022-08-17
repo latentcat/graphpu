@@ -5,7 +5,7 @@ use crate::{
     },
     models::{app_model::{AppModel, MainStage}, graphics_model::GraphicsModel, data_model::DataModel, Models},
 };
-use egui::{Color32, TextStyle, Vec2};
+use egui::{Color32, TextStyle};
 use crate::components::dock_view::DockView;
 use crate::components::drawer_view::DrawerView;
 use crate::models::app_model::DockStage;

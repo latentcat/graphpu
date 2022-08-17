@@ -122,7 +122,7 @@ impl GraphicsModel {
             graphics_resources.prepare_output();
             graphics_resources.render();
             graphics_resources.output_png_after_render(out_folder.to_owned());
-            message_info("Output Success", out_folder.to_owned().as_str())
+            message_info("Output Succeeded", out_folder.to_owned().as_str())
         }
     }
 }
