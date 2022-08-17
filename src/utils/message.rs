@@ -7,7 +7,7 @@ use strum::Display;
 #[derive(Display, PartialEq)]
 pub enum MessageLevel {
     Info,
-    Warn,
+    Warning,
     Error,
 }
 
@@ -32,8 +32,8 @@ impl Message {
         Self::new(MessageLevel::Info, title, content)
     }
 
-    fn warn(title: &str, content: &str) -> Self {
-        Self::new(MessageLevel::Warn, title, content)
+    fn warning(title: &str, content: &str) -> Self {
+        Self::new(MessageLevel::Warning, title, content)
     }
 
     fn error(title: &str, content: &str) -> Self {
@@ -45,7 +45,7 @@ impl Display for Message {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let format_message = match self.level {
             MessageLevel::Info => format!("[INFO]  {}  {}", self.title, self.content),
-            MessageLevel::Warn => format!("[WARN]  {}  {}", self.title, self.content),
+            MessageLevel::Warning => format!("[WARNING]  {}  {}", self.title, self.content),
             MessageLevel::Error => format!("[ERROR]  {}  {}", self.title, self.content),
         }
             .replace("\n", "  ");
@@ -61,14 +61,14 @@ pub fn messenger() -> MutexGuard<'static, Vec<Message>> {
     MESSAGE_LIST.lock().unwrap()
 }
 
-pub fn info_message(title: &str, content: &str) {
+pub fn message_info(title: &str, content: &str) {
     messenger().push(Message::info(title, content));
 }
 
-pub fn warn_message(title: &str, content: &str) {
-    messenger().push(Message::warn(title, content));
+pub fn message_warning(title: &str, content: &str) {
+    messenger().push(Message::warning(title, content));
 }
 
-pub fn error_message(title: &str, content: &str) {
+pub fn message_error(title: &str, content: &str) {
     messenger().push(Message::error(title, content));
 }

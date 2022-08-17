@@ -1,5 +1,5 @@
 
-use egui::{epaint, Response, Ui, Vec2};
+use egui::{Color32, epaint, Response, Ui, Vec2};
 use crate::models::app_model::DockStage;
 
 use crate::models::Models;
@@ -140,11 +140,20 @@ fn close_button(ui: &mut Ui, id: egui::Id, rect: egui::Rect) -> Response {
 }
 
 fn message_icon(ui: &mut egui::Ui, icon_type: &MessageLevel) {
-    let label = format!("[{}]", icon_type.to_string()).to_uppercase();
+    let (label, color) = match icon_type {
+        MessageLevel::Info => ("ℹ", Color32::GRAY),
+        MessageLevel::Warning => ("⚠", Color32::YELLOW),
+        MessageLevel::Error => ("！", Color32::RED),
+    };
+    let job = egui::text::LayoutJob::single_section(label.to_owned(), egui::TextFormat {
+        font_id: egui::FontId::new(24.0, Default::default()),
+        color: color,
+        ..Default::default()
+    });
     ui.vertical(|ui| {
-        ui.set_width(65.);
+        ui.set_width(30.);
         ui.add(
-            egui::Label::new(egui::RichText::new(label)).wrap(true)
+            egui::Label::new(job)
         )
     });
 }
