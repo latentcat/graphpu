@@ -901,11 +901,13 @@ impl GraphicsResources {
             // render pass
             let mut rpass = command_encoder.begin_render_pass(&render_pass_descriptor);
 
-            if self.render_options.is_rendering_axis {
-                rpass.set_pipeline(&self.axis_render_pipeline);
-                rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
-                rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
-                rpass.draw(0..4, 0..2);
+            if !is_render_output {
+                if self.render_options.is_rendering_axis {
+                    rpass.set_pipeline(&self.axis_render_pipeline);
+                    rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
+                    rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
+                    rpass.draw(0..4, 0..2);
+                }
             }
 
             if self.render_options.is_rendering_node {

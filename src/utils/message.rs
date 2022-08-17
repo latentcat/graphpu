@@ -1,6 +1,6 @@
 use std::{fmt::Display, sync::{Mutex, MutexGuard}};
 
-use chrono::Local;
+use chrono::Utc;
 
 use strum::Display;
 
@@ -24,7 +24,7 @@ impl Message {
             level,
             title: String::from(title),
             content: String::from(content),
-            time: Local::now().timestamp(),
+            time: Utc::now().timestamp(),
         }
     }
 

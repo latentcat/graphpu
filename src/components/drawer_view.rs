@@ -1,4 +1,4 @@
-
+use chrono::{DateTime, Local, Timelike};
 use egui::{Color32, epaint, Response, Ui, Vec2};
 use crate::models::app_model::DockStage;
 
@@ -15,7 +15,7 @@ impl AppView for DrawerView {
     fn show(&mut self, models: &mut Models, ui: &mut Ui, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::bottom("drawer")
             .resizable(true)
-            .default_height(200.0)
+            .default_height(220.0)
             .height_range(100.0..=350.0)
             .frame(drawer_frame(ui.style()))
             .show_inside(ui, |ui| {
@@ -62,8 +62,12 @@ impl AppView for DrawerView {
                         drawer_message_content_frame(ui.style()).show(ui, |ui| {
 
                             let messages = messenger();
-                            let row_height = 50.0;
+                            let row_height = 52.0;
                             let num_rows = messages.len();
+
+
+                            ui.style_mut().spacing.interact_size = Vec2::new(4.0, 4.0);
+
                             egui::ScrollArea::vertical().stick_to_bottom().auto_shrink([false; 2]).show_rows(
                                 ui,
                                 row_height,
@@ -72,6 +76,9 @@ impl AppView for DrawerView {
                                     for row in row_range {
                                         let message = &messages[row];
                                         let title_text = egui::RichText::new(&message.title);
+                                        let time = chrono::NaiveDateTime::from_timestamp(message.time, 0);
+                                        let time: DateTime<Local> = DateTime::from_utc(time, Local::now().offset().to_owned());
+                                        let time_text = egui::RichText::new(format!("{}:{}:{}", time.hour(), time.minute(), time.second())).weak();
                                         let content_text = &message.content;
                                         ui.vertical(|ui| {
 
@@ -81,14 +88,23 @@ impl AppView for DrawerView {
                                                 ui.add( egui::Separator::default().spacing(0.0) );
                                             }
 
-                                            ui.add_space(5.0);
-
                                             ui.with_layout(egui::Layout::from_main_dir_and_cross_align(egui::Direction::LeftToRight, egui::Align::Min), |ui| {
 
                                                 message_icon(ui, &message.level);
 
                                                 ui.vertical(|ui| {
-                                                    ui.label(title_text);
+
+                                                    ui.add_space(6.0);
+
+                                                    ui.horizontal(|ui| {
+                                                        ui.with_layout(egui::Layout::right_to_left(), |ui| {
+                                                            ui.add_space(6.0);
+                                                            ui.label(time_text);
+                                                            ui.allocate_ui_with_layout(ui.available_size(), egui::Layout::left_to_right(), |ui| {
+                                                                ui.label(title_text);
+                                                            });
+                                                        })
+                                                    });
 
                                                     let mut job = egui::text::LayoutJob::single_section(content_text.to_owned(), egui::TextFormat {
                                                         font_id: egui::FontId::new(13.0, Default::default()),
@@ -152,6 +168,7 @@ fn message_icon(ui: &mut egui::Ui, icon_type: &MessageLevel) {
     });
     ui.vertical(|ui| {
         ui.set_width(30.);
+        ui.add_space(5.0);
         ui.add(
             egui::Label::new(job)
         )

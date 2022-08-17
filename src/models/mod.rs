@@ -57,7 +57,7 @@ impl Models {
             &mut self.data_model,
         ));
         let text = format!(
-            "Node file: {}  Edge file: {}",
+            "Node file: {}  \nEdge file: {}",
             self.app_model.node_file_name().unwrap_or(""),
             self.app_model.edge_file_name().unwrap_or("")
         );
