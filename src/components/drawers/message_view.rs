@@ -44,7 +44,7 @@ impl AppView for MessageView {
 
                                 ui.vertical(|ui| {
 
-                                    ui.add_space(5.0);
+                                    ui.add_space(5.5);
 
                                     ui.horizontal(|ui| {
                                         ui.with_layout(egui::Layout::right_to_left(), |ui| {
