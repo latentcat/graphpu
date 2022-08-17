@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::Write;
 use std::mem;
 use std::sync::Arc;
+use chrono::Local;
 use egui::{Ui, Vec2};
 use glam::Vec3;
 use wgpu::{ Queue, ShaderModule };
@@ -1083,7 +1084,8 @@ impl GraphicsResources {
         let index = queue.submit(Some(command_buffer));
 
         let mut output_path = outfolder;
-        let png_name = format!("/{}.png", "123");
+        let formatted_time = Local::now().format("%Y.%m.%d_%H.%M.%S");
+        let png_name = format!("/graphpu_render_{}_{}.png", formatted_time, self.render_frame_count);
         output_path += &png_name;
         pollster::block_on(create_png(output_path, device, output_buffer, &buffer_dimensions, index));
     }
