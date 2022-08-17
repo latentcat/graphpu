@@ -25,15 +25,34 @@ impl AppView for DetailView {
                         ).weak()
                     );
 
+                    ui.add_space(30.0);
+
                     ui.allocate_ui_with_layout(
                         ui.available_size(),
                         egui::Layout::left_to_right(),
                         |ui| {
                             let messages = messenger();
                             if messages.len() > 0 {
+                                let message = &messages[messages.len() - 1].to_string();
                                 let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::click());
                                 ui.allocate_ui_at_rect(rect, |ui| {
-                                    ui.label(egui::RichText::new(format!("{}", messages[0])).weak())
+                                    ui.vertical(|ui| {
+                                        ui.add_space(3.0);
+
+                                        let mut job = egui::text::LayoutJob::single_section(message.to_owned(), egui::TextFormat {
+                                            font_id: egui::FontId::new(13.0, Default::default()),
+                                            color: egui::Color32::from_gray(120),
+                                            ..Default::default()
+                                        });
+                                        job.wrap = egui::epaint::text::TextWrapping {
+                                            max_rows: 1,
+                                            break_anywhere: true,
+                                            overflow_character: Some('…'),
+                                            ..Default::default()
+                                        };
+                                        ui.label(job);
+                                    });
+                                    // ui.label(egui::RichText::new(format!("{}", messages[0])).weak())
                                 });
                                 response.clicked().then(||{ models.app_model.dock_stage = DockStage::Messages });
                             }

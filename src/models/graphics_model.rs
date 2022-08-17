@@ -9,7 +9,7 @@ use wgpu::{ Queue, ShaderModule };
 use wgpu::util::DeviceExt;
 use crate::models::data_model::GraphicsStatus;
 use crate::models::graphics_lib::{BufferDimensions, Camera, Controls, RenderPipeline, Texture};
-use crate::utils::message::{error, info};
+use crate::utils::message::{error_message, info_message};
 
 use rayon::prelude::*;
 
@@ -122,7 +122,7 @@ impl GraphicsModel {
             graphics_resources.prepare_output();
             graphics_resources.render();
             graphics_resources.output_png_after_render(out_folder.to_owned());
-            info("Output Success", out_folder.to_owned().as_str())
+            info_message("Output Success", out_folder.to_owned().as_str())
         }
     }
 }
@@ -1203,7 +1203,7 @@ async fn create_png(
                 output_buffer.unmap();
             },
             Err(err) => {
-                error("create_png", &err.to_string());
+                error_message("create_png", &err.to_string());
             }
         }
     }

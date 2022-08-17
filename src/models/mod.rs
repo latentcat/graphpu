@@ -1,5 +1,6 @@
 use crate::models::data_model::GraphicsStatus;
 use std::path::PathBuf;
+use crate::utils::message::info_message;
 
 use self::{app_model::ImportState, data_model::ExternalData, graphics_model::GraphicsResources};
 
@@ -55,6 +56,12 @@ impl Models {
             self.graphics_model.compute_render_state.clone(),
             &mut self.data_model,
         ));
+        let text = format!(
+            "Node file: {}  Edge file: {}",
+            self.app_model.node_file_name().unwrap_or(""),
+            self.app_model.edge_file_name().unwrap_or("")
+        );
+        info_message("Import Data Succeeded", text.as_str());
     }
 
     pub fn clear_data(&mut self) {

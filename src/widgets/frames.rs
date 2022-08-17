@@ -140,10 +140,37 @@ pub fn dock_frame(style: &egui::Style) -> egui::Frame {
     }
 }
 
+pub fn drawer_frame(style: &egui::Style) -> egui::Frame {
+    egui::Frame {
+        inner_margin: egui::style::Margin::symmetric(0.0, 0.0),
+        rounding: egui::Rounding::none(),
+        fill: style.visuals.window_fill(),
+        stroke: style.visuals.window_stroke(),
+        ..Default::default()
+    }
+}
+
 pub fn drawer_title_frame(_style: &egui::Style) -> egui::Frame {
     egui::Frame {
-        inner_margin: egui::style::Margin::symmetric(4.0, 4.0),
+        inner_margin: egui::style::Margin {
+            left: 12.0,
+            right: 12.0,
+            top: 6.0,
+            bottom: 6.0
+        },
         rounding: egui::Rounding::none(),
+        ..Default::default()
+    }
+}
+
+pub fn drawer_message_content_frame(_style: &egui::Style) -> egui::Frame {
+    egui::Frame {
+        inner_margin: egui::style::Margin {
+            left: 12.0,
+            right: 6.0,
+            top: 3.0,
+            bottom: 3.0
+        },
         ..Default::default()
     }
 }

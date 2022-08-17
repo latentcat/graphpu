@@ -3,7 +3,7 @@ use crate::{
         detail_view::DetailView, graphics_view::GraphicsView, inspector_view::InspectorView,
         menubar_view::MenuBarView, AppView, import_modal_view::ImportModal, table_view::TableView,
     },
-    models::{app_model::{AppModel, MainStage}, graphics_model::GraphicsModel, data_model::DataModel, Models}, utils::message::info,
+    models::{app_model::{AppModel, MainStage}, graphics_model::GraphicsModel, data_model::DataModel, Models},
 };
 use egui::{Color32, TextStyle};
 use crate::components::dock_view::DockView;

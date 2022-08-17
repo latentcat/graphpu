@@ -47,7 +47,7 @@ impl AppView for InspectorView {
                                     });
                                 }
                                 ui.vertical_centered_justified(|ui| {
-                                    let render_button = ui.button("Render Image");
+                                    let render_button = ui.button("Output Image");
                                     if render_button.clicked() {
                                         self.pick_output_folder_and_then(&mut models.app_model.output_folder, |folder| {
                                             models.graphics_model.render_output(String::from(folder));
@@ -158,7 +158,7 @@ impl InspectorView {
                         .selected_text(&node_settings.position_type.to_string())
                         .show_ui(ui, |ui| {
                             ui.selectable_value(&mut node_settings.position_type, PositionType::Compute, "Compute");
-                            ui.selectable_value(&mut node_settings.position_type, PositionType::Set, "Set from data");
+                            ui.selectable_value(&mut node_settings.position_type, PositionType::Set, "Set");
                         });
                     ui.end_row();
 
@@ -212,8 +212,8 @@ impl InspectorView {
                         .selected_text(&node_settings.color_type.to_string())
                         .show_ui(ui, |ui| {
                             ui.selectable_value(&mut node_settings.color_type, ColorType::Constant, "Constant");
-                            ui.selectable_value(&mut node_settings.color_type, ColorType::Ramp, "Ramp from data");
-                            ui.selectable_value(&mut node_settings.color_type, ColorType::Partition, "Partition from data");
+                            ui.selectable_value(&mut node_settings.color_type, ColorType::Ramp, "Ramp");
+                            ui.selectable_value(&mut node_settings.color_type, ColorType::Partition, "Partition");
                         });
                     ui.end_row();
 
@@ -269,7 +269,7 @@ impl InspectorView {
                         .selected_text(&node_settings.size_type.to_string())
                         .show_ui(ui, |ui| {
                             ui.selectable_value(&mut node_settings.size_type, SizeType::Constant, "Constant");
-                            ui.selectable_value(&mut node_settings.size_type, SizeType::Ramp, "Ramp from data");
+                            ui.selectable_value(&mut node_settings.size_type, SizeType::Ramp, "Ramp");
                         });
                     ui.end_row();
 
