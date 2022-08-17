@@ -122,7 +122,6 @@ impl GraphicsModel {
             graphics_resources.prepare_output();
             graphics_resources.render();
             graphics_resources.output_png_after_render(out_folder.to_owned());
-            message_info("Output Succeeded", out_folder.to_owned().as_str())
         }
     }
 }
@@ -1083,10 +1082,10 @@ impl GraphicsResources {
 
         let index = queue.submit(Some(command_buffer));
 
-        let mut output_folder = outfolder;
-        let png_name =format!("/{}.png", "123");
-        output_folder += &png_name;
-        pollster::block_on(create_png(output_folder, device, output_buffer, &buffer_dimensions, index));
+        let mut output_path = outfolder;
+        let png_name = format!("/{}.png", "123");
+        output_path += &png_name;
+        pollster::block_on(create_png(output_path, device, output_buffer, &buffer_dimensions, index));
     }
 
     pub fn update_control(&mut self, ui: &mut Ui, is_hover_toolbar: bool) {
@@ -1175,7 +1174,7 @@ async fn create_png(
     if let Some(Ok(())) = receiver.receive().await {
         let padded_buffer = buffer_slice.get_mapped_range();
 
-        match File::create(png_output_path) {
+        match File::create(&png_output_path) {
             Ok(file) => {
                 let mut png_encoder = png::Encoder::new(
                     file,
@@ -1203,6 +1202,8 @@ async fn create_png(
                 drop(padded_buffer);
         
                 output_buffer.unmap();
+
+                message_info("Output Succeeded", png_output_path.to_owned().as_str())
             },
             Err(err) => {
                 message_error("create_png", &err.to_string());

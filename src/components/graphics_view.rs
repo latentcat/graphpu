@@ -185,21 +185,22 @@ impl AppView for GraphicsView {
                                 ui.set_style(ui.ctx().style());
                                 ui.spacing_mut().item_spacing = egui::vec2(4.0, 0.0);
                                 ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
+                                ui.spacing_mut().interact_size = Vec2::new(4.0, 4.0);
 
                                 ui.with_layout(egui::Layout::from_main_dir_and_cross_align(egui::Direction::TopDown, egui::Align::Max), |ui| {
 
                                     ui.horizontal(|ui| {
-                                        ui.label(format!("{}", graphics_resources.compute_frame_count));
+                                        ui.label(format!("{:06}", graphics_resources.compute_frame_count));
                                         ui.label(egui::RichText::new("Compute frames: ").weak());
                                     });
 
                                     ui.horizontal(|ui| {
-                                        ui.label(format!("{}", graphics_resources.render_frame_count));
+                                        ui.label(format!("{:06}", graphics_resources.render_frame_count));
                                         ui.label(egui::RichText::new("Render frames: ").weak());
                                     });
 
                                     ui.horizontal(|ui| {
-                                        ui.label(format!("{}", models.app_model.ui_frame_count));
+                                        ui.label(format!("{:06}", models.app_model.ui_frame_count));
                                         ui.label(egui::RichText::new("UI frames: ").weak());
                                     });
 

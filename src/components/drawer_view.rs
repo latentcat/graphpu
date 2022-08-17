@@ -1,4 +1,3 @@
-use chrono::{DateTime, Local, Timelike};
 use egui::{Color32, epaint, Response, Ui, Vec2};
 use crate::models::app_model::DockStage;
 
@@ -66,7 +65,7 @@ impl AppView for DrawerView {
                             let num_rows = messages.len();
 
 
-                            ui.style_mut().spacing.interact_size = Vec2::new(4.0, 4.0);
+                            ui.spacing_mut().interact_size = Vec2::new(4.0, 4.0);
 
                             egui::ScrollArea::vertical().stick_to_bottom().auto_shrink([false; 2]).show_rows(
                                 ui,
