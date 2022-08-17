@@ -744,6 +744,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "21d8ad60dd5b13a4ee6bd8fa2d5d88965c597c67bce32b5fc49c94f55cb50810"
 
 [[package]]
+name = "directories"
+version = "4.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f51c5d4ddabd36886dd3e1438cb358cdcb0d7c499cb99cb4ac2e38e18b5cb210"
+dependencies = [
+ "dirs-sys",
+]
+
+[[package]]
 name = "dirs"
 version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1303,6 +1312,7 @@ dependencies = [
  "bytemuck",
  "chrono",
  "csv",
+ "directories",
  "eframe",
  "egui",
  "egui-wgpu",

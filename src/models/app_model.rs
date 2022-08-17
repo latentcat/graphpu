@@ -2,6 +2,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use egui::{Color32, Rounding, Stroke, Style, Vec2, Visuals};
 use egui::style::{Selection, Spacing, Widgets, WidgetVisuals};
+use crate::utils::file::desktop_dir_or_empty;
 
 #[derive(Debug, Default, PartialEq)]
 pub enum ImportState {
@@ -116,7 +117,7 @@ impl Default for AppModel {
             import_state: Default::default(),
             node_file_path: None,
             edge_file_path: None,
-            output_folder: String::from(""),
+            output_folder: desktop_dir_or_empty(),
             main_stage: Default::default(),
             dock_stage: Default::default(),
             table_tab: Default::default(),
