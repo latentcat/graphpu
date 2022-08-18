@@ -1185,7 +1185,8 @@ async fn create_png(
                 );
                 png_encoder.set_depth(png::BitDepth::Eight);
                 png_encoder.set_color(png::ColorType::Rgba);
-                png_encoder.set_srgb(png::SrgbRenderingIntent::Perceptual);
+                // png_encoder.set_source_gamma(png::ScaledFloat::new(1.0));
+                // png_encoder.set_srgb(png::SrgbRenderingIntent::Perceptual);
                 let mut png_writer = png_encoder
                     .write_header()
                     .unwrap()
