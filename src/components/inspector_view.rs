@@ -47,7 +47,7 @@ impl AppView for InspectorView {
                                     });
                                 }
                                 ui.vertical_centered_justified(|ui| {
-                                    let render_button = ui.button("Output Image");
+                                    let render_button = ui.button("Render Image");
                                     if render_button.clicked() {
                                         self.pick_output_folder_and_then(&mut models.app_model.output_folder, |folder| {
                                             models.graphics_model.render_output(String::from(folder));
