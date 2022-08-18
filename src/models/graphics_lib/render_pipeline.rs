@@ -7,7 +7,7 @@ const MULTISAMPLE_STATE: wgpu::MultisampleState = wgpu::MultisampleState {
     alpha_to_coverage_enabled: false
 };
 
-const TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Bgra8UnormSrgb;
+const TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
 
 pub struct RenderPipeline {
     pub render_pipeline: wgpu::RenderPipeline,
