@@ -924,7 +924,7 @@ impl GraphicsResources {
                 rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
                 rpass.set_bind_group(1, &self.edge_render_bind_group, &[]);
                 rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
-                rpass.draw(0..2, 0..self.status.edge_count as u32);
+                rpass.draw(0..4, 0..self.status.edge_count as u32);
             }
 
         }
@@ -1185,6 +1185,7 @@ async fn create_png(
                 );
                 png_encoder.set_depth(png::BitDepth::Eight);
                 png_encoder.set_color(png::ColorType::Rgba);
+                png_encoder.set_srgb(png::SrgbRenderingIntent::Perceptual);
                 let mut png_writer = png_encoder
                     .write_header()
                     .unwrap()

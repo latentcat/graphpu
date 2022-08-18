@@ -32,12 +32,19 @@ fn main_vs(
     i: Input
 ) -> Varing {
     var edge = edgeSrc[i.instance_index];
-    var node_id = edge[i.vertex_index];
+    var node_id = edge[i.vertex_index % 2u];
     var node = nodeSrc[node_id];
+
+    var node_dir = nodeSrc[edge[1]].position - nodeSrc[edge[0]].position;
+    var dir = transform.view * vec4<f32>(node_dir, 1.0);
+    dir = dir / dir.w;
+    var quad_dir = normalize(vec2<f32>(dir.y, -dir.x));
 
     var v: Varing;
     v.position = vec4<f32>(node.position.xyz, 1.0);
-    v.position = transform.projection * transform.view * v.position;
+    v.position = transform.view * v.position;
+    v.position += vec4<f32>(quad_pos.y * quad_dir * 0.0075 * 0.25, 0.0, 0.0);
+    v.position = transform.projection * v.position;
     v.tex_coords = vec2<f32>(0.0);
 
     return v;
