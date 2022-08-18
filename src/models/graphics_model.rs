@@ -1,8 +1,5 @@
 use std::borrow::Cow;
-use std::fs::File;
-use std::io::Write;
 use std::mem;
-use std::sync::Arc;
 use chrono::Local;
 use egui::{Ui, Vec2};
 use glam::Vec3;
@@ -10,9 +7,11 @@ use wgpu::{ Queue, ShaderModule };
 use wgpu::util::DeviceExt;
 use crate::models::data_model::GraphicsStatus;
 use crate::models::graphics_lib::{BufferDimensions, Camera, Controls, RenderPipeline, Texture};
-use crate::utils::message::{message_error, message_info};
 
 use rayon::prelude::*;
+use crate::models::graphics_lib::bind_group_layout::BindGroupLayout;
+use crate::models::graphics_lib::compute_shader::ComputeShader;
+use crate::utils::file::create_png;
 
 use super::data_model::DataModel;
 
@@ -134,74 +133,76 @@ pub struct RenderOptions {
     pub is_showing_debug:  bool,
 }
 
+pub struct ComputePipelines {
+    gen_node:              wgpu::ComputePipeline,
+    cal_mass:              wgpu::ComputePipeline,
+    attractive_force:      wgpu::ComputePipeline,
+    reduction_bounding:    wgpu::ComputePipeline,
+    bounding_box:          wgpu::ComputePipeline,
+    compute:               wgpu::ComputePipeline,
+    randomize:             wgpu::ComputePipeline,
+    copy:                  wgpu::ComputePipeline,
+}
+
 // 绘图资源 Model，存放和计算和绘图相关的一切资源
 pub struct GraphicsResources {
 
     // 包含 Node / Edge Count
-    status: GraphicsStatus,
+    status:                         GraphicsStatus,
 
     // 包含 Device、Queue、target_format 和 egui_rpass
-    render_state: egui_wgpu::RenderState,
-
-    depth_texture: Option<Texture>,
-    output_depth_texture: Option<Texture>,
-
-    // 用于呈现渲染结果的 Texture View，在 egui 中注册后用 Texture ID 在 Image 组件显示
-    texture: Option<wgpu::Texture>,
-    texture_view: Option<wgpu::TextureView>,
-    msaa_texture_view: Option<wgpu::TextureView>,
-    output_texture: Option<wgpu::Texture>,
-    output_texture_view: Option<wgpu::TextureView>,
-    msaa_output_texture_view: Option<wgpu::TextureView>,
-    pub texture_id: egui::TextureId,
+    render_state:                   egui_wgpu::RenderState,
 
     // 视口大小
-    viewport_size: egui::Vec2,
-    texture_extent: wgpu::Extent3d,
-    output_texture_extent: wgpu::Extent3d,
+    viewport_size:                  egui::Vec2,
 
-    is_render_output: bool,
+    viewport_texture_extent:        wgpu::Extent3d,
+    viewport_texture:               Option<Texture>,
+    viewport_msaa_texture:          Option<Texture>,
+    viewport_depth_texture:         Option<Texture>,
+
+    pub viewport_texture_id:        egui::TextureId,
+
+    is_render_output:               bool,
+
+    output_texture_extent:          wgpu::Extent3d,
+    output_texture:                 Option<Texture>,
+    output_msaa_texture:            Option<Texture>,
+    output_depth_texture:           Option<Texture>,
 
     // 相机
-    camera: Camera,
-    control: Controls,
+    camera:                         Camera,
+    control:                        Controls,
 
     // Buffers
-    uniform_buffer: wgpu::Buffer,                   // 传递 Frame Num 等参数
-    quad_buffer:    wgpu::Buffer,                   // Quad 四个顶点数据
-    node_buffer:    wgpu::Buffer,
-    edge_buffer:    wgpu::Buffer,
-    render_uniform_buffer:    wgpu::Buffer,
+    uniform_buffer:                 wgpu::Buffer,
+    quad_buffer:                    wgpu::Buffer,
+    node_buffer:                    wgpu::Buffer,
+    edge_buffer:                    wgpu::Buffer,
+    render_uniform_buffer:          wgpu::Buffer,
 
     // Bind Group
-    compute_bind_group:     wgpu::BindGroup,
-    node_render_bind_group: wgpu::BindGroup,
-    edge_render_bind_group: wgpu::BindGroup,
-    render_uniform_bind_group: wgpu::BindGroup,
+    compute_bind_group:             wgpu::BindGroup,
+    node_render_bind_group:         wgpu::BindGroup,
+    edge_render_bind_group:         wgpu::BindGroup,
+    render_uniform_bind_group:      wgpu::BindGroup,
 
     // 渲染管线
-    node_render_pipeline: wgpu::RenderPipeline,
-    edge_render_pipeline: wgpu::RenderPipeline,
-    axis_render_pipeline: wgpu::RenderPipeline,
+    node_render_pipeline:           wgpu::RenderPipeline,
+    edge_render_pipeline:           wgpu::RenderPipeline,
+    axis_render_pipeline:           wgpu::RenderPipeline,
 
     // 计算管线
-    gen_node_pipeline:   wgpu::ComputePipeline,
-    cal_mass_pipeline:   wgpu::ComputePipeline,
-    attractive_force_pipeline:   wgpu::ComputePipeline,
-    reduction_bounding_pipeline:   wgpu::ComputePipeline,
-    bounding_box_pipeline:   wgpu::ComputePipeline,
-    compute_pipeline:   wgpu::ComputePipeline,      // 计算
-    randomize_pipeline: wgpu::ComputePipeline,      // 随机位置
-    copy_pipeline:      wgpu::ComputePipeline,      // 拷贝
+    compute_pipelines:              ComputePipelines,
 
     // 线程组数 = 线程数 / 每组线程数
-    node_work_group_count:   u32,
-    edge_work_group_count:   u32,
-    pub compute_frame_count:          u32,                      // 帧计数器
-    pub render_frame_count:          u32,                      // 帧计数器
+    node_work_group_count:          u32,
+    edge_work_group_count:          u32,
+    pub compute_frame_count:        u32,                      // 帧计数器
+    pub render_frame_count:         u32,                      // 帧计数器
 
-    pub render_options: RenderOptions,
-    pub need_update: bool,
+    pub render_options:             RenderOptions,
+    pub need_update:                bool,
 
 }
 
@@ -224,13 +225,13 @@ impl GraphicsResources {
         // 从文件中创建 Shader
 
         let shader_files = [
-            include_str!("../assets/shader/boids/CS_boids.wgsl"),
             include_str!("../assets/shader/boids/S_node.wgsl"),
             include_str!("../assets/shader/boids/S_edge.wgsl"),
             include_str!("../assets/shader/boids/S_axis.wgsl"),
+            include_str!("../assets/shader/boids/CS_boids.wgsl"),
         ];
 
-        let shaders = shader_files.par_iter().map(|shader_file| {
+        let mut shaders = shader_files.par_iter().map(|shader_file| {
 
             let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
                 label: None,
@@ -241,288 +242,68 @@ impl GraphicsResources {
 
         }).collect::<Vec<ShaderModule>>();
 
+
         // Compute Shader
-        let compute_shader = &shaders[0];
+        let compute_shader = shaders.pop().unwrap();
 
         // Node Shader
-        let node_shader = &shaders[1];
+        let node_shader = &shaders[0];
 
         // Edge Shader
-        let edge_shader = &shaders[2];
+        let edge_shader = &shaders[1];
 
         // Axis Shader
-        let axis_shader = &shaders[3];
-
-
-        // Boids 模拟所用到的参数
-        let sim_param_data = [
-            0.04f32, // deltaT
-            0.2,     // rule1Distance
-            0.025,   // rule2Distance
-            0.025,   // rule3Distance
-            0.02,    // rule1Scale
-            0.05,    // rule2Scale
-            0.01,   // rule3Scale
-        ].to_vec();
-
-        // 创建 Sim Param Buffer 并传入数据
-        // 其他 Buffer 在后面创建
-        let sim_param_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Simulation Parameter Buffer"),
-            contents: bytemuck::cast_slice(&sim_param_data),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
+        let axis_shader = &shaders[2];
 
         // Bind Group Layout
         // Bind Group 的布局，允许在布局不变的情况下更换 Bind Group 绑定的 Buffer
 
-        // Compute Bind Group Layout
-        // 0 - Uniform Buffer
-        // 1 - Uniform Buffer
-        // 2 - Node Buffer
-        // 3 - Edge Buffer
-        let compute_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::COMPUTE,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::COMPUTE,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 2,
-                        visibility: wgpu::ShaderStages::COMPUTE,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage { read_only: false },
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 3,
-                        visibility: wgpu::ShaderStages::COMPUTE,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage { read_only: true },
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 4,
-                        visibility: wgpu::ShaderStages::COMPUTE,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage { read_only: false },
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 5,
-                        visibility: wgpu::ShaderStages::COMPUTE,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Storage { read_only: false },
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    }
-                ],
-                label: None,
-            });
+        let compute_bind_group_layout =         BindGroupLayout::create_compute_bind_group_layout(device).bing_group_layout;
+        let node_render_bind_group_layout =     BindGroupLayout::create_node_render_bind_group_layout(device).bing_group_layout;
+        let edge_render_bind_group_layout =     BindGroupLayout::create_edge_render_bind_group_layout(device).bing_group_layout;
+        let render_uniform_bind_group_layout =  BindGroupLayout::create_render_uniform_bind_group_layout(device).bing_group_layout;
 
-        // Node Render Bind Group Layout
-        // 0 - Node Buffer
-        let node_render_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                },
-            ],
-            label: None,
-        });
-
-        // Edge Render Bind Group Layout
-        // 0 - Node Buffer
-        // 1 - Edge Buffer
-        let edge_render_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Storage { read_only: true },
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                },
-            ],
-            label: None,
-        });
-
-        let render_uniform_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                },
-            ],
-            label: None,
-        });
-
-        // Pipeline Layout
-        // Pipeline 布局，用于关联 Pipeline 和 Bind Group Layout
-        // 在 RenderPass set_pipeline 后，可以通过 set_bind_group 更换符合 Pipeline Layout 中 Bind Group Layout 的 Bind Group
-
-        let compute_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("compute"),
-            bind_group_layouts: &[&compute_bind_group_layout],
-            push_constant_ranges: &[],
-        });
-
-        let node_render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("node render"),
-            bind_group_layouts: &[&render_uniform_bind_group_layout, &node_render_bind_group_layout],
-            push_constant_ranges: &[],
-        });
-
-        let edge_render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("edge render"),
-            bind_group_layouts: &[&render_uniform_bind_group_layout, &edge_render_bind_group_layout],
-            push_constant_ranges: &[],
-        });
-
-        let axis_render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("axis render"),
-            bind_group_layouts: &[&render_uniform_bind_group_layout],
-            push_constant_ranges: &[],
-        });
 
         // Render Pipeline
         // 渲染管线
 
-        // Node Render Pipeline
-        // 拓扑结构：Triangle Strip
-        let node_render_pipeline = RenderPipeline::create_node_render_pipeline(device, node_render_pipeline_layout, node_shader).render_pipeline;
+        let node_render_pipeline = RenderPipeline::create_node_render_pipeline(
+            device,
+            &[&render_uniform_bind_group_layout, &node_render_bind_group_layout],
+            node_shader
+        ).render_pipeline;
 
-        // Edge Render Pipeline
-        // 拓扑结构：Line List
-        let edge_render_pipeline = RenderPipeline::create_edge_render_pipeline(device, edge_render_pipeline_layout, edge_shader).render_pipeline;
+        let edge_render_pipeline = RenderPipeline::create_edge_render_pipeline(
+            device,
+            &[&render_uniform_bind_group_layout, &edge_render_bind_group_layout],
+            edge_shader
+        ).render_pipeline;
 
-        // Node Render Pipeline
-        // 拓扑结构：Triangle Strip
-        let axis_render_pipeline = RenderPipeline::create_axis_render_pipeline(device, axis_render_pipeline_layout, axis_shader).render_pipeline;
+        let axis_render_pipeline = RenderPipeline::create_axis_render_pipeline(
+            device,
+            &[&render_uniform_bind_group_layout], axis_shader
+        ).render_pipeline;
 
+        let mut graph_compute = ComputeShader::create(device.clone(), compute_shader, &[&compute_bind_group_layout]);
 
+        let compute_pipelines = ComputePipelines {
+            gen_node:               graph_compute.create_pipeline("gen_node"),
+            cal_mass:               graph_compute.create_pipeline("cal_mass"),
+            attractive_force:       graph_compute.create_pipeline("attractive_force"),
+            reduction_bounding:     graph_compute.create_pipeline("reduction_bounding"),
+            bounding_box:           graph_compute.create_pipeline("bounding_box"),
+            compute:                graph_compute.create_pipeline("main"),
+            randomize:              graph_compute.create_pipeline("randomize"),
+            copy:                   graph_compute.create_pipeline("copy"),
+        };
 
-        // Gen Node Pipeline
-        let gen_node_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label: Some("Gen Node Pipeline"),
-            layout: Some(&compute_pipeline_layout),
-            module: &compute_shader,
-            entry_point: "gen_node",
-        });
-
-        // Cal Mass Pipeline
-        let cal_mass_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label: Some("Cal Mass Pipeline"),
-            layout: Some(&compute_pipeline_layout),
-            module: &compute_shader,
-            entry_point: "cal_mass",
-        });
-
-        // attractive_force Pipeline
-        let attractive_force_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label: Some("attractive_force Pipeline"),
-            layout: Some(&compute_pipeline_layout),
-            module: &compute_shader,
-            entry_point: "attractive_force",
-        });
-
-        // attractive_force Pipeline
-        let reduction_bounding_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label: Some("Reduction Bounding Pipeline"),
-            layout: Some(&compute_pipeline_layout),
-            module: &compute_shader,
-            entry_point: "reduction_bounding",
-        });
-
-        // attractive_force Pipeline
-        let bounding_box_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label: Some("Bounding Box Pipeline"),
-            layout: Some(&compute_pipeline_layout),
-            module: &compute_shader,
-            entry_point: "bounding_box",
-        });
-
-        // Compute Pipeline
-        let compute_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label: Some("Compute pipeline"),
-            layout: Some(&compute_pipeline_layout),
-            module: &compute_shader,
-            entry_point: "main",
-        });
-
-        // Randomize Pipeline
-        let randomize_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label: Some("Compute pipeline"),
-            layout: Some(&compute_pipeline_layout),
-            module: &compute_shader,
-            entry_point: "randomize",
-        });
-
-        // Copy Pipeline
-        let copy_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label: Some("Compute pipeline"),
-            layout: Some(&compute_pipeline_layout),
-            module: &compute_shader,
-            entry_point: "copy",
-        });
 
         // 计算线程组数
         // 线程组数 = 线程数 / 每组线程数（取整）
+
         let node_work_group_count =
             ((node_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
+
         let edge_work_group_count =
             ((edge_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
 
@@ -627,26 +408,22 @@ impl GraphicsResources {
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
-                    resource: sim_param_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
                     resource: uniform_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 2,
+                    binding: 1,
                     resource: node_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 3,
+                    binding: 2,
                     resource: edge_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 4,
+                    binding: 3,
                     resource: spring_force_buffer.as_entire_binding(),
                 },
                 wgpu::BindGroupEntry {
-                    binding: 5,
+                    binding: 4,
                     resource: bounding_buffer.as_entire_binding(),
                 },
             ],
@@ -695,17 +472,15 @@ impl GraphicsResources {
         let mut boids_resources = GraphicsResources {
             status: model.status.clone(),
             render_state,
-            depth_texture: None,
+            viewport_depth_texture: None,
             output_depth_texture: None,
-            texture: None,
-            texture_view: None,
-            msaa_texture_view: None,
+            viewport_texture: None,
+            viewport_msaa_texture: None,
             output_texture: None,
-            output_texture_view: None,
-            msaa_output_texture_view: None,
-            texture_id: Default::default(),
+            output_msaa_texture: None,
+            viewport_texture_id: Default::default(),
             viewport_size: Default::default(),
-            texture_extent: Default::default(),
+            viewport_texture_extent: Default::default(),
             output_texture_extent: Default::default(),
             is_render_output: false,
             camera,
@@ -722,14 +497,7 @@ impl GraphicsResources {
             node_render_pipeline,
             edge_render_pipeline,
             axis_render_pipeline,
-            gen_node_pipeline,
-            cal_mass_pipeline,
-            attractive_force_pipeline,
-            reduction_bounding_pipeline,
-            bounding_box_pipeline,
-            compute_pipeline,
-            randomize_pipeline,
-            copy_pipeline,
+            compute_pipelines,
             node_work_group_count,
             edge_work_group_count,
             compute_frame_count: 0,
@@ -763,19 +531,19 @@ impl GraphicsResources {
             // compute pass
             let mut cpass =
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-            cpass.set_pipeline(&self.compute_pipeline);
+            cpass.set_pipeline(&self.compute_pipelines.compute);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
 
-            cpass.set_pipeline(&self.attractive_force_pipeline);
+            cpass.set_pipeline(&self.compute_pipelines.attractive_force);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
 
-            cpass.set_pipeline(&self.reduction_bounding_pipeline);
+            cpass.set_pipeline(&self.compute_pipelines.reduction_bounding);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
 
-            cpass.set_pipeline(&self.bounding_box_pipeline);
+            cpass.set_pipeline(&self.compute_pipelines.bounding_box);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(1, 1, 1);
         }
@@ -797,10 +565,10 @@ impl GraphicsResources {
             // compute pass
             let mut cpass =
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-            cpass.set_pipeline(&self.gen_node_pipeline);
+            cpass.set_pipeline(&self.compute_pipelines.gen_node);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
-            cpass.set_pipeline(&self.cal_mass_pipeline);
+            cpass.set_pipeline(&self.compute_pipelines.cal_mass);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
         }
@@ -823,10 +591,10 @@ impl GraphicsResources {
             // compute pass
             let mut cpass =
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-            cpass.set_pipeline(&self.randomize_pipeline);
+            cpass.set_pipeline(&self.compute_pipelines.randomize);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
-            cpass.set_pipeline(&self.copy_pipeline);
+            cpass.set_pipeline(&self.compute_pipelines.copy);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
         }
@@ -845,22 +613,18 @@ impl GraphicsResources {
         let is_render_output = self.is_render_output;
         self.is_render_output = false;
 
-        let resolve_target = if !is_render_output {
-            Some(self.texture_view.as_ref().unwrap())
+        let (resolve_target, view, depth_view) = if !is_render_output {
+            (
+                Some(&self.viewport_texture.as_ref().unwrap().view),
+                &self.viewport_msaa_texture.as_ref().unwrap().view,
+                &self.viewport_depth_texture.as_ref().unwrap().view
+            )
         } else {
-            Some(self.output_texture_view.as_ref().unwrap())
-        };
-
-        let view = if !is_render_output {
-            self.msaa_texture_view.as_ref().unwrap()
-        } else {
-            self.msaa_output_texture_view.as_ref().unwrap()
-        };
-
-        let depth_view = if !is_render_output {
-            &self.depth_texture.as_ref().unwrap().view
-        } else {
-            &self.output_depth_texture.as_ref().unwrap().view
+            (
+                Some(&self.output_texture.as_ref().unwrap().view),
+                &self.output_msaa_texture.as_ref().unwrap().view,
+                &self.output_depth_texture.as_ref().unwrap().view
+            )
         };
 
         let color_attachment;
@@ -950,46 +714,20 @@ impl GraphicsResources {
                 depth_or_array_layers: 1,
             };
 
-            let texture = device.create_texture(&wgpu::TextureDescriptor {
-                size: texture_extent.clone(),
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                    | wgpu::TextureUsages::COPY_SRC
-                    | wgpu::TextureUsages::TEXTURE_BINDING,
-                label: None,
-            });
+            let texture = Texture::create_texture(device, &texture_extent, 1);
+            let msaa_texture = Texture::create_texture(device, &texture_extent, 4);
+            let depth_texture = Texture::create_depth_texture(&device, &texture_extent, "depth_texture");
 
-            let msaa_texture = device.create_texture(&wgpu::TextureDescriptor {
-                size: texture_extent.clone(),
-                mip_level_count: 1,
-                sample_count: 4,
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                    | wgpu::TextureUsages::COPY_SRC
-                    | wgpu::TextureUsages::TEXTURE_BINDING,
-                label: None,
-            });
-
-            let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-            let mass_texture_view = msaa_texture.create_view(&wgpu::TextureViewDescriptor::default());
-
-            if self.texture_view.is_some() {
-                self.render_state.egui_rpass.write().free_texture(&self.texture_id);
+            if self.viewport_texture.is_some() {
+                self.render_state.egui_rpass.write().free_texture(&self.viewport_texture_id);
             }
-            let texture_id = self.render_state.egui_rpass.write().register_native_texture(device, &texture_view, wgpu::FilterMode::Linear);
+            let texture_id = self.render_state.egui_rpass.write().register_native_texture(device, &texture.view, wgpu::FilterMode::Linear);
 
-            self.texture_extent = texture_extent;
-
-            self.depth_texture = Some(Texture::create_depth_texture(&device, &texture_extent, "depth_texture"));
-
-            self.texture = Option::from(texture);
-            self.texture_view = Option::from(texture_view);
-            self.msaa_texture_view = Option::from(mass_texture_view);
-            self.texture_id = texture_id;
+            self.viewport_texture_extent = texture_extent;
+            self.viewport_texture = Some(texture);
+            self.viewport_msaa_texture = Some(msaa_texture);
+            self.viewport_depth_texture = Some(depth_texture);
+            self.viewport_texture_id = texture_id;
 
             self.need_update = true;
         }
@@ -1000,51 +738,26 @@ impl GraphicsResources {
         self.is_render_output = true;
 
         let device = &self.render_state.device;
-        // let queue = &self.render_state.queue;
+        let _queue = &self.render_state.queue;
 
         let output_texture_extent = wgpu::Extent3d {
-            width: (self.texture_extent.width * 2) as u32,
-            height: (self.texture_extent.height * 2) as u32,
+            width: (self.viewport_texture_extent.width * 2) as u32,
+            height: (self.viewport_texture_extent.height * 2) as u32,
             depth_or_array_layers: 1,
         };
 
-        let output_texture = device.create_texture(&wgpu::TextureDescriptor {
-            size: output_texture_extent.clone(),
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                | wgpu::TextureUsages::COPY_SRC
-                | wgpu::TextureUsages::TEXTURE_BINDING,
-            label: None,
-        });
-
-        let msaa_output_texture = device.create_texture(&wgpu::TextureDescriptor {
-            size: output_texture_extent.clone(),
-            mip_level_count: 1,
-            sample_count: 4,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT
-                | wgpu::TextureUsages::COPY_SRC
-                | wgpu::TextureUsages::TEXTURE_BINDING,
-            label: None,
-        });
-
-        let output_texture_view = output_texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let msaa_output_texture_view = msaa_output_texture.create_view(&wgpu::TextureViewDescriptor::default());
-
-        self.output_texture = Some(output_texture);
-        self.output_texture_view = Some(output_texture_view);
-        self.msaa_output_texture_view = Some(msaa_output_texture_view);
-        self.output_depth_texture = Some(Texture::create_depth_texture(&device, &output_texture_extent, "depth_texture"));
+        let output_texture = Texture::create_texture(device, &output_texture_extent, 1);
+        let msaa_output_texture = Texture::create_texture(device, &output_texture_extent, 4);
+        let output_depth_texture = Texture::create_depth_texture(&device, &output_texture_extent, "depth_texture");
 
         self.output_texture_extent = output_texture_extent;
+        self.output_texture = Some(output_texture);
+        self.output_msaa_texture = Some(msaa_output_texture);
+        self.output_depth_texture = Some(output_depth_texture);
 
     }
 
-    pub fn output_png_after_render(&mut self, outfolder:String) {
+    pub fn output_png_after_render(&mut self, out_folder: String) {
 
         let device = &self.render_state.device;
         let queue = &self.render_state.queue;
@@ -1063,7 +776,7 @@ impl GraphicsResources {
                 device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
             encoder.copy_texture_to_buffer(
-                self.output_texture.as_ref().unwrap().as_image_copy(),
+                self.output_texture.as_ref().unwrap().texture.as_image_copy(),
                 wgpu::ImageCopyBuffer {
                     buffer: &output_buffer,
                     layout: wgpu::ImageDataLayout {
@@ -1083,7 +796,7 @@ impl GraphicsResources {
 
         let index = queue.submit(Some(command_buffer));
 
-        let mut output_path = outfolder;
+        let mut output_path = out_folder;
         let formatted_time = Local::now().format("%Y.%m.%d_%H.%M.%S");
         let png_name = format!("/graphpu_render_{}_{}.png", formatted_time, self.render_frame_count);
         output_path += &png_name;
@@ -1146,72 +859,4 @@ fn pad_size(node_struct_size: usize, num_particles: u32) -> wgpu::BufferAddress 
     let padded_size = (padded_size * num_particles as u64) as wgpu::BufferAddress;
 
     padded_size
-}
-
-async fn create_png(
-    png_output_path: String,
-    device: &Arc<wgpu::Device>,
-    output_buffer: wgpu::Buffer,
-    buffer_dimensions: &BufferDimensions,
-    submission_index: wgpu::SubmissionIndex,
-) {
-    // Note that we're not calling `.await` here.
-    let buffer_slice = output_buffer.slice(..);
-    // Sets the buffer up for mapping, sending over the result of the mapping back to us when it is finished.
-    let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
-    buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
-
-    // Poll the device in a blocking manner so that our future resolves.
-    // In an actual application, `device.poll(...)` should
-    // be called in an event loop or on another thread.
-    //
-    // We pass our submission index so we don't need to wait for any other possible submissions.
-    device.poll(wgpu::Maintain::WaitForSubmissionIndex(submission_index));
-    // If a file system is available, write the buffer as a PNG
-    let has_file_system_available = cfg!(not(target_arch = "wasm32"));
-    if !has_file_system_available {
-        return;
-    }
-
-    if let Some(Ok(())) = receiver.receive().await {
-        let padded_buffer = buffer_slice.get_mapped_range();
-
-        match File::create(&png_output_path) {
-            Ok(file) => {
-                let mut png_encoder = png::Encoder::new(
-                    file,
-                    buffer_dimensions.width as u32,
-                    buffer_dimensions.height as u32,
-                );
-                png_encoder.set_depth(png::BitDepth::Eight);
-                png_encoder.set_color(png::ColorType::Rgba);
-                // png_encoder.set_source_gamma(png::ScaledFloat::new(1.0));
-                // png_encoder.set_srgb(png::SrgbRenderingIntent::Perceptual);
-                let mut png_writer = png_encoder
-                    .write_header()
-                    .unwrap()
-                    .into_stream_writer_with_size(buffer_dimensions.unpadded_bytes_per_row)
-                    .unwrap();
-        
-                // from the padded_buffer we write just the unpadded bytes into the image
-                for chunk in padded_buffer.chunks(buffer_dimensions.padded_bytes_per_row) {
-                    png_writer
-                        .write_all(&chunk[..buffer_dimensions.unpadded_bytes_per_row])
-                        .unwrap();
-                }
-                png_writer.finish().unwrap();
-        
-                // With the current interface, we have to make sure all mapped views are
-                // dropped before we unmap the buffer.
-                drop(padded_buffer);
-        
-                output_buffer.unmap();
-
-                message_info("Output Succeeded", png_output_path.to_owned().as_str())
-            },
-            Err(err) => {
-                message_error("create_png", &err.to_string());
-            }
-        }
-    }
 }

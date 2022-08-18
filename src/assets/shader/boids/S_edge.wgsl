@@ -53,8 +53,7 @@ fn main_vs(
 @fragment
 fn main_fs(v: Varing) -> @location(0) vec4<f32> {
 
-
-    var out_color = vec4<f32>(0.1);
+    var out_color = vec4<f32>(1.0, 1.0, 1.0, 0.1);
 
     return out_color;
 }

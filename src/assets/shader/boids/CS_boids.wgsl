@@ -4,16 +4,6 @@ struct Node {
     mass: atomic<u32>,
 };
 
-struct SimParams {
-    deltaT : f32,
-    rule1Distance : f32,
-    rule2Distance : f32,
-    rule3Distance : f32,
-    rule1Scale : f32,
-    rule2Scale : f32,
-    rule3Scale : f32,
-};
-
 struct Uniforms {
     frame_num: u32,
 };
@@ -23,12 +13,11 @@ struct Bound {
     bound_max: vec3<f32>,
 }
 
-@group(0) @binding(0) var<uniform> params: SimParams;
-@group(0) @binding(1) var<uniform> uniforms: Uniforms;
-@group(0) @binding(2) var<storage, read_write> nodeSrc: array<Node>;
-@group(0) @binding(3) var<storage, read> edgeSrc: array<vec2<u32>>;
-@group(0) @binding(4) var<storage, read_write> springForceSrc: array<atomic<i32>>;
-@group(0) @binding(5) var<storage, read_write> bounding: array<Bound>;
+@group(0) @binding(0) var<uniform> uniforms: Uniforms;
+@group(0) @binding(1) var<storage, read_write> nodeSrc: array<Node>;
+@group(0) @binding(2) var<storage, read> edgeSrc: array<vec2<u32>>;
+@group(0) @binding(3) var<storage, read_write> springForceSrc: array<atomic<i32>>;
+@group(0) @binding(4) var<storage, read_write> bounding: array<Bound>;
 
 
 fn hash(s: u32) -> u32 {
@@ -237,7 +226,7 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 
     var vForce: vec3<f32> = electron_force * 0.05 + gravaty_force * 10. + spring_force * 100.0;
 
-    vVel = vVel + vForce * params.deltaT;
+    vVel = vVel + vForce * 0.04;
 
     // clamp velocity for a more pleasing simulation
     if (dot(vVel, vVel) > 0.0) {
@@ -245,7 +234,7 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     }
 
     // kinematic update
-    vPos += vVel * params.deltaT;
+    vPos += vVel * 0.04;
 
     // Write back
     nodeSrc[index].position = vPos;

@@ -46,13 +46,13 @@ fn main_fs(v: Varing) -> @location(0) vec4<f32> {
     let sdf = dot(v.tex_coords, v.tex_coords);
     let clip = step(sdf, 1.0);
 
-    var out_color = vec4<f32>(1.0, 0.5, 0.5, 1.0);
+    var out_color = vec4<f32>(1.0, 1.0, 1.0, 1.0);
 
-    let alpha = 0.8;
-
-    out_color.r *= alpha;
-    out_color.g *= alpha;
-    out_color.b *= alpha;
+//    let alpha = 1.0;
+//
+//    out_color.r *= alpha;
+//    out_color.g *= alpha;
+//    out_color.b *= alpha;
 
     if clip < 0.5 {
         discard;

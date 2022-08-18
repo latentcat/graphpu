@@ -67,7 +67,7 @@ impl AppView for GraphicsView {
                             }
 
                             // 获取已经注册的 wgpu 材质的 egui 材质 ID
-                            let texture_id = compute_resources.texture_id;
+                            let texture_id = compute_resources.viewport_texture_id;
 
                             // 通过材质 ID 绘制 Image
                             // ui.image(texture_id, max_rect.size());

@@ -15,7 +15,13 @@ pub struct RenderPipeline {
 
 impl RenderPipeline {
 
-    pub fn create_node_render_pipeline( device: &wgpu::Device, node_render_pipeline_layout: wgpu::PipelineLayout, node_shader: &wgpu::ShaderModule ) -> Self {
+    pub fn create_node_render_pipeline( device: &wgpu::Device, layouts: &[&wgpu::BindGroupLayout], node_shader: &wgpu::ShaderModule ) -> Self {
+
+        let node_render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("node render"),
+            bind_group_layouts: layouts,
+            push_constant_ranges: &[],
+        });
 
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
@@ -38,7 +44,7 @@ impl RenderPipeline {
                     format: TEXTURE_FORMAT,
                     blend: Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
-                            src_factor: wgpu::BlendFactor::One,
+                            src_factor: wgpu::BlendFactor::SrcAlpha,
                             dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
                             operation: wgpu::BlendOperation::Add,
                         },
@@ -75,7 +81,13 @@ impl RenderPipeline {
 
     }
 
-    pub fn create_edge_render_pipeline( device: &wgpu::Device, edge_render_pipeline_layout: wgpu::PipelineLayout, edge_shader: &wgpu::ShaderModule ) -> Self {
+    pub fn create_edge_render_pipeline( device: &wgpu::Device, layouts: &[&wgpu::BindGroupLayout],  edge_shader: &wgpu::ShaderModule ) -> Self {
+
+        let edge_render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("edge render"),
+            bind_group_layouts: layouts,
+            push_constant_ranges: &[],
+        });
 
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
@@ -97,8 +109,16 @@ impl RenderPipeline {
                 targets: &[Some(wgpu::ColorTargetState {
                     format: TEXTURE_FORMAT,
                     blend: Some(wgpu::BlendState {
-                        color: wgpu::BlendComponent::OVER,
-                        alpha: wgpu::BlendComponent::OVER,
+                        color: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::SrcAlpha,
+                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                        alpha: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::One,
+                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                            operation: wgpu::BlendOperation::Add,
+                        },
                     }),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
@@ -126,7 +146,13 @@ impl RenderPipeline {
 
     }
 
-    pub fn create_axis_render_pipeline( device: &wgpu::Device, axis_render_pipeline_layout: wgpu::PipelineLayout, axis_shader: &wgpu::ShaderModule ) -> Self {
+    pub fn create_axis_render_pipeline( device: &wgpu::Device, layouts: &[&wgpu::BindGroupLayout], axis_shader: &wgpu::ShaderModule ) -> Self {
+
+        let axis_render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("axis render"),
+            bind_group_layouts: layouts,
+            push_constant_ranges: &[],
+        });
 
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: None,
