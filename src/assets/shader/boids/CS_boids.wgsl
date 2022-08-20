@@ -1,6 +1,7 @@
 struct Node {
     position: vec3<f32>,
-    velocity: vec3<f32>,
+    force: vec3<f32>,
+    prev_force: vec3<f32>,
     mass: atomic<u32>,
 };
 
@@ -65,17 +66,15 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     }
 
     var vPos : vec3<f32> = nodeSrc[index].position;
-    var vVel : vec3<f32> = nodeSrc[index].velocity;
 
     vPos.x = random_xy(index, 0u + 3u * uniforms.frame_num) * 2.0 - 1.0;
     vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
     vPos.z = random_xy(index, 2u + 3u * uniforms.frame_num) * 2.0 - 1.0;
 
-    vVel = vec3<f32>(0.0);
-
     // Write back
     nodeSrc[index].position = vPos;
-    nodeSrc[index].velocity = vVel;
+    nodeSrc[index].force = vec3<f32>(0.0);
+    nodeSrc[index].prev_force = vec3<f32>(0.0);
     atomicStore(&nodeSrc[index].mass, 0u);
     atomicStore(&springForceSrc[index * 3u + 0u], 0);
     atomicStore(&springForceSrc[index * 3u + 1u], 0);
@@ -86,8 +85,7 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 
 @compute
 @workgroup_size(128)
-fn cal_mass(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
-{
+fn cal_mass(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     let total = arrayLength(&edgeSrc);
     let index = global_invocation_id.x;
     if (index >= total) {
@@ -100,14 +98,40 @@ fn cal_mass(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
 
     atomicAdd(&nodeSrc[source_node].mass, 1u);
     atomicAdd(&nodeSrc[target_node].mass, 1u);
-
 }
-
 
 @compute
 @workgroup_size(128)
-fn attractive_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
-{
+fn cal_gravity_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
+    let total = arrayLength(&edgeSrc);
+    let index = global_invocation_id.x;
+    if (index >= total) {
+        return;
+    }
+
+    // TODO: Global Param
+    let strong_gravity = false;
+    let k_gravity = 1.0;
+
+    let pos = nodeSrc[index].position;
+    let mass = f32(atomicLoad(&nodeSrc[index].mass));
+    var gravity_force: f32;
+    if (strong_gravity) {
+        gravity_force =  k_gravity * mass;
+    } else {
+        if (pos.x != 0.0 || pos.y != 0.0 || pos.z != 0.0) {
+            gravity_force = k_gravity * mass * inverseSqrt(dot(pos, pos));
+        }
+        else {
+            gravity_force = 0.0;
+        }
+    }
+    nodeSrc[index].force +=  -pos * min(gravity_force, 10.0);
+}
+
+@compute
+@workgroup_size(128)
+fn attractive_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     let total = arrayLength(&edgeSrc);
     let index = global_invocation_id.x;
     if (index >= total) {
@@ -184,8 +208,11 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
         return;
     }
 
-    var vPos: vec3<f32> = nodeSrc[index].position;
-    var vVel: vec3<f32> = nodeSrc[index].velocity;
+    let vPos: vec3<f32> = nodeSrc[index].position;
+    let mass = f32(atomicLoad(&nodeSrc[index].mass));
+
+    // TODO: Global Param
+    let scaling_ratio = 0.0002;
 
     var i : u32 = 0u;
     var electron_force = vec3<f32>(0.0);
@@ -194,44 +221,65 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
         if (i == index) { continue; }
 
         let pos = nodeSrc[i].position;
-        let dir = pos - vPos;
+        let mass_i = f32(atomicLoad(&nodeSrc[i].mass));
+        let dist = vPos - pos;
+        let distance2 = dot(dist, dist);
+        let factor = scaling_ratio * mass * mass_i / distance2;
 
-        electron_force += -dir / dot(dir, dir);
+        // electron_force += -dir / dot(dir, dir);
+        electron_force += dist * factor;
 
         continuing {
             i = i + 1u;
         }
     }
 
-    var gravaty_force = -vPos;
-
     var spring_force = vec3<f32>(0.0);
+<<<<<<< HEAD
 
     spring_force.x = bitcast<f32>(atomicLoad(&springForceSrc[index * 3u + 0u]));
     spring_force.y = bitcast<f32>(atomicLoad(&springForceSrc[index * 3u + 1u]));
     spring_force.z = bitcast<f32>(atomicLoad(&springForceSrc[index * 3u + 2u]));
+=======
+    spring_force.x = f32(atomicLoad(&springForceSrc[index * 3u + 0u]));
+    spring_force.y = f32(atomicLoad(&springForceSrc[index * 3u + 1u]));
+    spring_force.z = f32(atomicLoad(&springForceSrc[index * 3u + 2u]));
+>>>>>>> 5fa6a2f0 (feat: force & gravity & bruce electron)
 
     atomicStore(&springForceSrc[index * 3u + 0u], 0);
     atomicStore(&springForceSrc[index * 3u + 1u], 0);
     atomicStore(&springForceSrc[index * 3u + 2u], 0);
+    spring_force *= 0.0001;
 
+<<<<<<< HEAD
     var vForce: vec3<f32> = electron_force * 0.05 + gravaty_force * 10. + spring_force * 1000.0;
 
     vVel = vVel + vForce * 0.04;
+=======
+    nodeSrc[index].force += electron_force + spring_force;
+}
+>>>>>>> 5fa6a2f0 (feat: force & gravity & bruce electron)
 
-    // clamp velocity for a more pleasing simulation
-    if (dot(vVel, vVel) > 0.0) {
-        vVel = normalize(vVel) * clamp(length(vVel) * 0.1, 0.0, .5);
+@compute
+@workgroup_size(128)
+fn displacement(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
+    let total = arrayLength(&nodeSrc);
+    let index = global_invocation_id.x;
+    if (index >= total) {
+        return;
     }
 
-    // kinematic update
-    vPos += vVel * 0.04;
+    // TODO: Global Param
+    let global_speed = 1.0;
 
-    // Write back
-    nodeSrc[index].position = vPos;
-    nodeSrc[index].velocity = vVel;
+    let d_force = nodeSrc[index].force - nodeSrc[index].prev_force;
+    let swg = sqrt(dot(d_force, d_force));
+    let factor = global_speed / (1.0 + sqrt(global_speed * swg));
+    
+    nodeSrc[index].position += nodeSrc[index].force * factor * 0.05;
+    nodeSrc[index].prev_force = nodeSrc[index].force;
+    nodeSrc[index].force = vec3<f32>(0.0);
 }
-
 
 @compute
 @workgroup_size(128)
@@ -243,17 +291,15 @@ fn randomize(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     }
 
     var vPos : vec3<f32> = nodeSrc[index].position;
-    var vVel : vec3<f32> = nodeSrc[index].velocity;
 
     vPos.x = random_xy(index, 0u + 3u * uniforms.frame_num) * 2.0 - 1.0;
     vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
     vPos.z = random_xy(index, 2u + 3u * uniforms.frame_num) * 2.0 - 1.0;
 
-    vVel = vec3<f32>(0.0);
-
     // Write back
     nodeSrc[index].position = vPos;
-    nodeSrc[index].velocity = vVel;
+    nodeSrc[index].force = vec3<f32>(0.0);
+    nodeSrc[index].prev_force = vec3<f32>(0.0);
 }
 
 @compute
@@ -266,8 +312,8 @@ fn copy(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     }
 
     var vPos : vec3<f32> = nodeSrc[index].position;
-    var vVel : vec3<f32> = nodeSrc[index].velocity;
+    // var vVel : vec3<f32> = nodeSrc[index].velocity;
 
   // Write back
-//  nodeSrc[index] = Node(vPos, vVel);
+    //  nodeSrc[index] = Node(vPos, vVel);
 }

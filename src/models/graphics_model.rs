@@ -25,7 +25,8 @@ const PARTICLES_PER_GROUP: u32 = 128;
 #[repr(C)]
 pub struct Node {
     _position: [f32; 3],
-    _velocity: [f32; 3],
+    _force: [f32; 3],
+    _prev_force: [f32; 3],
     _mass: u32,
 }
 
@@ -136,10 +137,12 @@ pub struct RenderOptions {
 pub struct ComputePipelines {
     gen_node:              wgpu::ComputePipeline,
     cal_mass:              wgpu::ComputePipeline,
+    cal_gravity:           wgpu::ComputePipeline,
     attractive_force:      wgpu::ComputePipeline,
     reduction_bounding:    wgpu::ComputePipeline,
     bounding_box:          wgpu::ComputePipeline,
     compute:               wgpu::ComputePipeline,
+    displacement:          wgpu::ComputePipeline,
     randomize:             wgpu::ComputePipeline,
     copy:                  wgpu::ComputePipeline,
 }
@@ -289,10 +292,12 @@ impl GraphicsResources {
         let compute_pipelines = ComputePipelines {
             gen_node:               graph_compute.create_pipeline("gen_node"),
             cal_mass:               graph_compute.create_pipeline("cal_mass"),
+            cal_gravity:            graph_compute.create_pipeline("cal_gravity_force"),
             attractive_force:       graph_compute.create_pipeline("attractive_force"),
             reduction_bounding:     graph_compute.create_pipeline("reduction_bounding"),
             bounding_box:           graph_compute.create_pipeline("bounding_box"),
             compute:                graph_compute.create_pipeline("main"),
+            displacement:           graph_compute.create_pipeline("displacement"),
             randomize:              graph_compute.create_pipeline("randomize"),
             copy:                   graph_compute.create_pipeline("copy"),
         };
@@ -535,6 +540,10 @@ impl GraphicsResources {
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
 
+            cpass.set_pipeline(&self.compute_pipelines.cal_gravity);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+
             cpass.set_pipeline(&self.compute_pipelines.attractive_force);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
@@ -546,6 +555,10 @@ impl GraphicsResources {
             cpass.set_pipeline(&self.compute_pipelines.bounding_box);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(1, 1, 1);
+        
+            cpass.set_pipeline(&self.compute_pipelines.displacement);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));

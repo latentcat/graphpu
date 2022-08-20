@@ -9,8 +9,9 @@ struct Varing {
 };
 
 struct Node {
-    position : vec3<f32>,
-    velocity : vec3<f32>,
+    position: vec3<f32>,
+    force: vec3<f32>,
+    prev_force: vec3<f32>,
     mass: u32,
 };
 
