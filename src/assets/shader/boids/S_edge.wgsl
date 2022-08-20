@@ -47,7 +47,7 @@ fn main_vs(
     var v: Varing;
     v.position = vec4<f32>(node.position.xyz, 1.0);
     v.position = transform.view * v.position;
-    v.position += vec4<f32>(quad_pos.y * quad_dir * 0.0075 * 1.0, 0.0, 0.0);
+    v.position += vec4<f32>(quad_pos.y * quad_dir * 0.0075 * 0.25, 0.0, 0.0);
     v.position = transform.projection * v.position;
     v.tex_coords = vec2<f32>(0.0);
 
