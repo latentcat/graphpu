@@ -37,10 +37,11 @@ pub enum TableTab {
 #[derive(Default, PartialEq)]
 pub enum InspectorTab {
     #[default]
+    Graph,
     Node,
     Edge,
     Scene,
-    Setting,
+    Options,
 }
 
 #[derive(Default, PartialEq)]

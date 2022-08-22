@@ -1,13 +1,12 @@
 use std::hash::Hash;
 
-use egui::Ui;
-use egui::collapsing_header::HeaderResponse;
+use egui::{CollapsingHeader, CollapsingResponse, Color32, Ui};
 
 use crate::models::Models;
 use crate::models::app_model::{ImportState, InspectorTab};
 use crate::models::graphics_model::ComputeMethod;
 use crate::models::graphics_model::ComputeMethodType;
-use crate::models::data_model::{PositionType, ColorType, ColorRamp, ColorPalette, SizeType};
+use crate::models::data_model::{ColorType, ColorRamp, ColorPalette, SizeType};
 use crate::utils::file::{path_to_string, pick_folder, system_open_directory};
 use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_PADDING, inspector_frame, inspector_inner_frame};
 
@@ -20,7 +19,7 @@ impl AppView for InspectorView {
     fn show(&mut self, models: &mut Models, ui: &mut Ui, _frame: &mut eframe::Frame) {
         egui::SidePanel::right("inspector_view")
             .frame(inspector_frame(ui.style()))
-            .default_width(300.0)
+            .default_width(320.0)
             .width_range(150.0..=400.0)
             .resizable(false)
             .show_inside(ui, |ui| {
@@ -104,23 +103,26 @@ impl AppView for InspectorView {
                         button_group_style(ui.style()).show(ui, |ui| {
                             ui.set_style(ui.ctx().style());
                             ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
-                            ui.columns(4, |columns| {
+                            ui.columns(5, |columns| {
                                 columns[0].vertical_centered_justified(|ui| {
-                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Node, "Node");
+                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Graph, "Graph");
                                 });
                                 columns[1].vertical_centered_justified(|ui| {
-                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Edge, "Edge");
+                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Node, "Node");
                                 });
                                 columns[2].vertical_centered_justified(|ui| {
-                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Scene, "Scene");
+                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Edge, "Edge");
                                 });
                                 columns[3].vertical_centered_justified(|ui| {
-                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Setting, "Setting");
+                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Scene, "Scene");
+                                });
+                                columns[4].vertical_centered_justified(|ui| {
+                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Options, "Options");
                                 });
                             });
                         });
 
-                        ui.add_space(4.0);
+                        ui.add_space(6.0);
 
                         // Node Edge Inspector
                         egui::ScrollArea::vertical()
@@ -129,10 +131,11 @@ impl AppView for InspectorView {
                             .id_source("source")
                             .show(ui, |ui| {
                                 match models.app_model.inspector_tab {
+                                    InspectorTab::Graph => self.graph_inspector(models, ui),
                                     InspectorTab::Node => self.node_inspector(models, ui),
                                     InspectorTab::Edge => self.edge_inspector(models, ui),
                                     InspectorTab::Scene => self.scene_inspector(models, ui),
-                                    InspectorTab::Setting => self.setting_inspector(models, ui),
+                                    InspectorTab::Options => self.setting_inspector(models, ui),
                                 };
 
                             });
@@ -145,197 +148,193 @@ impl AppView for InspectorView {
 }
 
 impl InspectorView {
+    fn graph_inspector(&mut self, models: &mut Models, ui: &mut Ui) {
+        let node_settings = &mut models.data_model.node_settings;
+        // TODO: constant editor
+
+        inspector_section(ui, true, "Layout", |ui| {
+
+            grid_label(ui, "Method");
+            egui::ComboBox::from_id_source("Position Compute")
+                .selected_text(node_settings.position_compute.0)
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut node_settings.position_compute, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
+                    ui.separator();
+                    ui.selectable_value(&mut node_settings.position_compute, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
+                });
+            ui.end_row();
+
+            grid_label(ui, "");
+            if node_settings.position_compute.1 == ComputeMethodType::Continuous {
+                let continuous_button = ui.button(if !models.graphics_model.is_computing { "Start Computing" } else { "Pause Computing" });
+                if continuous_button.clicked() {
+                    models.graphics_model.switch_computing();
+                }
+            } else {
+                models.graphics_model.set_computing(false);
+                let one_step_button = ui.button("⏩ Dispatch");
+                if one_step_button.clicked() {
+                    models.graphics_model.set_dispatching(true);
+                }
+            }
+            ui.end_row();
+        });
+
+        inspector_section(ui, true, "Transform", |ui| {
+            grid_label(ui, "");
+            ui.end_row();
+        });
+
+    }
+
     fn node_inspector(&mut self, models: &mut Models, ui: &mut Ui) {
         let node_settings = &mut models.data_model.node_settings;
         // TODO: constant editor
 
-        let (header, _) = grid_header(ui, true, "Position", &node_settings.position_type.to_string());
-        header.body(|ui| {
-            inspector_grid("Node Position")
-                .show(ui, |ui| {
-                    grid_label(ui, "Type");
-                    egui::ComboBox::from_id_source("Position Type")
-                        .selected_text(&node_settings.position_type.to_string())
+        inspector_section(ui, true, "Color", |ui| {
+            grid_label(ui, "Type");
+            egui::ComboBox::from_id_source("Color Type")
+                .selected_text(&node_settings.color_type.to_string())
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut node_settings.color_type, ColorType::Constant, "Constant");
+                    ui.selectable_value(&mut node_settings.color_type, ColorType::Ramp, "Ramp");
+                    ui.selectable_value(&mut node_settings.color_type, ColorType::Partition, "Partition");
+                });
+            ui.end_row();
+
+            match node_settings.color_type {
+                ColorType::Constant => {
+                    grid_label(ui, "Value");
+                    ui.color_edit_button_srgba(&mut node_settings.color_constant);
+                    ui.end_row();
+                },
+                ColorType::Ramp => {
+                    let (source, ramp) = &mut node_settings.color_ramp;
+                    source_combox("Source", &models.data_model.node_data.headers_index_str, source, ui);
+                    grid_label(ui, "Picker");
+                    egui::ComboBox::from_id_source("Color Ramp")
+                        .selected_text(&ramp.to_string())
                         .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut node_settings.position_type, PositionType::Compute, "Compute");
-                            ui.selectable_value(&mut node_settings.position_type, PositionType::Set, "Set");
+                            ui.selectable_value(ramp, ColorRamp::Ramp1, "Ramp1");
+                            ui.selectable_value(ramp, ColorRamp::Ramp2, "Ramp2");
                         });
                     ui.end_row();
 
-                    match node_settings.position_type {
-                        PositionType::Compute => {
-                            grid_label(ui, "Method");
-                            egui::ComboBox::from_id_source("Position Compute")
-                                .selected_text(node_settings.position_compute.0)
-                                .show_ui(ui, |ui| {
-                                    ui.selectable_value(&mut node_settings.position_compute, ComputeMethod::FORCE_ATLAS2, ComputeMethod::FORCE_ATLAS2.0);
-                                    ui.separator();
-                                    ui.selectable_value(&mut node_settings.position_compute, ComputeMethod::RANDOMIZE, ComputeMethod::RANDOMIZE.0);
-                                });
-                            ui.end_row();
+                    grid_label(ui, "");
+                    let _ = ui.button("Set Color");
+                    ui.end_row();
+                },
+                ColorType::Partition => {
+                    let (source, platte) = &mut node_settings.color_partition;
+                    source_combox("Color Partition Source", &models.data_model.node_data.headers_index_str, source, ui);
+                    grid_label(ui, "Platte");
+                    egui::ComboBox::from_id_source("Color Partition")
+                        .selected_text(&platte.to_string())
+                        .show_ui(ui, |ui| {
+                            ui.selectable_value(platte, ColorPalette::Palette1, "Palette1");
+                            ui.selectable_value(platte, ColorPalette::Palette2, "Palette2");
+                        });
+                    ui.end_row();
 
-                            grid_label(ui, "");
-                            if node_settings.position_compute.1 == ComputeMethodType::Continuous {
-                                let continuous_button = ui.button(if !models.graphics_model.is_computing { "Start Computing" } else { "Pause Computing" });
-                                if continuous_button.clicked() {
-                                    models.graphics_model.switch_computing();
-                                }
-                            } else {
-                                models.graphics_model.set_computing(false);
-                                let one_step_button = ui.button("⏩ Dispatch");
-                                if one_step_button.clicked() {
-                                    models.graphics_model.set_dispatching(true);
-                                }
-                            }
-                            ui.end_row();
-                        },
-                        PositionType::Set => {
-                            grid_label(ui, "Set");
-                            ui.text_edit_singleline(&mut "".to_owned());
-                            ui.text_edit_singleline(&mut "".to_owned());
-                            ui.text_edit_singleline(&mut "".to_owned());
-                            ui.end_row();
-                            grid_label(ui, "");
-                            let _ = ui.button("Set Position");
-                            ui.end_row();
-                        }
-                    }
-                });
+                    grid_label(ui, "");
+                    let _ = ui.button("Set Color");
+                    ui.end_row();
+                },
+            }
         });
 
-        let (header, _) = grid_header(ui, false, "Color", &node_settings.color_type.to_string());
-        header.body(|ui| {
-            inspector_grid("Node Color")
-                .show(ui, |ui| {
-                    grid_label(ui, "Type");
-                    egui::ComboBox::from_id_source("Color Type")
-                        .selected_text(&node_settings.color_type.to_string())
-                        .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut node_settings.color_type, ColorType::Constant, "Constant");
-                            ui.selectable_value(&mut node_settings.color_type, ColorType::Ramp, "Ramp");
-                            ui.selectable_value(&mut node_settings.color_type, ColorType::Partition, "Partition");
-                        });
+        inspector_section(ui, true, "Size", |ui| {
+            grid_label(ui, "Type");
+            egui::ComboBox::from_id_source("Size Type")
+                .selected_text(&node_settings.size_type.to_string())
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut node_settings.size_type, SizeType::Constant, "Constant");
+                    ui.selectable_value(&mut node_settings.size_type, SizeType::Ramp, "Ramp");
+                });
+            ui.end_row();
+
+            match node_settings.size_type {
+                SizeType::Constant => {
+                    grid_label(ui, "Value");
+                    ui.add(egui::Slider::new(&mut node_settings.size_constant, 0.1..=10.0));
+                    ui.end_row();
+                },
+                SizeType::Ramp => {
+                    let (source, _) = &mut node_settings.size_ramp;
+                    source_combox("Source", &models.data_model.node_data.headers_index_str, source, ui);
+                    grid_label(ui, "Range");
+                    ui.horizontal(|ui| {
+                        ui.add(egui::DragValue::new(&mut node_settings.size_ramp.1[0]).speed(0.1));
+                        ui.label("—");
+                        ui.add(egui::DragValue::new(&mut node_settings.size_ramp.1[1]).speed(0.1));
+                    });
                     ui.end_row();
 
-                    match node_settings.color_type {
-                        ColorType::Constant => {
-                            grid_label(ui, "Constant");
-                            ui.color_edit_button_srgba(&mut node_settings.color_constant);
-                            ui.end_row();
-                        },
-                        ColorType::Ramp => {
-                            let (source, ramp) = &mut node_settings.color_ramp;
-                            source_combox("Color Ramp Source", &models.data_model.node_data.headers_index_str, source, ui);
-                            grid_label(ui, "Picker");
-                            egui::ComboBox::from_id_source("Color Ramp")
-                                .selected_text(&ramp.to_string())
-                                .show_ui(ui, |ui| {
-                                    ui.selectable_value(ramp, ColorRamp::Ramp1, "Ramp1");
-                                    ui.selectable_value(ramp, ColorRamp::Ramp2, "Ramp2");
-                                });
-                            ui.end_row();
-
-                            grid_label(ui, "");
-                            let _ = ui.button("Set Color");
-                            ui.end_row();
-                        },
-                        ColorType::Partition => {
-                            let (source, platte) = &mut node_settings.color_partition;
-                            source_combox("Color Partition Source", &models.data_model.node_data.headers_index_str, source, ui);
-                            grid_label(ui, "Platte");
-                            egui::ComboBox::from_id_source("Color Partition")
-                                .selected_text(&platte.to_string())
-                                .show_ui(ui, |ui| {
-                                    ui.selectable_value(platte, ColorPalette::Palette1, "Palette1");
-                                    ui.selectable_value(platte, ColorPalette::Palette2, "Palette2");
-                                });
-                            ui.end_row();
-
-                            grid_label(ui, "");
-                            let _ = ui.button("Set Color");
-                            ui.end_row();
-                        },
-                    }
-                });
+                    grid_label(ui, "");
+                    let _ = ui.button("Set Size");
+                    ui.end_row();
+                }
+            }
         });
 
+        inspector_section(ui, false, "Position", |ui| {
+            let (source, _) = &mut node_settings.size_ramp;
+            source_combox("Source", &models.data_model.node_data.headers_index_str, source, ui);
+            grid_label(ui, "");
+            let _ = ui.button("Set Position");
+            ui.end_row();
 
-        let (header, _) = grid_header(ui, false, "Size", &node_settings.size_type.to_string());
-        header.body(|ui| {
-            inspector_grid("Node Size")
-                .show(ui, |ui| {
-                    grid_label(ui, "Type");
-                    egui::ComboBox::from_id_source("Size Type")
-                        .selected_text(&node_settings.size_type.to_string())
-                        .show_ui(ui, |ui| {
-                            ui.selectable_value(&mut node_settings.size_type, SizeType::Constant, "Constant");
-                            ui.selectable_value(&mut node_settings.size_type, SizeType::Ramp, "Ramp");
-                        });
-                    ui.end_row();
-
-                    match node_settings.size_type {
-                        SizeType::Constant => {
-                            grid_label(ui, "Constant");
-                            ui.add(egui::Slider::new(&mut node_settings.size_constant, 0.1..=10.0));
-                            ui.end_row();
-                        },
-                        SizeType::Ramp => {
-                            let (source, _) = &mut node_settings.size_ramp;
-                            source_combox("Size Ramp Source", &models.data_model.node_data.headers_index_str, source, ui);
-                            grid_label(ui, "Range");
-                            ui.horizontal(|ui| {
-                                ui.add(egui::DragValue::new(&mut node_settings.size_ramp.1[0]).speed(0.1));
-                                ui.label("—");
-                                ui.add(egui::DragValue::new(&mut node_settings.size_ramp.1[1]).speed(0.1));
-                            });
-                            ui.end_row();
-
-                            grid_label(ui, "");
-                            let _ = ui.button("Set Size");
-                            ui.end_row();
-                        }
-                    }
-                });
         });
     }
 
-    fn edge_inspector(&mut self, _models: &mut Models, _ui: &mut Ui) {
+    fn edge_inspector(&mut self, _models: &mut Models, ui: &mut Ui) {
+        inspector_section(ui, true, "Color", |ui| {
+            grid_label(ui, "Value");
+            ui.color_edit_button_srgba(&mut Color32::from_rgb(255, 255, 255));
+            ui.end_row();
+        });
 
+        inspector_section(ui, true, "Width", |ui| {
+            grid_label(ui, "Value");
+            ui.add(egui::Slider::new(&mut 1.0, 0.1..=10.0));
+            ui.end_row();
+        });
     }
 
-    fn scene_inspector(&mut self, _models: &mut Models, _ui: &mut Ui) {
-
+    fn scene_inspector(&mut self, _models: &mut Models, ui: &mut Ui) {
+        inspector_section(ui, true, "Camera", |ui| {
+            ui.end_row();
+        });
+        inspector_section(ui, true, "Composite", |ui| {
+            ui.end_row();
+        });
     }
 
     fn setting_inspector(&mut self, models: &mut Models, ui: &mut Ui) {
 
-        let (header, _) = grid_header(ui, true, "Output", "");
-        header.body(|ui| {
-            inspector_grid("Output")
-                .show(ui, |ui| {
-                    grid_label(ui, "Folder");
-                    ui.horizontal(|ui| {
-                        ui.with_layout(egui::Layout::right_to_left(), |ui| {
+        inspector_section(ui, true, "Output", |ui| {
+            grid_label(ui, "Folder");
+            ui.horizontal(|ui| {
+                ui.with_layout(egui::Layout::right_to_left(), |ui| {
 
-                            ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
+                    ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
 
-                            if ui.button("•••").clicked() {
-                                models.app_model.output_folder = path_to_string(&pick_folder()).unwrap_or(models.app_model.output_folder.clone());
-                            }
+                    if ui.button("•••").clicked() {
+                        models.app_model.output_folder = path_to_string(&pick_folder()).unwrap_or(models.app_model.output_folder.clone());
+                    }
 
-                            ui.vertical_centered_justified(|ui| {
-                                ui.add(
-                                    egui::TextEdit::singleline(&mut models.app_model.output_folder)
-                                        // .hint_text("未识别的路径")
-                                        .desired_width(200.)
-                                );
-                            });
-
-                        });
+                    ui.vertical_centered_justified(|ui| {
+                        ui.add(
+                            egui::TextEdit::singleline(&mut models.app_model.output_folder)
+                                // .hint_text("未识别的路径")
+                                .desired_width(200.)
+                        );
                     });
-                    ui.end_row();
 
                 });
+            });
+            ui.end_row();
+
         });
 
     }
@@ -376,28 +375,27 @@ fn inspector_grid(id: &str) -> egui::Grid {
 fn grid_label(ui: &mut egui::Ui, title: &str) {
     let label = format!("{}", title);
     ui.horizontal(|ui| {
-        ui.set_max_width(65.);
-        ui.add(
-            egui::Label::new(egui::RichText::new(label)).wrap(true)
-        )
+        ui.set_width(100.);
+        ui.with_layout(egui::Layout::right_to_left(), |ui| {
+            ui.add(
+                egui::Label::new(egui::RichText::new(label)).wrap(true)
+            )
+        });
     });
 }
 
-fn grid_header<'a>(ui: &'a mut egui::Ui, default_open: bool, title: &str, hint: &str) -> (HeaderResponse<'a, ()>, bool) {
-    let id = ui.make_persistent_id(title);
-    let header = egui::collapsing_header::CollapsingState::load_with_default_open(ui.ctx(), id, default_open);
-    let is_header_open = header.is_open();
-    return (header
-        .show_header(ui, |ui| {
-            if is_header_open {
-                ui.strong(title);
-            } else {
-                ui.horizontal(|ui| {
-                    ui.strong(title);
-                    ui.with_layout(egui::Layout::right_to_left(), |ui| {
-                        ui.weak(hint);
-                    });
-                });
-            }
-        }), is_header_open)
+
+fn inspector_section<R>(ui: &mut Ui, default_open: bool, title: &str, add_contents: impl FnOnce(&mut Ui) -> R ) -> CollapsingResponse<R> {
+    CollapsingHeader::new(title)
+        .default_open(default_open)
+        .show(ui, |ui| {
+            // ui.add_space(6.0);
+            let r = inspector_grid(title)
+                .show(ui, |ui| {
+                    add_contents(ui)
+                }).inner;
+            // ui.add_space(6.0);
+
+            r
+        })
 }
