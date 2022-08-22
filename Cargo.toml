@@ -48,3 +48,6 @@ strum = { version = "0.24.1", features = ["derive"] }
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
 chrono = "0.4.22"
 lazy_static = "1.4.0"
+
+[patch.crates-io]
+naga = { path = "./lib/naga" }
