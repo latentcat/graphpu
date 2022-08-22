@@ -3,3 +3,6 @@
 /.vscode
 .DS_Store
 /lib
+/lib/*
+lib/egui
+lib/naga

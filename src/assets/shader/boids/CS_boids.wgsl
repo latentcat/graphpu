@@ -85,7 +85,7 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     atomicStore(&springForceSrc[index * 3u + 1u], 0);
     atomicStore(&springForceSrc[index * 3u + 2u], 0);
     let target_node: u32 = index * 3u + 2u;
-    atomicExchange(&springForceSrc[target_node], 0);
+    let aa = atomicExchange(&springForceSrc[target_node], 0);
 }
 
 @compute

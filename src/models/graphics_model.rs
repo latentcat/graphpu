@@ -231,9 +231,9 @@ impl GraphicsResources {
             include_str!("../assets/shader/boids/CS_boids.wgsl"),
         ];
 
-        let mut shaders = shader_files.par_iter().map(|shader_file| {
+        let mut shaders = shader_files.par_iter().map(|shader_file| unsafe {
 
-            let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            let shader = device.create_shader_module_unchecked(wgpu::ShaderModuleDescriptor {
                 label: None,
                 source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(shader_file)),
             });
