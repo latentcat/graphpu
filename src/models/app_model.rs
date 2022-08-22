@@ -40,7 +40,7 @@ pub enum InspectorTab {
     Graph,
     Node,
     Edge,
-    Scene,
+    Camera,
     Options,
 }
 

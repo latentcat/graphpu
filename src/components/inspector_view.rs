@@ -114,7 +114,7 @@ impl AppView for InspectorView {
                                     ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Edge, "Edge");
                                 });
                                 columns[3].vertical_centered_justified(|ui| {
-                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Scene, "Scene");
+                                    ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Camera, "Camera");
                                 });
                                 columns[4].vertical_centered_justified(|ui| {
                                     ui.selectable_value(&mut models.app_model.inspector_tab, InspectorTab::Options, "Options");
@@ -134,8 +134,8 @@ impl AppView for InspectorView {
                                     InspectorTab::Graph => self.graph_inspector(models, ui),
                                     InspectorTab::Node => self.node_inspector(models, ui),
                                     InspectorTab::Edge => self.edge_inspector(models, ui),
-                                    InspectorTab::Scene => self.scene_inspector(models, ui),
-                                    InspectorTab::Options => self.setting_inspector(models, ui),
+                                    InspectorTab::Camera => self.camera_inspector(models, ui),
+                                    InspectorTab::Options => self.options_inspector(models, ui),
                                 };
 
                             });
@@ -150,7 +150,11 @@ impl AppView for InspectorView {
 impl InspectorView {
     fn graph_inspector(&mut self, models: &mut Models, ui: &mut Ui) {
         let node_settings = &mut models.data_model.node_settings;
-        // TODO: constant editor
+
+        inspector_section(ui, true, "Transform", |ui| {
+            grid_label(ui, "");
+            ui.end_row();
+        });
 
         inspector_section(ui, true, "Layout", |ui| {
 
@@ -180,16 +184,10 @@ impl InspectorView {
             ui.end_row();
         });
 
-        inspector_section(ui, true, "Transform", |ui| {
-            grid_label(ui, "");
-            ui.end_row();
-        });
-
     }
 
     fn node_inspector(&mut self, models: &mut Models, ui: &mut Ui) {
         let node_settings = &mut models.data_model.node_settings;
-        // TODO: constant editor
 
         inspector_section(ui, true, "Color", |ui| {
             grid_label(ui, "Type");
@@ -301,8 +299,11 @@ impl InspectorView {
         });
     }
 
-    fn scene_inspector(&mut self, _models: &mut Models, ui: &mut Ui) {
-        inspector_section(ui, true, "Camera", |ui| {
+    fn camera_inspector(&mut self, _models: &mut Models, ui: &mut Ui) {
+        inspector_section(ui, true, "Transform", |ui| {
+            ui.end_row();
+        });
+        inspector_section(ui, true, "View", |ui| {
             ui.end_row();
         });
         inspector_section(ui, true, "Composite", |ui| {
@@ -310,7 +311,7 @@ impl InspectorView {
         });
     }
 
-    fn setting_inspector(&mut self, models: &mut Models, ui: &mut Ui) {
+    fn options_inspector(&mut self, models: &mut Models, ui: &mut Ui) {
 
         inspector_section(ui, true, "Output", |ui| {
             grid_label(ui, "Folder");
