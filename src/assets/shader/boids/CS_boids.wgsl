@@ -39,24 +39,17 @@ fn random_xy(seed_x: u32, seed_y: u32) -> f32 {
     return f32(hash(hash(seed_x) + seed_y)) / 4294967295.0; // 2^32-1
 }
 
-//fn interlocked_add_float(spring_force: ptr<function, atomic<u32>>, value: f32) {
-//    var i_val: u32 = bitcast<u32>(value);
-//    var tmp0: u32 = 0u;
-//    var tmp1: u32;
-//    while (true)
-//    {
-//
-////    var result = atomicCompareExchangeWeak(&nodeSrc[source_node].spring_force_x, 0u, 1u);
-//        var tmp1 = atomicLoad(spring_force);
-//        if (tmp1 == tmp0) {
-//            break;
-//        }
-//        tmp0 = tmp1;
-//        i_val = bitcast<u32>(value + bitcast<f32>(tmp1));
-//    }
-//}
-
-
+fn atomic_add_f32(springIndex: u32, updateValue: f32) {
+    let atomic_ptr = &springForceSrc[springIndex];
+    var assumed: i32 = atomicLoad(atomic_ptr);
+    var success = false;
+    for (; success == false;) {
+        assumed = atomicLoad(atomic_ptr);
+        let new_value = bitcast<f32>(assumed) + updateValue;
+        let new_u32 = bitcast<i32>(new_value);
+        success = atomicCompareExchangeWeak(atomic_ptr, assumed, new_u32);
+    }
+}
 
 @compute
 @workgroup_size(128)
@@ -124,15 +117,12 @@ fn attractive_force(@builtin(global_invocation_id) global_invocation_id: vec3<u3
 
     var dir = nodeSrc[target_node].position - nodeSrc[source_node].position;
 
-    var dir_i32 = vec3<i32>(dir * 10000.0);
-
-    atomicAdd(&springForceSrc[source_node * 3u + 0u], dir_i32.x);
-    atomicAdd(&springForceSrc[source_node * 3u + 1u], dir_i32.y);
-    atomicAdd(&springForceSrc[source_node * 3u + 2u], dir_i32.z);
-    atomicAdd(&springForceSrc[target_node * 3u + 0u], -dir_i32.x);
-    atomicAdd(&springForceSrc[target_node * 3u + 1u], -dir_i32.y);
-    atomicAdd(&springForceSrc[target_node * 3u + 2u], -dir_i32.z);
-
+    atomic_add_f32(source_node * 3u + 0u, dir.x);
+    atomic_add_f32(source_node * 3u + 1u, dir.y);
+    atomic_add_f32(source_node * 3u + 2u, dir.z);
+    atomic_add_f32(target_node * 3u + 0u, -dir.x);
+    atomic_add_f32(target_node * 3u + 1u, -dir.y);
+    atomic_add_f32(target_node * 3u + 2u, -dir.z);
 }
 
 var<workgroup> smin: array<vec3<f32>, 128>;
@@ -214,19 +204,15 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 
     var spring_force = vec3<f32>(0.0);
 
-    spring_force.x = f32( atomicLoad(&springForceSrc[index * 3u + 0u]) );
-    spring_force.y = f32( atomicLoad(&springForceSrc[index * 3u + 1u]) );
-    spring_force.z = f32( atomicLoad(&springForceSrc[index * 3u + 2u]) );
+    spring_force.x = bitcast<f32>(atomicLoad(&springForceSrc[index * 3u + 0u]));
+    spring_force.y = bitcast<f32>(atomicLoad(&springForceSrc[index * 3u + 1u]));
+    spring_force.z = bitcast<f32>(atomicLoad(&springForceSrc[index * 3u + 2u]));
 
     atomicStore(&springForceSrc[index * 3u + 0u], 0);
     atomicStore(&springForceSrc[index * 3u + 1u], 0);
     atomicStore(&springForceSrc[index * 3u + 2u], 0);
 
-    spring_force *= 0.001;
-
-//    var spring_force = bitcast<vec3<f32>>();
-
-    var vForce: vec3<f32> = electron_force * 0.05 + gravaty_force * 10. + spring_force * 100.0;
+    var vForce: vec3<f32> = electron_force * 0.05 + gravaty_force * 10. + spring_force * 1000.0;
 
     vVel = vVel + vForce * 0.04;
 
