@@ -41,13 +41,16 @@ fn random_xy(seed_x: u32, seed_y: u32) -> f32 {
 
 fn atomic_add_f32(springIndex: u32, updateValue: f32) {
     let atomic_ptr = &springForceSrc[springIndex];
-    var assumed: i32 = atomicLoad(atomic_ptr);
-    var success = false;
-    for (; success == false;) {
-        assumed = atomicLoad(atomic_ptr);
-        let new_value = bitcast<f32>(assumed) + updateValue;
-        let new_u32 = bitcast<i32>(new_value);
-        success = atomicCompareExchangeWeak(atomic_ptr, assumed, new_u32);
+    var new_u32 = bitcast<i32>(updateValue);
+    var assumed: i32 = 0;
+    var origin: i32;
+    while (true) {
+        origin = atomicCompareExchangeWeak(atomic_ptr, assumed, new_u32);
+        if (origin == assumed) {
+            break;
+        }
+        assumed = origin;
+        new_u32 = bitcast<i32>(bitcast<f32>(origin) + updateValue);
     }
 }
 
