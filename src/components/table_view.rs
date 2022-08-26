@@ -56,7 +56,7 @@ impl AppView for TableView {
                     .show(ui, |ui| {
                         TableBuilder::new(ui)
                             .striped(true)
-                            .cell_layout(egui::Layout::left_to_right())
+                            .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
                             .columns(Size::initial(100.0).at_least(60.0), if data_headers.len() > 0 { data_headers.len() } else { 0 })
                             .columns(Size::remainder().at_least(60.0), 1)
                             .resizable(true)

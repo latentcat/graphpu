@@ -28,7 +28,7 @@ impl AppView for DockView {
 
                     ui.allocate_ui_with_layout(
                         ui.available_size(),
-                        egui::Layout::right_to_left(),
+                        egui::Layout::right_to_left(egui::Align::Center),
                         |ui| {
 
                             if let Some(graphics_resources) = &mut models.graphics_model.graphics_resources  {

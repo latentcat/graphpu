@@ -37,7 +37,7 @@ impl AppView for InspectorView {
                         }
 
                         ui.with_layout(
-                            egui::Layout::right_to_left(),
+                            egui::Layout::right_to_left(egui::Align::Center),
                             |ui| {
                                 let folder_open = ui.button("🗁");
                                 if folder_open.clicked() {
@@ -67,7 +67,7 @@ impl AppView for InspectorView {
                         // Import Section / File Section
                         if matches!(models.app_model.import_state, ImportState::Success) {
                             ui.horizontal(|ui| {
-                                ui.with_layout(egui::Layout::right_to_left(), |ui| {
+                                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
 
                                     ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
                                     let remove_data_button = ui.button("🗑");
@@ -316,7 +316,7 @@ impl InspectorView {
         inspector_section(ui, true, "Output", |ui| {
             grid_label(ui, "Folder");
             ui.horizontal(|ui| {
-                ui.with_layout(egui::Layout::right_to_left(), |ui| {
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
 
                     ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
 
@@ -377,7 +377,7 @@ fn grid_label(ui: &mut egui::Ui, title: &str) {
     let label = format!("{}", title);
     ui.horizontal(|ui| {
         ui.set_width(100.);
-        ui.with_layout(egui::Layout::right_to_left(), |ui| {
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             ui.add(
                 egui::Label::new(egui::RichText::new(label)).wrap(true)
             )

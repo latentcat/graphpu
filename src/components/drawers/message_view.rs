@@ -20,7 +20,7 @@ impl AppView for MessageView {
 
             ui.spacing_mut().interact_size = Vec2::new(4.0, 4.0);
 
-            egui::ScrollArea::vertical().stick_to_bottom().auto_shrink([false; 2]).show_rows(
+            egui::ScrollArea::vertical().stick_to_bottom(true).auto_shrink([false; 2]).show_rows(
                 ui,
                 row_height,
                 num_rows,
@@ -47,10 +47,10 @@ impl AppView for MessageView {
                                     ui.add_space(5.5);
 
                                     ui.horizontal(|ui| {
-                                        ui.with_layout(egui::Layout::right_to_left(), |ui| {
+                                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                                             ui.add_space(6.0);
                                             ui.label(time_text);
-                                            ui.allocate_ui_with_layout(ui.available_size(), egui::Layout::left_to_right(), |ui| {
+                                            ui.allocate_ui_with_layout(ui.available_size(), egui::Layout::left_to_right(egui::Align::Center), |ui| {
                                                 ui.label(title_text);
                                             });
                                         })

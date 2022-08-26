@@ -75,7 +75,7 @@ impl AppView for MenuBarView {
                         ui.separator();
 
                         if ui.button("Quit").clicked() {
-                            frame.quit();
+                            frame.close();
                         }
                         spacing_ui_end(ui);
                     });

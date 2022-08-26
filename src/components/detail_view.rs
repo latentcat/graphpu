@@ -14,7 +14,7 @@ impl AppView for DetailView {
         egui::TopBottomPanel::bottom("detail").show_inside(ui, |ui| {
 
             ui.horizontal(|ui| {
-                ui.with_layout(egui::Layout::right_to_left(), |ui| {
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     ui.label(
                         egui::RichText::new(
                             format!(
@@ -29,7 +29,7 @@ impl AppView for DetailView {
 
                     ui.allocate_ui_with_layout(
                         ui.available_size(),
-                        egui::Layout::left_to_right(),
+                        egui::Layout::left_to_right(egui::Align::Center),
                         |ui| {
                             let messages = messenger();
                             if messages.len() > 0 {

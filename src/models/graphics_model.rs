@@ -83,7 +83,7 @@ impl GraphicsModel {
             is_computing: false,
             is_dispatching: false,
             is_hover_toolbar: false,
-            compute_render_state: cc.render_state.as_ref().unwrap().clone(),
+            compute_render_state: cc.wgpu_render_state.as_ref().unwrap().clone(),
             graphics_resources: None,
         }
     }

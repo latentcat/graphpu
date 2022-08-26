@@ -146,7 +146,7 @@ impl AppView for GraphicsView {
                             ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
                             ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
 
-                            ui.with_layout(egui::Layout::right_to_left(), |ui| {
+                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                                 ui.horizontal(|ui| {
                                     if let Some(graphics_resources) = &mut models.graphics_model.graphics_resources {
 

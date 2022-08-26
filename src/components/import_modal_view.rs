@@ -57,7 +57,7 @@ impl ImportModal {
                         }
                         ui.allocate_ui_with_layout(
                             ui.available_size(),
-                            egui::Layout::right_to_left(),
+                            egui::Layout::right_to_left(egui::Align::Center),
                             |ui| match self.page_index {
                                 Page::FilePicker => {
                                     ui.add_enabled_ui(!self.edge_file_path.is_empty(), |ui| {

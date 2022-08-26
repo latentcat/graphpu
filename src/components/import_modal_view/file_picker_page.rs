@@ -27,7 +27,7 @@ pub fn show(parent: &mut ImportModal, _: &mut Models, ui: &mut Ui) {
         .show(ui, |ui| {
             ui.add(egui::Label::new("Node File"));
             ui.horizontal(|ui| {
-                ui.with_layout(egui::Layout::right_to_left(), |ui| {
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
 
                     ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
 
@@ -49,7 +49,7 @@ pub fn show(parent: &mut ImportModal, _: &mut Models, ui: &mut Ui) {
 
             ui.add(egui::Label::new("Edge File*"));
             ui.horizontal(|ui| {
-                ui.with_layout(egui::Layout::right_to_left(), |ui| {
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
 
                     ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
 

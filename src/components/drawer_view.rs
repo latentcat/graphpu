@@ -22,7 +22,7 @@ impl AppView for DrawerView {
                 drawer_title_frame(ui.style()).show(ui, |ui| {
 
                     ui.horizontal(|ui| {
-                        ui.with_layout(egui::Layout::right_to_left(), |ui| {
+                        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
 
                             let (egui_id, rect) = ui.allocate_space(Vec2::splat(15.0));
                             if close_button(ui, egui_id, rect).clicked() {
@@ -32,7 +32,7 @@ impl AppView for DrawerView {
 
                             ui.allocate_ui_with_layout(
                                 ui.available_size(),
-                                egui::Layout::left_to_right(),
+                                egui::Layout::left_to_right(egui::Align::Center),
                                 |ui| {
 
                                     let title = match models.app_model.dock_stage {
