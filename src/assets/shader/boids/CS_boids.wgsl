@@ -616,10 +616,10 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
                         pd = 8u;
                     }
                 }
-                depth--;
-                if (depth < 0u) {
+                if (depth == 0u) {
                     break;
                 }
+                depth--;
             }
             nodeSrc[index].force += af;
         }
