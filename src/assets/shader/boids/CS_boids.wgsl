@@ -112,8 +112,8 @@ fn cal_mass(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     let source_node: u32 = edge[0];
     let target_node: u32 = edge[1];
 
-//    atomicAdd(&nodeSrc[source_node].mass, 1u);
-//    atomicAdd(&nodeSrc[target_node].mass, 1u);
+    atomicAdd(&nodeSrc[source_node].mass, 1u);
+    atomicAdd(&nodeSrc[target_node].mass, 1u);
 }
 
 @compute
@@ -143,7 +143,7 @@ fn cal_gravity_force(@builtin(global_invocation_id) global_invocation_id: vec3<u
         }
     }
 //    nodeSrc[index].force +=  -pos * min(gravity_force, 10.0);
-    nodeSrc[index].force +=  -pos * 0.1;
+    nodeSrc[index].force +=  -pos * 2.;
 }
 
 @compute
@@ -626,7 +626,7 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
                 }
                 depth--;
             }
-            nodeSrc[order].force += af;
+            nodeSrc[order].force += af * 0.5;
         }
     }
 }
@@ -654,7 +654,7 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     atomicStore(&springForceSrc[index * 3u + 0u], 0);
     atomicStore(&springForceSrc[index * 3u + 1u], 0);
     atomicStore(&springForceSrc[index * 3u + 2u], 0);
-    spring_force *= 10.0;
+    spring_force *= 100.0;
 
     nodeSrc[index].force += spring_force;
 }
@@ -673,9 +673,9 @@ fn displacement(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) 
 
     let d_force = nodeSrc[index].force - nodeSrc[index].prev_force;
     let swg = sqrt(dot(d_force, d_force));
-    let factor = global_speed / (1.0 + sqrt(global_speed * swg));
+    let factor = global_speed / (1.0 + sqrt(global_speed * swg)) / f32(nodeSrc[index].mass);
     
-    nodeSrc[index].position += nodeSrc[index].force * factor * 0.05;
+    nodeSrc[index].position += nodeSrc[index].force * factor * 0.01;
     nodeSrc[index].prev_force = nodeSrc[index].force;
     nodeSrc[index].force = vec3<f32>(0.0);
 }
