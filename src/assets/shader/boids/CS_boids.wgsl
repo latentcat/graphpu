@@ -24,7 +24,7 @@ struct BHTreeNode {
     position: vec3<f32>,
     mass: atomic<i32>,
     count: i32,
-    start: i32,
+    start: atomic<i32>,
     sort: i32,
 }
 
@@ -216,8 +216,8 @@ fn bounding_box() {
     bhTree.radius = max(max(box.x, box.y), box.z) * 0.5;
     bhTree.bottom = tree_node_count;
     atomicStore(&treeNode[tree_node_count].mass, -1);
+    atomicStore(&treeNode[tree_node_count].start, 0);
     treeNode[tree_node_count].position = (bound_min_min + bound_max_max) * 0.5;
-    treeNode[tree_node_count].start = 0;
     treeNode[tree_node_count].count = -1;
     treeNode[tree_node_count].sort = 0;
     for (var i = 0u; i < 8u; i++) {
@@ -376,7 +376,7 @@ fn clear_2(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     treeNode[index].position = vec3<f32>(0.0);
     treeNode[index].count = -1;
     treeNode[index].sort = 0;
-    treeNode[index].start = -1;
+    atomicStore(&treeNode[index].start, 0);
     atomicStore(&treeNode[index].mass, -1);
 }
 
@@ -515,7 +515,7 @@ fn sort(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     var index = tree_node_count + 1u - inc + global_invocation_id.x;
 
     while (index >= bottom) {
-        var start = treeNode[index].start;
+        var start = atomicLoad(&treeNode[index].start);
         if (start >= 0) {
             var j = 0u;
             for (var i = 0u; i < 8u; i++) {
@@ -527,7 +527,7 @@ fn sort(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
                     }
                     j++;
                     if (ch >= i32(node_count)) {
-                        treeNode[ch].start = start;
+                        atomicStore(&treeNode[ch].start, start);
                         start += treeNode[ch].count;
                     } else {
                         treeNode[start].sort = ch;
