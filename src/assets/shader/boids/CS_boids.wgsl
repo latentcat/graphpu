@@ -142,8 +142,9 @@ fn cal_gravity_force(@builtin(global_invocation_id) global_invocation_id: vec3<u
             gravity_force = 0.0;
         }
     }
+    nodeSrc[index].force +=  -pos * gravity_force;
 //    nodeSrc[index].force +=  -pos * min(gravity_force, 10.0);
-    nodeSrc[index].force +=  -pos * 2.;
+//    nodeSrc[index].force +=  -pos * 2.;
 }
 
 @compute
@@ -626,7 +627,7 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
                 }
                 depth--;
             }
-            nodeSrc[order].force += af * 0.5;
+            nodeSrc[order].force += af;
         }
     }
 }
@@ -654,7 +655,7 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     atomicStore(&springForceSrc[index * 3u + 0u], 0);
     atomicStore(&springForceSrc[index * 3u + 1u], 0);
     atomicStore(&springForceSrc[index * 3u + 2u], 0);
-    spring_force *= 100.0;
+    spring_force *= 1000.0;
 
     nodeSrc[index].force += spring_force;
 }
