@@ -126,7 +126,7 @@ fn cal_gravity_force(@builtin(global_invocation_id) global_invocation_id: vec3<u
     }
 
     // TODO: Global Param
-    let strong_gravity = false;
+    let strong_gravity = true;
     let k_gravity = 1.0;
 
     let pos = nodeSrc[index].position;
@@ -378,7 +378,7 @@ fn clear_2(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     treeNode[index].position = vec3<f32>(0.0);
     treeNode[index].count = -1;
     treeNode[index].sort = 0;
-    atomicStore(&treeNode[index].start, 0);
+    atomicStore(&treeNode[index].start, -1);
     atomicStore(&treeNode[index].mass, -1);
 }
 

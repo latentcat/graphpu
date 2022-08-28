@@ -242,8 +242,9 @@ impl GraphicsResources {
     pub fn new(render_state: egui_wgpu::RenderState, model: &mut DataModel) -> Self {
 
         // 从 Graphics Model 中获取 Node 和 Edge 的数量
-        let node_count: u32 = model.status.node_count as u32;
-        let edge_count: u32 = model.status.edge_count as u32;
+        let node_count = model.status.node_count as u32;
+        let edge_count = model.status.edge_count as u32;
+        let tree_node_count = get_tree_node_count(&node_count);
 
         // Node 和 Edge 结构体的占内存大小，用于计算 Buffer 长度
         let node_struct_size = mem::size_of::<Node>();
@@ -346,7 +347,7 @@ impl GraphicsResources {
             ((edge_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
 
         let tree_node_work_group_count = 
-            (((node_count as f32) * 2.0) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
+            (tree_node_count as f32 / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
 
         // Buffer 创建
 
@@ -433,7 +434,7 @@ impl GraphicsResources {
         });
 
         // Tree Node Buffer
-        let tree_node_buffer_size = pad_size(mem::size_of::<BHTreeNode>(), 2 * node_count + 1);
+        let tree_node_buffer_size = pad_size(mem::size_of::<BHTreeNode>(), tree_node_count + 1);
         let tree_node_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Tree Node Buffer"),
             size: tree_node_buffer_size,
@@ -442,7 +443,7 @@ impl GraphicsResources {
         });
 
         // Tree Child Buffer
-        let tree_child_buffer_size = pad_size(mem::size_of::<i32>(), (2 * node_count + 1) * 8);
+        let tree_child_buffer_size = pad_size(mem::size_of::<i32>(), (tree_node_count + 1) * 8);
         let tree_child_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Tree Child Buffer"),
             size: tree_child_buffer_size,
@@ -980,4 +981,12 @@ fn pad_size(node_struct_size: usize, num_particles: u32) -> wgpu::BufferAddress 
     let padded_size = (padded_size * num_particles as u64) as wgpu::BufferAddress;
 
     padded_size
+}
+
+fn get_tree_node_count(node_count: &u32) -> u32 {
+    let mut tree_node_count = node_count * 2;
+    while tree_node_count & (PARTICLES_PER_GROUP - 1) != 0 {
+        tree_node_count += 1;
+    }
+    tree_node_count - 1
 }
