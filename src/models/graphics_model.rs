@@ -47,6 +47,22 @@ pub struct Bound {
     _bound_max: [f32; 3],
 }
 
+#[repr(C)]
+pub struct BHTree {
+    _max_depth: u32,
+    _bottom: u32,
+    _radius: f32,
+}
+
+#[repr(C)]
+pub struct BHTreeNode {
+    _position: [f32; 3],
+    _mass: i32,
+    _count: i32,
+    _start: i32,
+    _sort: i32,
+}
+
 // 计算方法的类型
 // Continuous 为需要连续迭代模拟的方法，如 Force Atlas 2
 // OneStep 为单次方法，如 Randomize
@@ -141,6 +157,12 @@ pub struct ComputePipelines {
     attractive_force:      wgpu::ComputePipeline,
     reduction_bounding:    wgpu::ComputePipeline,
     bounding_box:          wgpu::ComputePipeline,
+    clear_1:               wgpu::ComputePipeline,
+    tree_building:         wgpu::ComputePipeline,
+    clear_2:               wgpu::ComputePipeline,
+    summarization:         wgpu::ComputePipeline,
+    sort:                  wgpu::ComputePipeline,
+    electron_force:        wgpu::ComputePipeline,
     compute:               wgpu::ComputePipeline,
     displacement:          wgpu::ComputePipeline,
     randomize:             wgpu::ComputePipeline,
@@ -183,6 +205,10 @@ pub struct GraphicsResources {
     node_buffer:                    wgpu::Buffer,
     edge_buffer:                    wgpu::Buffer,
     render_uniform_buffer:          wgpu::Buffer,
+    bounding_buffer:                wgpu::Buffer,
+    tree_buffer:                    wgpu::Buffer,
+    tree_node_buffer:               wgpu::Buffer,
+    tree_child_buffer:              wgpu::Buffer,
 
     // Bind Group
     compute_bind_group:             wgpu::BindGroup,
@@ -201,6 +227,7 @@ pub struct GraphicsResources {
     // 线程组数 = 线程数 / 每组线程数
     node_work_group_count:          u32,
     edge_work_group_count:          u32,
+    tree_node_work_group_count:     u32,
     pub compute_frame_count:        u32,                      // 帧计数器
     pub render_frame_count:         u32,                      // 帧计数器
 
@@ -296,6 +323,12 @@ impl GraphicsResources {
             attractive_force:       graph_compute.create_pipeline("attractive_force"),
             reduction_bounding:     graph_compute.create_pipeline("reduction_bounding"),
             bounding_box:           graph_compute.create_pipeline("bounding_box"),
+            clear_1:                graph_compute.create_pipeline("clear_1"),
+            tree_building:          graph_compute.create_pipeline("tree_building"),
+            clear_2:                graph_compute.create_pipeline("clear_2"),
+            summarization:          graph_compute.create_pipeline("summarization"),
+            sort:                   graph_compute.create_pipeline("sort"),
+            electron_force:         graph_compute.create_pipeline("electron_force"),
             compute:                graph_compute.create_pipeline("main"),
             displacement:           graph_compute.create_pipeline("displacement"),
             randomize:              graph_compute.create_pipeline("randomize"),
@@ -311,6 +344,9 @@ impl GraphicsResources {
 
         let edge_work_group_count =
             ((edge_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
+
+        let tree_node_work_group_count = 
+            (((node_count as f32) * 2.0) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
 
         // Buffer 创建
 
@@ -387,6 +423,33 @@ impl GraphicsResources {
                 | wgpu::BufferUsages::COPY_DST,
         });
 
+        // Tree Buffer
+        let tree_buffer_size = pad_size(mem::size_of::<BHTree>(), 1);
+        let tree_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Tree Buffer"),
+            size: tree_buffer_size,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false
+        });
+
+        // Tree Node Buffer
+        let tree_node_buffer_size = pad_size(mem::size_of::<BHTreeNode>(), 2 * node_count + 1);
+        let tree_node_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Tree Node Buffer"),
+            size: tree_node_buffer_size,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false
+        });
+
+        // Tree Child Buffer
+        let tree_child_buffer_size = pad_size(mem::size_of::<i32>(), (2 * node_count + 1) * 8);
+        let tree_child_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Tree Child Buffer"),
+            size: tree_child_buffer_size,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false
+        });
+
         // 清空 Model 中的 Source Target List
         model.clear_source_target_list();
 
@@ -430,6 +493,18 @@ impl GraphicsResources {
                 wgpu::BindGroupEntry {
                     binding: 4,
                     resource: bounding_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 5,
+                    resource: tree_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 6,
+                    resource: tree_node_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 7,
+                    resource: tree_child_buffer.as_entire_binding(),
                 },
             ],
             label: None,
@@ -495,6 +570,10 @@ impl GraphicsResources {
             node_buffer,
             edge_buffer,
             render_uniform_buffer,
+            bounding_buffer,
+            tree_buffer,
+            tree_node_buffer,
+            tree_child_buffer,
             compute_bind_group,
             node_render_bind_group,
             edge_render_bind_group,
@@ -505,6 +584,7 @@ impl GraphicsResources {
             compute_pipelines,
             node_work_group_count,
             edge_work_group_count,
+            tree_node_work_group_count,
             compute_frame_count: 0,
             render_frame_count: 0,
             render_options: RenderOptions {
@@ -536,10 +616,6 @@ impl GraphicsResources {
             // compute pass
             let mut cpass =
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-            cpass.set_pipeline(&self.compute_pipelines.compute);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
-
             cpass.set_pipeline(&self.compute_pipelines.cal_gravity);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
@@ -555,7 +631,35 @@ impl GraphicsResources {
             cpass.set_pipeline(&self.compute_pipelines.bounding_box);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(1, 1, 1);
-        
+
+            cpass.set_pipeline(&self.compute_pipelines.clear_1);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.tree_node_work_group_count, 1, 1);
+
+            cpass.set_pipeline(&self.compute_pipelines.tree_building);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+
+            cpass.set_pipeline(&self.compute_pipelines.clear_2);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.tree_node_work_group_count, 1, 1);
+
+            cpass.set_pipeline(&self.compute_pipelines.summarization);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+
+            cpass.set_pipeline(&self.compute_pipelines.sort);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+
+            // cpass.set_pipeline(&self.compute_pipelines.electron_force);
+            // cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            // cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+
+            cpass.set_pipeline(&self.compute_pipelines.compute);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+
             cpass.set_pipeline(&self.compute_pipelines.displacement);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
@@ -832,6 +936,10 @@ impl GraphicsResources {
     pub fn dispose(&mut self) {
         self.node_buffer.destroy();
         self.edge_buffer.destroy();
+        self.bounding_buffer.destroy();
+        self.tree_buffer.destroy();
+        self.tree_node_buffer.destroy();
+        self.tree_child_buffer.destroy();
     }
 
 

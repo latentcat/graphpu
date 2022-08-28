@@ -14,12 +14,28 @@ struct Bound {
     bound_max: vec3<f32>,
 }
 
+struct BHTree {
+    max_depth: atomic<u32>,
+    bottom: atomic<u32>,
+    radius: f32,
+}
+
+struct BHTreeNode {
+    position: vec3<f32>,
+    mass: atomic<i32>,
+    count: i32,
+    start: i32,
+    sort: i32,
+}
+
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
 @group(0) @binding(1) var<storage, read_write> nodeSrc: array<Node>;
 @group(0) @binding(2) var<storage, read> edgeSrc: array<vec2<u32>>;
 @group(0) @binding(3) var<storage, read_write> springForceSrc: array<atomic<i32>>;
 @group(0) @binding(4) var<storage, read_write> bounding: array<Bound>;
-
+@group(0) @binding(5) var<storage, read_write> bhTree: BHTree;
+@group(0) @binding(6) var<storage, read_write> treeNode: array<BHTreeNode>;
+@group(0) @binding(7) var<storage, read_write> treeChild: array<atomic<i32>>;
 
 fn hash(s: u32) -> u32 {
     var t : u32 = s;
@@ -158,7 +174,6 @@ var<workgroup> smax: array<vec3<f32>, 128>;
 @compute
 @workgroup_size(128)
 fn reduction_bounding(
-    @builtin(local_invocation_id) local_id: vec3<u32>,
     @builtin(local_invocation_index) local_index: u32,
     @builtin(global_invocation_id) global_id: vec3<u32>,
     @builtin(workgroup_id) group_id: vec3<u32>,
@@ -195,8 +210,419 @@ fn bounding_box() {
         bound_min_min = min(bound_min_min, bounding[i].bound_min);
         bound_max_max = max(bound_max_max, bounding[i].bound_max);
     }
-    bounding[0].bound_min = bound_min_min;
-    bounding[0].bound_max = bound_max_max;
+
+    let box = bound_max_max - bound_min_min;
+    let tree_node_count = arrayLength(&treeNode) - 1u;
+    bhTree.radius = max(max(box.x, box.y), box.z) * 0.5;
+    bhTree.bottom = tree_node_count;
+    atomicStore(&treeNode[tree_node_count].mass, -1);
+    treeNode[tree_node_count].position = (bound_min_min + bound_max_max) * 0.5;
+    treeNode[tree_node_count].start = 0;
+    treeNode[tree_node_count].count = -1;
+    treeNode[tree_node_count].sort = 0;
+    for (var i = 0u; i < 8u; i++) {
+        atomicStore(&treeChild[tree_node_count * 8u + i], -1);
+    }
+}
+
+@compute
+@workgroup_size(128)
+fn clear_1(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
+    let total = arrayLength(&treeNode) - 1u;
+    let index = global_invocation_id.x;
+    if (index >= total) {
+        return;
+    }
+
+    for (var i = 0u; i < 8u; i++) {
+        atomicStore(&treeChild[index * 8u + i], -1);
+    }
+}
+
+@compute
+@workgroup_size(128)
+fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
+    var index = global_invocation_id.x;
+    let node_count = arrayLength(&nodeSrc);
+    let tree_node_count = arrayLength(&treeNode) - 1u;
+    let root_pos = treeNode[tree_node_count].position;
+    let inc = node_count; // should change
+
+    var skip = 1;
+    var pos: vec3<f32>;
+    var dp: vec3<f32>;
+    var rdp: vec3<f32>;
+    var n = tree_node_count;
+    var depth = 1u;
+    var local_max_depth = 1u;
+    var j = 0u;
+    var r = bhTree.radius * 0.5;
+
+    while (index < node_count) {
+        if (skip != 0) {
+            skip = 0;
+            pos = nodeSrc[index].position;
+            n = tree_node_count;
+            r = bhTree.radius * 0.5;
+            
+            let compare = step(root_pos, pos);
+            j = (u32(compare.x) << 0u) | (u32(compare.y) << 1u) + (u32(compare.z) << 2u); // 八个象限
+            dp = -r + compare * (2.0 * r);
+            rdp = root_pos + dp; // 所在象限的原点
+        }
+
+        atomicAdd(&treeChild[n * 8u + j], 0); // ...
+        var ch = atomicLoad(&treeChild[n * 8u + j]);
+
+        // 迭代至叶节点
+        while (ch >= i32(node_count)) { 
+            n = u32(ch);
+            depth++;
+            r *= 0.5;
+
+            let compare = step(rdp, pos);
+            j = (u32(compare.x) << 0u) | (u32(compare.y) << 1u) + (u32(compare.z) << 2u);
+            dp = -r + compare * (2.0 * r);
+
+            rdp += dp;
+            ch = atomicLoad(&treeChild[n * 8u + j]);
+        }
+
+        // 非 lock 状态
+        if (ch != -2) { 
+            let locked = n * 8u + j;
+            if (ch == -1) {
+                // 格子未被占用的话，直接尝试占用
+                let origin = atomicCompareExchangeWeak(&treeChild[locked], -1, i32(index));
+                if (origin == -1) {
+                    local_max_depth = max(depth, local_max_depth);
+                    index += inc;
+                    skip = 1;
+                }
+            } else {
+                // 格子已被占用，将其设置为 lock 状态
+                let origin = atomicCompareExchangeWeak(&treeChild[locked], i32(index), -2);
+                if (ch == origin) {
+                    // lock 成功，如果两个点的位置相同，做一点微小偏移就行了
+                    if (all(nodeSrc[ch].position == pos)) {
+                        nodeSrc[index].position *= 1.01;
+                        skip = 0;
+                        treeChild[locked] = ch;
+                        break;
+                    }
+
+                    // 两个点位置不同，则开始分裂
+                    var locked_ch = -1;
+                    loop {
+                        // 1. create new cell
+                        let cell = atomicSub(&bhTree.bottom, 1u) - 1u;
+                        if (cell <= node_count) {
+                            return;
+                        }
+                        
+                        if (locked_ch != -1) {
+                            atomicStore(&treeChild[n * 8u + j], i32(cell));
+                        }
+                        locked_ch = max(locked_ch, i32(cell));
+
+                        // 2. make newly created cell current
+                        depth++;
+                        n = cell;
+                        r *= 0.5;
+
+                        // 3. insert old body into current quadrant
+                        let compare = step(rdp, nodeSrc[ch].position);
+                        j = (u32(compare.x) << 0u) | (u32(compare.y) << 1u) + (u32(compare.z) << 2u);
+
+                        atomicStore(&treeChild[cell * 8u + j], ch);
+
+                        // 4. determin center + quadrant for cell of new body
+                        let compare = step(rdp, pos);
+                        j = (u32(compare.x) << 0u) | (u32(compare.y) << 1u) + (u32(compare.z) << 2u);
+                        dp = -r + compare * (2.0 * r);
+
+                        rdp += dp;
+
+                        // 5. visit this cell/chec if in use (possibly by old body)
+                        ch = atomicLoad(&treeChild[n * 8u + j]);
+                        if (ch < 0) {
+                            break;
+                        }
+                    };
+                    atomicStore(&treeChild[n * 8u + j], i32(index));
+                    local_max_depth = max(depth, local_max_depth);
+                    index += inc;
+                    skip = 2;
+                }
+            }
+        }
+        workgroupBarrier();
+        if (skip == 2) {
+            atomicStore(&treeChild[locked], locked_ch);
+        }
+    }
+    atomicMax(&bhTree.max_depth, local_max_depth);
+}
+
+@compute
+@workgroup_size(128)
+fn clear_2(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
+    let total = arrayLength(&treeNode) - 1u;
+    let index = global_invocation_id.x;
+    if (index >= total) {
+        return;
+    }
+    treeNode[index].position = vec3<f32>(0.0);
+    treeNode[index].count = -1;
+    treeNode[index].sort = 0;
+    treeNode[index].start = -1;
+    atomicStore(&treeNode[index].mass, -1);
+}
+
+@compute
+@workgroup_size(128)
+fn summarization(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
+    let bottom = atomicLoad(&bhTree.bottom);
+    let tree_node_count = arrayLength(&treeNode) - 1u;
+    let node_count = arrayLength(&nodeSrc);
+    let inc = node_count;
+    var index = (bottom & u32(-32)) + global_invocation_id.x;
+    if (index < bottom) {
+        index += inc;
+    }
+
+    // TODO: ch bounds check
+    var schild: array<u32, 8>;
+    var smass: array<i32, 8>;
+    let restart = index;
+    for (var j = 0; j < 5; j++) {
+        while (index <= tree_node_count) {
+            if (atomicLoad(&treeNode[index].mass) < 0) {
+                var ch = 0u;
+                var i = 0u;
+                for (i = 0u; i < 8u; i++) {
+                    ch = u32(atomicLoad(&treeChild[index * 8u + i]));
+                    schild[i] = ch;
+                    // atomicAdd(&treeNode[ch].mass, 0);
+                    smass[i] = atomicLoad(&treeNode[ch].mass);
+                    if (ch >= node_count && smass[i] < 0) {
+                        break;
+                    }
+                }
+                if (i == 8u) {
+                    var cm = 0;
+                    var pos = vec3<f32>(0.0);
+                    var cnt = 0;
+                    for (i = 0u; i < 8u; i++) {
+                        ch = schild[i];
+                        if (ch >= node_count) {
+                            let m = smass[i];
+                            cnt += treeNode[ch].count;
+                            pos += treeNode[ch].position * f32(m);
+                            cm += m;
+                        } else {
+                            let m = i32(atomicLoad(&nodeSrc[ch].mass));
+                            cnt += 1;
+                            pos += nodeSrc[ch].position * f32(m);
+                            cm += m;
+                        }
+                    }
+                    treeNode[index].count = cnt;
+                    treeNode[index].position = pos / f32(cm);
+                    // workgroupBarrier();
+                    atomicStore(&treeNode[index].mass, cm);
+                }
+            }
+            index += inc;
+        }
+        index = restart;
+    }
+
+    var j = 0;
+    var flag = false;
+    while (index <= tree_node_count) {
+        if (index < node_count) {
+            index += inc;
+        } else if (index >= node_count && atomicLoad(&treeNode[index].mass) >= 0) {
+            index += inc;
+        } else {
+            if (j == 0) {
+                j = 8;
+                for (var i = 0u; i < 8u; i++) {
+                    let ch = u32(atomicLoad(&treeChild[index * 8u + i]));
+                    schild[i] = ch;
+                    smass[i] = atomicLoad(&treeNode[ch].mass);
+                    if (ch < node_count || smass[i] >= 0) {
+                        j--;
+                    }
+                }
+            } else {
+                j = 8;
+                for (var i = 0u; i < 8u; i++) {
+                    let ch = schild[i];
+                    let old_mass = smass[i];
+                    smass[i] = atomicLoad(&treeNode[ch].mass);
+                    if (ch < node_count || old_mass >= 0 || smass[i] >= 0) {
+                        j--;
+                    }
+                }
+            }
+
+            if (j == 0) {
+                var cm = 0;
+                var pos = vec3<f32>(0.0);
+                var cnt = 0;
+                for (i = 0u; i < 8u; i++) {
+                    let ch = schild[i];
+                    if (ch >= node_count) {
+                        let m = smass[i];
+                        cnt += treeNode[ch].count;
+                        pos += treeNode[ch].position * f32(m);
+                        cm += m;
+                    } else {
+                        let m = i32(atomicLoad(&nodeSrc[ch].mass));
+                        cnt += 1;
+                        pos += nodeSrc[ch].position * f32(m);
+                        cm += m;
+                    }
+                }
+                treeNode[index].count = cnt;
+                treeNode[index].position = pos / f32(cm);
+                flag = true;
+            }
+        }
+        // workgroupBarrier();
+        if (flag) {
+            if (index < node_count) {
+                atomicStore(&nodeSrc[index].mass, u32(cm));
+            } else {
+                atomicStore(&treeNode[index].mass, cm);
+            }
+            index += inc;
+            flag = false;
+        }
+    }
+}
+
+@compute
+@workgroup_size(128)
+fn sort(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
+    let tree_node_count = arrayLength(&treeNode) - 1u;
+    let bottom = atomicLoad(&bhTree.bottom);
+    let node_count = arrayLength(&nodeSrc);
+    let inc = node_count;
+    var index = tree_node_count + 1u - inc + global_invocation_id.x;
+
+    while (index >= bottom) {
+        var start = treeNode[index].start;
+        if (start >= 0) {
+            var j = 0u;
+            for (var i = 0u; i < 8u; i++) {
+                let ch = atomicLoad(&treeChild[index * 8u + i]);
+                if (ch >= 0) {
+                    if (i != j) {
+                        atomicStore(&treeChild[index * 8u + i], -1);
+                        atomicStore(&treeChild[index * 8u + j], ch);
+                    }
+                    j++;
+                    if (ch >= i32(node_count)) {
+                        treeNode[ch].start = start;
+                        start += treeNode[ch].count;
+                    } else {
+                        treeNode[start].sort = ch;
+                        start++;
+                    }
+                }
+            }
+            if (index < inc) {
+                break;
+            }
+            index -= inc;
+        }
+    }
+}
+
+@compute
+@workgroup_size(128)
+fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
+    let tree_node_count = arrayLength(&treeNode) - 1u;
+    let node_count = arrayLength(&nodeSrc);
+    let inc = node_count;
+
+    // TODO: Global Param
+    let scale = 0.02;
+
+    var spos: array<u32, 48>;
+    var snode: array<u32, 48>;
+    var sdq: array<f32, 48>;
+
+    let itolsq = 1.0;
+    let epssq = 0.05 * 0.05;
+    let diameter = bhTree.radius * 2.0;
+    let max_depth = atomicLoad(&bhTree.max_depth);
+    sdq[0] = diameter * diameter * itolsq;
+    for (var j = 1u; j < max_depth; j++) {
+        sdq[j] = sdq[j - 1u] * 0.25;
+        sdq[j - 1u] += epssq;
+    }
+    sdq[max_depth - 2u] += epssq;
+
+    if (max_depth < 48u) {
+        for (var index = global_invocation_id.x; index < node_count; index += inc) {
+            let order = treeNode[index].sort;
+            let pos = nodeSrc[index].position;
+            var af = vec3<f32>(0.0);
+
+            var depth = 0u;
+            spos[0] = 0u;
+            snode[0] = tree_node_count;
+
+            loop {
+                var pd = spos[depth];
+                var nd = snode[depth];
+                while (pd < 8u) {
+                    let n = atomicLoad(&treeChild[nd * 8u + pd]);
+                    pd++;
+
+                    if (n >= 0) {
+                        let n = u32(n);
+                        var dp: vec3<f32>;
+                        if (n < node_count) {
+                            dp = pos - nodeSrc[n].position;
+                        } else {
+                            dp = pos - treeNode[n].position;
+                        }
+                        let dist2 = dot(dp, dp);
+
+                        if (n < node_count) {
+                            if (dist2 > 0.0) {
+                                let factor = scale * f32(atomicLoad(&nodeSrc[index].mass)) * f32(atomicLoad(&nodeSrc[n].mass)) / dist2;
+                                af += dp * factor;
+                            }
+                        } else if (dist2 >= sdq[depth]) {
+                            if (dist2 > 0.0) {
+                                let factor = scale * f32(atomicLoad(&nodeSrc[index].mass)) * f32(atomicLoad(&treeNode[n].mass)) / dist2;
+                                af += dp * factor; 
+                            }
+                        } else {
+                            spos[depth] = pd;
+                            snode[depth] = nd;
+                            depth++;
+                            pd = 0u;
+                            nd = n;
+                        }
+                    } else {
+                        pd = 8u;
+                    }
+                }
+                depth--;
+                if (depth < 0u) {
+                    break;
+                }
+            }
+            nodeSrc[index].force += af;
+        }
+    }
 }
 
 @compute
@@ -214,51 +640,18 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     // TODO: Global Param
     let scaling_ratio = 0.0002;
 
-    var i : u32 = 0u;
-    var electron_force = vec3<f32>(0.0);
-    loop {
-        if (i >= total) { break; }
-        if (i == index) { continue; }
-
-        let pos = nodeSrc[i].position;
-        let mass_i = f32(atomicLoad(&nodeSrc[i].mass));
-        let dist = vPos - pos;
-        let distance2 = dot(dist, dist);
-        let factor = scaling_ratio * mass * mass_i / distance2;
-
-        // electron_force += -dir / dot(dir, dir);
-        electron_force += dist * factor;
-
-        continuing {
-            i = i + 1u;
-        }
-    }
-
     var spring_force = vec3<f32>(0.0);
-<<<<<<< HEAD
-
     spring_force.x = bitcast<f32>(atomicLoad(&springForceSrc[index * 3u + 0u]));
     spring_force.y = bitcast<f32>(atomicLoad(&springForceSrc[index * 3u + 1u]));
     spring_force.z = bitcast<f32>(atomicLoad(&springForceSrc[index * 3u + 2u]));
-=======
-    spring_force.x = f32(atomicLoad(&springForceSrc[index * 3u + 0u]));
-    spring_force.y = f32(atomicLoad(&springForceSrc[index * 3u + 1u]));
-    spring_force.z = f32(atomicLoad(&springForceSrc[index * 3u + 2u]));
->>>>>>> 5fa6a2f0 (feat: force & gravity & bruce electron)
 
     atomicStore(&springForceSrc[index * 3u + 0u], 0);
     atomicStore(&springForceSrc[index * 3u + 1u], 0);
     atomicStore(&springForceSrc[index * 3u + 2u], 0);
     spring_force *= 0.0001;
 
-<<<<<<< HEAD
-    var vForce: vec3<f32> = electron_force * 0.05 + gravaty_force * 10. + spring_force * 1000.0;
-
-    vVel = vVel + vForce * 0.04;
-=======
-    nodeSrc[index].force += electron_force + spring_force;
+    nodeSrc[index].force += spring_force;
 }
->>>>>>> 5fa6a2f0 (feat: force & gravity & bruce electron)
 
 @compute
 @workgroup_size(128)
