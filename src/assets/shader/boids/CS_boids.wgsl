@@ -292,8 +292,8 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
         if (ch != -2) { 
             let locked = n * 8u + j;
             if (ch == -1) {
-                // 格子未被占用的话，直接尝试占用
-                let origin = atomicCompareExchangeWeak(&treeChild[locked], -1, i32(index));
+                var v = -1;
+                let origin = atomicCompareExchangeWeak(&treeChild[locked], v, i32(index));
                 if (origin == -1) {
                     local_max_depth = max(depth, local_max_depth);
                     index += inc;
