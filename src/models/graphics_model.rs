@@ -18,7 +18,7 @@ use super::data_model::DataModel;
 
 // 须同步修改 Compute WGSL 中每一个函数的 @workgroup_size
 // WGSL 中没有宏，不能使用类似 HLSL 的 #define 方法
-const PARTICLES_PER_GROUP: u32 = 128;
+const PARTICLES_PER_GROUP: u32 = 256;
 
 
 // 须同步修改各个 WGSL 中的 Node struct
@@ -228,6 +228,7 @@ pub struct GraphicsResources {
     node_work_group_count:          u32,
     edge_work_group_count:          u32,
     tree_node_work_group_count:     u32,
+    step_work_group_count:          u32,
     pub compute_frame_count:        u32,                      // 帧计数器
     pub render_frame_count:         u32,                      // 帧计数器
 
@@ -348,6 +349,9 @@ impl GraphicsResources {
 
         let tree_node_work_group_count = 
             (tree_node_count as f32 / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
+
+        let step_work_group_count = 
+            (std::cmp::min(node_count, 16384) as f32 / PARTICLES_PER_GROUP as f32).ceil() as u32;
 
         // Buffer 创建
 
@@ -586,6 +590,7 @@ impl GraphicsResources {
             node_work_group_count,
             edge_work_group_count,
             tree_node_work_group_count,
+            step_work_group_count,
             compute_frame_count: 0,
             render_frame_count: 0,
             render_options: RenderOptions {
@@ -639,7 +644,7 @@ impl GraphicsResources {
 
             cpass.set_pipeline(&self.compute_pipelines.tree_building);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+            cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
 
             cpass.set_pipeline(&self.compute_pipelines.clear_2);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
@@ -647,15 +652,15 @@ impl GraphicsResources {
 
             cpass.set_pipeline(&self.compute_pipelines.summarization);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+            cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
 
             cpass.set_pipeline(&self.compute_pipelines.sort);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+            cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
 
             cpass.set_pipeline(&self.compute_pipelines.electron_force);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+            cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
 
             cpass.set_pipeline(&self.compute_pipelines.compute);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
