@@ -215,6 +215,7 @@ fn bounding_box() {
     let tree_node_count = arrayLength(&treeNode) - 1u;
     bhTree.radius = max(max(box.x, box.y), box.z) * 0.5;
     bhTree.bottom = tree_node_count;
+    atomicStore(&bhTree.max_depth, 0u);
     atomicStore(&treeNode[tree_node_count].mass, -1);
     atomicStore(&treeNode[tree_node_count].start, 0);
     treeNode[tree_node_count].position = (bound_min_min + bound_max_max) * 0.5;
@@ -273,7 +274,7 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
             rdp = root_pos + dp; // 所在象限的原点
         }
 
-        atomicAdd(&treeChild[n * 8u + j], 0); // ...
+        // atomicAdd(&treeChild[n * 8u + j], 0); // ...
         var ch = atomicLoad(&treeChild[n * 8u + j]);
 
         // 迭代至叶节点
@@ -389,7 +390,7 @@ fn summarization(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     let tree_node_count = arrayLength(&treeNode) - 1u;
     let node_count = arrayLength(&nodeSrc);
     let inc = node_count;
-    var index = (bottom & u32(-32)) + global_invocation_id.x;
+    var index = (bottom & u32(-128)) + global_invocation_id.x;
     if (index < bottom) {
         index += inc;
     }
@@ -523,6 +524,7 @@ fn sort(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
             for (var i = 0u; i < 8u; i++) {
                 let ch = atomicLoad(&treeChild[index * 8u + i]);
                 if (ch >= 0) {
+                    // 把子节点集中到开头
                     if (i != j) {
                         atomicStore(&treeChild[index * 8u + i], -1);
                         atomicStore(&treeChild[index * 8u + j], ch);
@@ -568,12 +570,12 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
         sdq[j] = sdq[j - 1u] * 0.25;
         sdq[j - 1u] += epssq;
     }
-    sdq[max_depth - 2u] += epssq;
+    sdq[max_depth - 1u] += epssq;
 
     if (max_depth < 48u) {
         for (var index = global_invocation_id.x; index < node_count; index += inc) {
             let order = treeNode[index].sort;
-            let pos = nodeSrc[index].position;
+            let pos = nodeSrc[order].position;
             var af = vec3<f32>(0.0);
 
             var depth = 0u;
@@ -599,12 +601,12 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
 
                         if (n < node_count) {
                             if (dist2 > 0.0) {
-                                let factor = scale * f32(atomicLoad(&nodeSrc[index].mass)) * f32(atomicLoad(&nodeSrc[n].mass)) / dist2;
+                                let factor = scale * f32(atomicLoad(&nodeSrc[order].mass)) * f32(atomicLoad(&nodeSrc[n].mass)) / dist2;
                                 af += dp * factor;
                             }
                         } else if (dist2 >= sdq[depth]) {
                             if (dist2 > 0.0) {
-                                let factor = scale * f32(atomicLoad(&nodeSrc[index].mass)) * f32(atomicLoad(&treeNode[n].mass)) / dist2;
+                                let factor = scale * f32(atomicLoad(&nodeSrc[order].mass)) * f32(atomicLoad(&treeNode[n].mass)) / dist2;
                                 af += dp * factor; 
                             }
                         } else {
@@ -623,7 +625,7 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
                 }
                 depth--;
             }
-            nodeSrc[index].force += af;
+            nodeSrc[order].force += af;
         }
     }
 }
