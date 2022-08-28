@@ -91,7 +91,7 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     nodeSrc[index].position = vPos;
     nodeSrc[index].force = vec3<f32>(0.0);
     nodeSrc[index].prev_force = vec3<f32>(0.0);
-    atomicStore(&nodeSrc[index].mass, 0u);
+    atomicStore(&nodeSrc[index].mass, 1u);
     atomicStore(&springForceSrc[index * 3u + 0u], 0);
     atomicStore(&springForceSrc[index * 3u + 1u], 0);
     atomicStore(&springForceSrc[index * 3u + 2u], 0);
@@ -112,8 +112,8 @@ fn cal_mass(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     let source_node: u32 = edge[0];
     let target_node: u32 = edge[1];
 
-    atomicAdd(&nodeSrc[source_node].mass, 1u);
-    atomicAdd(&nodeSrc[target_node].mass, 1u);
+//    atomicAdd(&nodeSrc[source_node].mass, 1u);
+//    atomicAdd(&nodeSrc[target_node].mass, 1u);
 }
 
 @compute
@@ -142,7 +142,8 @@ fn cal_gravity_force(@builtin(global_invocation_id) global_invocation_id: vec3<u
             gravity_force = 0.0;
         }
     }
-    nodeSrc[index].force +=  -pos * min(gravity_force, 10.0);
+//    nodeSrc[index].force +=  -pos * min(gravity_force, 10.0);
+    nodeSrc[index].force +=  -pos * 0.1;
 }
 
 @compute
@@ -214,7 +215,8 @@ fn bounding_box() {
     let box = bound_max_max - bound_min_min;
     let tree_node_count = arrayLength(&treeNode) - 1u;
     bhTree.radius = max(max(box.x, box.y), box.z) * 0.5;
-    bhTree.bottom = tree_node_count;
+    atomicStore(&bhTree.bottom, tree_node_count);
+    atomicStore(&bhTree.max_depth, 0u);
     atomicStore(&treeNode[tree_node_count].mass, -1);
     atomicStore(&treeNode[tree_node_count].start, 0);
     treeNode[tree_node_count].position = (bound_min_min + bound_max_max) * 0.5;
@@ -651,7 +653,7 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     atomicStore(&springForceSrc[index * 3u + 0u], 0);
     atomicStore(&springForceSrc[index * 3u + 1u], 0);
     atomicStore(&springForceSrc[index * 3u + 2u], 0);
-    spring_force *= 0.0001;
+    spring_force *= 10.0;
 
     nodeSrc[index].force += spring_force;
 }
