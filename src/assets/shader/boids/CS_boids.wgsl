@@ -262,8 +262,10 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
         if (skip != 0) {
             skip = 0;
             pos = nodeSrc[index].position;
+
             n = tree_node_count;
             r = bhTree.radius * 0.5;
+            depth = 1u;
             
             let compare = step(root_pos, pos);
             j = (u32(compare.x) << 0u) | (u32(compare.y) << 1u) + (u32(compare.z) << 2u); // 八个象限
@@ -301,7 +303,7 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
                 }
             } else {
                 // 格子已被占用，将其设置为 lock 状态
-                var v = i32(index);
+                var v = ch;
                 let origin = atomicCompareExchangeWeak(&treeChild[locked], v, -2);
                 if (ch == origin) {
                     // lock 成功，如果两个点的位置相同，做一点微小偏移就行了
@@ -551,7 +553,7 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
     let inc = node_count;
 
     // TODO: Global Param
-    let scale = 0.02;
+    let scale = 0.0003;
 
     var spos: array<u32, 48>;
     var snode: array<u32, 48>;
