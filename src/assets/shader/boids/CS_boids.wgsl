@@ -301,7 +301,8 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
                 }
             } else {
                 // 格子已被占用，将其设置为 lock 状态
-                let origin = atomicCompareExchangeWeak(&treeChild[locked], i32(index), -2);
+                var v = i32(index);
+                let origin = atomicCompareExchangeWeak(&treeChild[locked], v, -2);
                 if (ch == origin) {
                     // lock 成功，如果两个点的位置相同，做一点微小偏移就行了
                     if (all(nodeSrc[ch].position == pos)) {
