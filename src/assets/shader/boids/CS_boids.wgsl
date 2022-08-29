@@ -232,15 +232,12 @@ fn bounding_box() {
     treeNode[tree_node_count].position = (bound_min_min + bound_max_max) * 0.5;
     treeNode[tree_node_count].count = -1;
     treeNode[tree_node_count].sort = 0;
-    for (var i = 0u; i < 8u; i++) {
-        atomicStore(&treeChild[tree_node_count * 8u + i], -1);
-    }
 }
 
 @compute
 @workgroup_size(256)
 fn clear_1(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
-    let total = arrayLength(&treeNode) - 1u;
+    let total = arrayLength(&treeNode);
     let index = global_invocation_id.x;
     if (index >= total) {
         return;
@@ -268,15 +265,23 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     var depth = 1u;
     var local_max_depth = 1u;
     var j = 0u;
-    var r = bhTree.radius * 0.5;
+    var root_r = bhTree.radius;
+    var r = root_r * 0.5;
+    var locked_ch: i32;
+
+    var limit = 10000;
 
     while (index < node_count) {
+
+        limit--;
+        if (limit < 0) { return; }
+
         if (skip != 0) {
             skip = 0;
             pos = nodeSrc[index].position;
 
             n = tree_node_count;
-            r = bhTree.radius * 0.5;
+            r = root_r * 0.5;
             depth = 1u;
             
             let compare = step(root_pos, pos);
@@ -322,12 +327,12 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
                     if (all(nodeSrc[ch].position == pos)) {
                         nodeSrc[index].position += vec3<f32>(0.01, -0.005, 0.01);
                         skip = 0;
-                        treeChild[locked] = ch;
+                        atomicStore(&treeChild[locked], ch);
                         break;
                     }
 
                     // 两个点位置不同，则开始分裂
-                    var locked_ch = -1;
+                    locked_ch = -1;
                     loop {
                         if (ch < 0) {
                             break;
