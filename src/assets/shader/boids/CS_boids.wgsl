@@ -87,6 +87,8 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
     vPos.z = random_xy(index, 2u + 3u * uniforms.frame_num) * 2.0 - 1.0;
 
+    vPos = vec3<f32>(f32(index) / f32(total));
+
     // Write back
     nodeSrc[index].position = vPos;
     nodeSrc[index].force = vec3<f32>(0.0);
@@ -142,8 +144,9 @@ fn cal_gravity_force(@builtin(global_invocation_id) global_invocation_id: vec3<u
             gravity_force = 0.0;
         }
     }
+    nodeSrc[index].force +=  -pos * gravity_force;
 //    nodeSrc[index].force +=  -pos * min(gravity_force, 10.0);
-    nodeSrc[index].force +=  -pos * 2.;
+//    nodeSrc[index].force +=  -pos * 2.;
 }
 
 @compute
