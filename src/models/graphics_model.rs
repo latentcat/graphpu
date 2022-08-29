@@ -447,10 +447,10 @@ impl GraphicsResources {
         });
 
         // Tree Child Buffer
-        let tree_child_buffer_size = pad_size(mem::size_of::<i32>(), (tree_node_count + 1) * 8);
+        let tree_child_buffer_size = 4 * ((tree_node_count + 1) * 8);
         let tree_child_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Tree Child Buffer"),
-            size: tree_child_buffer_size,
+            size: tree_child_buffer_size as _,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false
         });
