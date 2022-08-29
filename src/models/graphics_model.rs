@@ -990,8 +990,13 @@ fn pad_size(node_struct_size: usize, num_particles: u32) -> wgpu::BufferAddress 
 
 fn get_tree_node_count(node_count: &u32) -> u32 {
     let mut tree_node_count = node_count * 2;
+    println!("{}", tree_node_count);
     while tree_node_count & (PARTICLES_PER_GROUP - 1) != 0 {
         tree_node_count += 1;
     }
-    tree_node_count - 1
+    tree_node_count = (tree_node_count as f32).log2().ceil().exp2() as u32;
+    tree_node_count = tree_node_count * 2 - 1;
+    println!("{}", tree_node_count);
+
+    tree_node_count
 }
