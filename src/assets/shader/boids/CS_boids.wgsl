@@ -119,7 +119,7 @@ fn cal_mass(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 @compute
 @workgroup_size(256)
 fn cal_gravity_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
-    let total = arrayLength(&edgeSrc);
+    let total = arrayLength(&nodeSrc);
     let index = global_invocation_id.x;
     if (index >= total) {
         return;
@@ -142,8 +142,8 @@ fn cal_gravity_force(@builtin(global_invocation_id) global_invocation_id: vec3<u
             gravity_force = 0.0;
         }
     }
-//    nodeSrc[index].force +=  -pos * min(gravity_force, 10.0);
-    nodeSrc[index].force +=  -pos * 2.;
+    nodeSrc[index].force +=  -pos * gravity_force;
+//    nodeSrc[index].force +=  -pos * 2.;
 }
 
 @compute
@@ -626,7 +626,7 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
                 }
                 depth--;
             }
-            nodeSrc[order].force += af * 0.5;
+            nodeSrc[order].force += af;
         }
     }
 }
