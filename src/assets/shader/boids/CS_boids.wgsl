@@ -87,7 +87,11 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
     vPos.z = random_xy(index, 2u + 3u * uniforms.frame_num) * 2.0 - 1.0;
 
-    vPos = vec3<f32>(f32(index) / f32(total));
+//    vPos = vec3<f32>(f32(index) / f32(total));
+
+    if (index < 1u || index > 16383u) {
+        vPos = vec3<f32>(0.0);
+    }
 
     // Write back
     nodeSrc[index].position = vPos;
@@ -121,7 +125,7 @@ fn cal_mass(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 @compute
 @workgroup_size(256)
 fn cal_gravity_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
-    let total = arrayLength(&edgeSrc);
+    let total = arrayLength(&nodeSrc);
     let index = global_invocation_id.x;
     if (index >= total) {
         return;
@@ -184,6 +188,10 @@ fn reduction_bounding(
 ) {
 
     let index = global_id.x;
+    let total = arrayLength(&nodeSrc);
+    if (index >= total) {
+        return;
+    }
 
     smin[local_index] = nodeSrc[index].position;
     smax[local_index] = nodeSrc[index].position;
@@ -209,7 +217,7 @@ fn reduction_bounding(
 fn bounding_box() {
     var bound_min_min = bounding[0].bound_min;
     var bound_max_max = bounding[0].bound_max;
-    let node_group_count = arrayLength(&nodeSrc) / 256u;
+    let node_group_count = u32(ceil(f32(arrayLength(&nodeSrc)) / 256.0));
     for (var i = 0u; i < node_group_count; i++) {
         bound_min_min = min(bound_min_min, bounding[i].bound_min);
         bound_max_max = max(bound_max_max, bounding[i].bound_max);
@@ -249,6 +257,9 @@ fn clear_1(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     var index = global_invocation_id.x;
     let node_count = arrayLength(&nodeSrc);
+    if (index >= node_count) {
+        return;
+    }
     let tree_node_count = arrayLength(&treeNode) - 1u;
     let root_pos = treeNode[tree_node_count].position;
     let inc = min(node_count, 16384u); // should change
@@ -262,6 +273,7 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     var local_max_depth = 1u;
     var j = 0u;
     var r = bhTree.radius * 0.5;
+    var locked_ch: i32;
 
     while (index < node_count) {
         if (skip != 0) {
@@ -313,14 +325,14 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
                 if (ch == origin) {
                     // lock 成功，如果两个点的位置相同，做一点微小偏移就行了
                     if (all(nodeSrc[ch].position == pos)) {
-                        nodeSrc[index].position *= 1.01;
+                        nodeSrc[index].position += vec3<f32>(0.01, -0.01, -0.01);
                         skip = 0;
                         treeChild[locked] = ch;
                         break;
                     }
 
                     // 两个点位置不同，则开始分裂
-                    var locked_ch = -1;
+                    locked_ch = -1;
                     loop {
                         // 1. create new cell
                         let cell = atomicSub(&bhTree.bottom, 1u) - 1u;
@@ -629,7 +641,7 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
                 }
                 depth--;
             }
-            nodeSrc[order].force += af * 0.5;
+            nodeSrc[order].force += af;
         }
     }
 }
@@ -657,7 +669,7 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     atomicStore(&springForceSrc[index * 3u + 0u], 0);
     atomicStore(&springForceSrc[index * 3u + 1u], 0);
     atomicStore(&springForceSrc[index * 3u + 2u], 0);
-    spring_force *= 100.0;
+    spring_force *= 1.0;
 
     nodeSrc[index].force += spring_force;
 }
