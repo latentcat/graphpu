@@ -87,6 +87,8 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
     vPos.z = random_xy(index, 2u + 3u * uniforms.frame_num) * 2.0 - 1.0;
 
+    vPos = vec3<f32>(f32(index) / f32(total));
+
     // Write back
     nodeSrc[index].position = vPos;
     nodeSrc[index].force = vec3<f32>(0.0);
@@ -314,7 +316,7 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
                 if (ch == origin) {
                     // lock 成功，如果两个点的位置相同，做一点微小偏移就行了
                     if (all(nodeSrc[ch].position == pos)) {
-                        nodeSrc[index].position *= 1.01;
+                        nodeSrc[index].position += vec3<f32>(0.01, -0.01, 0.01);
                         skip = 0;
                         treeChild[locked] = ch;
                         break;
@@ -323,6 +325,10 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
                     // 两个点位置不同，则开始分裂
                     var locked_ch = -1;
                     loop {
+                        if (ch < 0) {
+                            break;
+                        }
+
                         // 1. create new cell
                         let cell = atomicSub(&bhTree.bottom, 1u) - 1u;
                         if (cell <= node_count) {
@@ -354,9 +360,7 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
 
                         // 5. visit this cell/chec if in use (possibly by old body)
                         ch = atomicLoad(&treeChild[n * 8u + j]);
-                        if (ch < 0) {
-                            break;
-                        }
+
                     };
                     atomicStore(&treeChild[n * 8u + j], i32(index));
                     local_max_depth = max(depth, local_max_depth);
