@@ -334,9 +334,6 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
                     // 两个点位置不同，则开始分裂
                     locked_ch = -1;
                     loop {
-                        if (ch < 0) {
-                            break;
-                        }
 
                         // 1. create new cell
                         let cell = atomicSub(&bhTree.bottom, 1u) - 1u;
@@ -369,6 +366,10 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
 
                         // 5. visit this cell/chec if in use (possibly by old body)
                         ch = atomicLoad(&treeChild[n * 8u + j]);
+
+                        if (ch < 0) {
+                            break;
+                        }
 
                     };
                     atomicStore(&treeChild[n * 8u + j], i32(index));
