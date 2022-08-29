@@ -180,7 +180,11 @@ fn reduction_bounding(
     @builtin(workgroup_id) group_id: vec3<u32>,
 ) {
 
-    let index = global_id.x;
+    var index = global_id.x;
+    let total = arrayLength(&nodeSrc);
+    if (index >= total) {
+        index = total - 1u;
+    }
 
     smin[local_index] = nodeSrc[index].position;
     smax[local_index] = nodeSrc[index].position;
@@ -206,7 +210,7 @@ fn reduction_bounding(
 fn bounding_box() {
     var bound_min_min = bounding[0].bound_min;
     var bound_max_max = bounding[0].bound_max;
-    let node_group_count = arrayLength(&nodeSrc) / 256u;
+    let node_group_count = u32(ceil(f32(arrayLength(&nodeSrc)) / 256.0));
     for (var i = 0u; i < node_group_count; i++) {
         bound_min_min = min(bound_min_min, bounding[i].bound_min);
         bound_max_max = max(bound_max_max, bounding[i].bound_max);
