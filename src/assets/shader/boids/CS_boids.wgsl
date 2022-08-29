@@ -87,11 +87,11 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
     vPos.z = random_xy(index, 2u + 3u * uniforms.frame_num) * 2.0 - 1.0;
 
-    vPos = vec3<f32>(f32(index) / f32(total));
-
-    if (index > 126u) {
-        vPos = vec3<f32>(0.1);
-    }
+//    vPos = vec3<f32>(f32(index) / f32(total));
+//
+//    if (index > 126u) {
+//        vPos = vec3<f32>(0.1);
+//    }
 
     // Write back
     nodeSrc[index].position = vPos;
@@ -196,7 +196,7 @@ fn reduction_bounding(
     smax[local_index] = nodeSrc[index].position;
     workgroupBarrier();
 
-    for (var s = 64u; s > 0u; s >>= 1u) {
+    for (var s = 256u / 2u; s > 0u; s >>= 1u) {
         if (local_index < s) {
             let k = local_index + s;
             smin[local_index] = min(smin[local_index], smin[k]);
