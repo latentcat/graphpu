@@ -239,6 +239,13 @@ pub struct GraphicsResources {
     pub render_options:             RenderOptions,
     pub need_update:                bool,
 
+    debugger:                       GraphicsDebugger,
+}
+
+struct GraphicsDebugger {
+    debug_buffer:                   wgpu::Buffer,
+    tree_child_buffer_size:         u32,
+
 }
 
 impl GraphicsResources {
@@ -487,7 +494,7 @@ impl GraphicsResources {
         let tree_child_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Tree Child Buffer"),
             size: tree_child_buffer_size as _,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false
         });
 
@@ -602,6 +609,13 @@ impl GraphicsResources {
             label: None,
         });
 
+        let debug_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Debug Buffer"),
+            size: tree_child_buffer_size as _,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         let mut boids_resources = GraphicsResources {
             status: model.status.clone(),
             render_state,
@@ -652,6 +666,10 @@ impl GraphicsResources {
                 is_showing_debug: false
             },
             need_update: true,
+            debugger: GraphicsDebugger {
+                debug_buffer,
+                tree_child_buffer_size,
+            }
         };
 
         boids_resources.gen_node();
@@ -722,9 +740,29 @@ impl GraphicsResources {
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
         }
-        command_encoder.pop_debug_group();
+        let debugger = &mut self.debugger;
+        command_encoder.copy_buffer_to_buffer(&self.tree_child_buffer, 0, &debugger.debug_buffer, 0, debugger.tree_child_buffer_size as _);
         queue.submit(Some(command_encoder.finish()));
         self.compute_frame_count += 1;
+
+        let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
+        let buffer_slice = debugger.debug_buffer.slice(..);
+        buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
+        device.poll(wgpu::Maintain::Wait);
+
+        pollster::block_on(async {
+            if let Some(Ok(())) = receiver.receive().await {
+                let data = buffer_slice.get_mapped_range();
+                let result: Vec<i32> = bytemuck::cast_slice(&data).to_vec();
+        
+                drop(data);
+                debugger.debug_buffer.unmap();
+        
+                println!("{:?}", result);
+            } else {
+                panic!("failed to run compute on gpu!")
+            }
+        });
     }
 
 
