@@ -698,21 +698,23 @@ impl GraphicsResources {
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
 
-            cpass.set_pipeline(&self.compute_pipelines.clear_2);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.tree_node_work_group_count, 1, 1);
+            if cfg!(windows) {
+                cpass.set_pipeline(&self.compute_pipelines.clear_2);
+                cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                cpass.dispatch_workgroups(self.tree_node_work_group_count, 1, 1);
 
-            cpass.set_pipeline(&self.compute_pipelines.summarization);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
+                cpass.set_pipeline(&self.compute_pipelines.summarization);
+                cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
 
-            cpass.set_pipeline(&self.compute_pipelines.sort);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
+                cpass.set_pipeline(&self.compute_pipelines.sort);
+                cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
 
-            cpass.set_pipeline(&self.compute_pipelines.electron_force);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
+                cpass.set_pipeline(&self.compute_pipelines.electron_force);
+                cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
+            }
 
             cpass.set_pipeline(&self.compute_pipelines.compute);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
