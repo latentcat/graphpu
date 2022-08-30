@@ -87,12 +87,6 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
     vPos.z = random_xy(index, 2u + 3u * uniforms.frame_num) * 2.0 - 1.0;
 
-//    vPos = vec3<f32>(f32(index) / f32(total));
-//
-//    if (index > 126u) {
-//        vPos = vec3<f32>(0.1);
-//    }
-
     // Write back
     nodeSrc[index].position = vPos;
     nodeSrc[index].force = vec3<f32>(0.0);
@@ -221,6 +215,9 @@ fn bounding_box() {
         bound_min_min = min(bound_min_min, bounding[i].bound_min);
         bound_max_max = max(bound_max_max, bounding[i].bound_max);
     }
+
+    bounding[0].bound_min = bound_min_min;
+    bounding[0].bound_max = bound_max_max;
 
     let box = bound_max_max - bound_min_min;
     let tree_node_count = arrayLength(&treeNode) - 1u;
