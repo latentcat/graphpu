@@ -202,6 +202,8 @@ pub struct GraphicsResources {
     // Buffers
     uniform_buffer:                 wgpu::Buffer,
     quad_buffer:                    wgpu::Buffer,
+    bounding_box_vertex_buffer:     wgpu::Buffer,
+    bounding_box_index_buffer:      wgpu::Buffer,
     node_buffer:                    wgpu::Buffer,
     edge_buffer:                    wgpu::Buffer,
     render_uniform_buffer:          wgpu::Buffer,
@@ -214,12 +216,14 @@ pub struct GraphicsResources {
     compute_bind_group:             wgpu::BindGroup,
     node_render_bind_group:         wgpu::BindGroup,
     edge_render_bind_group:         wgpu::BindGroup,
+    bounding_box_render_bind_group: wgpu::BindGroup,
     render_uniform_bind_group:      wgpu::BindGroup,
 
     // 渲染管线
     node_render_pipeline:           wgpu::RenderPipeline,
     edge_render_pipeline:           wgpu::RenderPipeline,
     axis_render_pipeline:           wgpu::RenderPipeline,
+    bounding_box_render_pipeline:   wgpu::RenderPipeline,
 
     // 计算管线
     compute_pipelines:              ComputePipelines,
@@ -260,6 +264,7 @@ impl GraphicsResources {
             include_str!("../assets/shader/boids/S_node.wgsl"),
             include_str!("../assets/shader/boids/S_edge.wgsl"),
             include_str!("../assets/shader/boids/S_axis.wgsl"),
+            include_str!("../assets/shader/boids/S_bounding_box.wgsl"),
             include_str!("../assets/shader/boids/CS_boids.wgsl"),
         ];
 
@@ -274,26 +279,21 @@ impl GraphicsResources {
 
         }).collect::<Vec<ShaderModule>>();
 
-
-        // Compute Shader
         let compute_shader = shaders.pop().unwrap();
 
-        // Node Shader
         let node_shader = &shaders[0];
-
-        // Edge Shader
         let edge_shader = &shaders[1];
-
-        // Axis Shader
         let axis_shader = &shaders[2];
+        let bounding_box_shader = &shaders[3];
 
         // Bind Group Layout
         // Bind Group 的布局，允许在布局不变的情况下更换 Bind Group 绑定的 Buffer
 
-        let compute_bind_group_layout =         BindGroupLayout::create_compute_bind_group_layout(device).bing_group_layout;
-        let node_render_bind_group_layout =     BindGroupLayout::create_node_render_bind_group_layout(device).bing_group_layout;
-        let edge_render_bind_group_layout =     BindGroupLayout::create_edge_render_bind_group_layout(device).bing_group_layout;
-        let render_uniform_bind_group_layout =  BindGroupLayout::create_render_uniform_bind_group_layout(device).bing_group_layout;
+        let compute_bind_group_layout =             BindGroupLayout::create_compute_bind_group_layout(device).bing_group_layout;
+        let node_render_bind_group_layout =         BindGroupLayout::create_node_render_bind_group_layout(device).bing_group_layout;
+        let edge_render_bind_group_layout =         BindGroupLayout::create_edge_render_bind_group_layout(device).bing_group_layout;
+        let bounding_box_render_bind_group_layout = BindGroupLayout::create_bounding_box_render_bind_group_layout(device).bing_group_layout;
+        let render_uniform_bind_group_layout =      BindGroupLayout::create_render_uniform_bind_group_layout(device).bing_group_layout;
 
 
         // Render Pipeline
@@ -313,7 +313,14 @@ impl GraphicsResources {
 
         let axis_render_pipeline = RenderPipeline::create_axis_render_pipeline(
             device,
-            &[&render_uniform_bind_group_layout], axis_shader
+            &[&render_uniform_bind_group_layout],
+            axis_shader
+        ).render_pipeline;
+
+        let bounding_box_render_pipeline = RenderPipeline::create_bounding_box_render_pipeline(
+            device,
+            &[&render_uniform_bind_group_layout, &bounding_box_render_bind_group_layout],
+            bounding_box_shader
         ).render_pipeline;
 
         let mut graph_compute = ComputeShader::create(device.clone(), compute_shader, &[&compute_bind_group_layout]);
@@ -382,6 +389,35 @@ impl GraphicsResources {
             label: Some("Vertex Buffer"),
             contents: bytemuck::bytes_of(&vertex_buffer_data),
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let vertex_buffer_data: &[f32] = &[
+                -1.0, -1.0, -1.0,
+                 1.0, -1.0, -1.0,
+                -1.0,  1.0, -1.0,
+                 1.0,  1.0, -1.0,
+                -1.0, -1.0,  1.0,
+                 1.0, -1.0,  1.0,
+                -1.0,  1.0,  1.0,
+                 1.0,  1.0,  1.0,
+            ];
+
+        let index_buffer_data: &[u16] = &[
+            0, 1, 1, 3, 3, 2, 2, 0,
+            0, 4, 1, 5, 2, 6, 3, 7,
+            4, 5, 5, 7, 7, 6, 6, 4,
+        ];
+
+        let bounding_box_vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(&vertex_buffer_data),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
+
+        let bounding_box_index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Index Buffer"),
+            contents: bytemuck::cast_slice(&index_buffer_data),
+            usage: wgpu::BufferUsages::INDEX,
         });
 
         // 计算对齐后的 Node Buffer 大小
@@ -543,6 +579,18 @@ impl GraphicsResources {
             label: None,
         });
 
+        // Edge Render Bind Group
+        let bounding_box_render_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &bounding_box_render_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: bounding_buffer.as_entire_binding(),
+                },
+            ],
+            label: None,
+        });
+
         let render_uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &render_uniform_bind_group_layout,
             entries: &[
@@ -572,6 +620,8 @@ impl GraphicsResources {
             control,
             uniform_buffer,
             quad_buffer,
+            bounding_box_vertex_buffer,
+            bounding_box_index_buffer,
             node_buffer,
             edge_buffer,
             render_uniform_buffer,
@@ -582,10 +632,12 @@ impl GraphicsResources {
             compute_bind_group,
             node_render_bind_group,
             edge_render_bind_group,
+            bounding_box_render_bind_group,
             render_uniform_bind_group,
             node_render_pipeline,
             edge_render_pipeline,
             axis_render_pipeline,
+            bounding_box_render_pipeline,
             compute_pipelines,
             node_work_group_count,
             edge_work_group_count,
@@ -596,7 +648,7 @@ impl GraphicsResources {
             render_options: RenderOptions {
                 is_rendering_node: true,
                 is_rendering_edge: true,
-                is_rendering_axis: false,
+                is_rendering_axis: true,
                 is_showing_debug: false
             },
             need_update: true,
@@ -694,6 +746,12 @@ impl GraphicsResources {
             cpass.set_pipeline(&self.compute_pipelines.cal_mass);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
+            cpass.set_pipeline(&self.compute_pipelines.reduction_bounding);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+            cpass.set_pipeline(&self.compute_pipelines.bounding_box);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(1, 1, 1);
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));
@@ -794,6 +852,13 @@ impl GraphicsResources {
                     rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
                     rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
                     rpass.draw(0..4, 0..2);
+
+                    rpass.set_pipeline(&self.bounding_box_render_pipeline);
+                    rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
+                    rpass.set_bind_group(1, &self.bounding_box_render_bind_group, &[]);
+                    rpass.set_index_buffer(self.bounding_box_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                    rpass.set_vertex_buffer(0, self.bounding_box_vertex_buffer.slice(..));
+                    rpass.draw_indexed(0..24, 0, 0..1);
                 }
             }
 
