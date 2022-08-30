@@ -373,13 +373,14 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
                     local_max_depth = max(depth, local_max_depth);
                     index += inc;
                     skip = 2;
+            atomicStore(&treeChild[locked], locked_ch);
                 }
             }
         }
         workgroupBarrier();
-        if (skip == 2) {
-            atomicStore(&treeChild[locked], locked_ch);
-        }
+//        if (skip == 2) {
+//            atomicStore(&treeChild[locked], locked_ch);
+//        }
     }
     atomicMax(&bhTree.max_depth, local_max_depth);
 }

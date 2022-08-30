@@ -67,7 +67,7 @@ fn main_fs(v: Varing) -> @location(0) vec4<f32> {
     var lerp = (1.0 - pow(x, 10000.0)) * 1.2;
     color *= lerp;
 
-    let alpha = 0.5;
+    let alpha = 1.0;
 
     return vec4<f32>(color, alpha);
 }
