@@ -411,7 +411,7 @@ fn summarization(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     let tree_node_count = arrayLength(&treeNode) - 1u;
     let node_count = arrayLength(&nodeSrc);
     let inc = min(node_count, 16384u);
-    var index = (bottom & u32(-256)) + global_invocation_id.x;
+    var index = u32((i32(bottom) & -32) + i32(global_invocation_id.x));
     if (index < bottom) {
         index += inc;
     }
