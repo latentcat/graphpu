@@ -264,14 +264,15 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     var j = 0u;
     var root_r = bhTree.radius;
     var r = root_r * 0.5;
-    var locked_ch: i32;
 
     var limit = 10000;
 
     while (index < node_count) {
 
         limit--;
-        if (limit < 0) { return; }
+        if (limit < 0) {
+            return;
+        }
 
         if (skip != 0) {
             skip = 0;
@@ -304,9 +305,11 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
             ch = atomicLoad(&treeChild[n * 8u + j]);
         }
 
+        let locked = n * 8u + j;
+        var locked_ch = -1;
+
         // 非 lock 状态
-        if (ch != -2) { 
-            let locked = n * 8u + j;
+        if (ch != -2) {
             if (ch == -1) {
                 var v = -1;
                 let origin = atomicCompareExchangeWeak(&treeChild[locked], v, i32(index));
@@ -314,7 +317,9 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
                     local_max_depth = max(depth, local_max_depth);
                     index += inc;
                     skip = 1;
-                }
+                } else {
+                     skip = 0;
+                 }
             } else {
                 // 格子已被占用，将其设置为 lock 状态
                 var v = ch;
@@ -322,7 +327,7 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
                 if (ch == origin) {
                     // lock 成功，如果两个点的位置相同，做一点微小偏移就行了
                     if (all(nodeSrc[ch].position == pos)) {
-                        nodeSrc[index].position += vec3<f32>(0.01, -0.005, 0.01);
+                        nodeSrc[index].position += vec3<f32>(0.1, -0.05, 0.1);
                         skip = 0;
                         atomicStore(&treeChild[locked], ch);
                         break;
@@ -373,14 +378,13 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
                     local_max_depth = max(depth, local_max_depth);
                     index += inc;
                     skip = 2;
-            atomicStore(&treeChild[locked], locked_ch);
                 }
             }
         }
         workgroupBarrier();
-//        if (skip == 2) {
-//            atomicStore(&treeChild[locked], locked_ch);
-//        }
+        if (skip == 2) {
+            atomicStore(&treeChild[locked], locked_ch);
+        }
     }
     atomicMax(&bhTree.max_depth, local_max_depth);
 }

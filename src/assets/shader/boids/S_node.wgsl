@@ -6,6 +6,7 @@ struct Input {
 struct Varing {
     @location(0) tex_coords: vec2<f32>,
     @builtin(position) position: vec4<f32>,
+    @location(1) color: vec3<f32>,
 };
 
 struct Node {
@@ -37,6 +38,10 @@ fn main_vs(
     v.position += vec4<f32>(quad_pos * 0.0075 * (1.0 + f32(node.mass) * 0.0), 0.0, 0.0);
     v.position = transform.projection * v.position;
     v.tex_coords = quad_pos;
+    v.color = mix(vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), f32(i.instance_index) / f32(arrayLength(&nodeSrc)));
+    if (i.instance_index == 0u) {
+        v.color = vec3<f32>(1.0);
+    }
 
     return v;
 }
@@ -47,7 +52,7 @@ fn main_fs(v: Varing) -> @location(0) vec4<f32> {
     let sdf = dot(v.tex_coords, v.tex_coords);
     let clip = step(sdf, 1.0);
 
-    var out_color = vec4<f32>(1.0, 1.0, 1.0, 1.0);
+    var out_color = vec4<f32>(v.color, 1.0);
 
 //    let alpha = 1.0;
 //

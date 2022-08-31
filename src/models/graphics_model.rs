@@ -716,7 +716,7 @@ impl GraphicsResources {
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
 
-            if cfg!(windows) {
+            // if cfg!(windows) {
                 cpass.set_pipeline(&self.compute_pipelines.clear_2);
                 cpass.set_bind_group(0, &self.compute_bind_group, &[]);
                 cpass.dispatch_workgroups(self.tree_node_work_group_count, 1, 1);
@@ -732,11 +732,11 @@ impl GraphicsResources {
                 cpass.set_pipeline(&self.compute_pipelines.electron_force);
                 cpass.set_bind_group(0, &self.compute_bind_group, &[]);
                 cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
-            }
+            // }
 
-            cpass.set_pipeline(&self.compute_pipelines.compute);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+            // cpass.set_pipeline(&self.compute_pipelines.compute);
+            // cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            // cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
 
             cpass.set_pipeline(&self.compute_pipelines.displacement);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
@@ -759,8 +759,11 @@ impl GraphicsResources {
         
                 drop(data);
                 debugger.debug_buffer.unmap();
-        
-                println!("{:?}", result);
+
+                if result[result.len() - 1] != 0 {
+                    println!("{:?}", result);
+                }
+                // println!("{:?}", result);
             } else {
                 panic!("failed to run compute on gpu!")
             }
@@ -1095,8 +1098,10 @@ fn pad_size(node_struct_size: usize, num_particles: u32) -> wgpu::BufferAddress 
 
 fn get_tree_node_count(node_count: &u32) -> u32 {
     let mut tree_node_count = node_count * 2;
+    println!("{}", node_count);
     while tree_node_count & (PARTICLES_PER_GROUP - 1) != 0 {
         tree_node_count += 1;
     }
+    println!("{}", tree_node_count - 1);
     tree_node_count - 1
 }
