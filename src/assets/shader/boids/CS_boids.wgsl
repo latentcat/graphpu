@@ -87,6 +87,10 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
     vPos.z = random_xy(index, 2u + 3u * uniforms.frame_num) * 2.0 - 1.0;
 
+    if (index == 0u) {
+        vPos = vec3<f32>(0.0);
+    }
+
     // Write back
     nodeSrc[index].position = vPos;
     nodeSrc[index].force = vec3<f32>(0.0);
@@ -596,6 +600,7 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
     if (max_depth < 48u) {
         for (var index = global_invocation_id.x; index < node_count; index += inc) {
             let order = treeNode[index].sort;
+//            if (order == 0) { continue; }
             let pos = nodeSrc[order].position;
             var af = vec3<f32>(0.0);
 
@@ -607,11 +612,11 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
                 var pd = spos[depth];
                 var nd = snode[depth];
                 while (pd < 8u) {
-                    let n = atomicLoad(&treeChild[nd * 8u + pd]);
+                    let n_i32 = atomicLoad(&treeChild[nd * 8u + pd]);
                     pd++;
 
-                    if (n >= 0) {
-                        let n = u32(n);
+                    if (n_i32 >= 0) {
+                        let n = u32(n_i32);
                         var dp: vec3<f32>;
                         if (n < node_count) {
                             dp = pos - nodeSrc[n].position;
@@ -694,10 +699,16 @@ fn displacement(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) 
     let d_force = nodeSrc[index].force - nodeSrc[index].prev_force;
     let swg = sqrt(dot(d_force, d_force));
     let factor = global_speed / (1.0 + sqrt(global_speed * swg)) / f32(nodeSrc[index].mass);
-    
-    nodeSrc[index].position += nodeSrc[index].force * factor * 0.01;
-    nodeSrc[index].prev_force = nodeSrc[index].force;
+
+    let force = nodeSrc[index].force;
     nodeSrc[index].force = vec3<f32>(0.0);
+    nodeSrc[index].prev_force = force;
+
+    if (index == 0u) {
+        return;
+    }
+
+    nodeSrc[index].position += force * factor * 0.01;
 }
 
 @compute

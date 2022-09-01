@@ -734,9 +734,9 @@ impl GraphicsResources {
                 cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
             // }
 
-            // cpass.set_pipeline(&self.compute_pipelines.compute);
-            // cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            // cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+            cpass.set_pipeline(&self.compute_pipelines.compute);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
 
             cpass.set_pipeline(&self.compute_pipelines.displacement);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
