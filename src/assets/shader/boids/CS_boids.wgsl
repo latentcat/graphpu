@@ -22,6 +22,7 @@ struct BHTree {
 
 struct BHTreeNode {
     position: vec3<f32>,
+    _empty: i32,
     mass: atomic<i32>,
     count: i32,
     start: atomic<i32>,

@@ -737,9 +737,9 @@ impl GraphicsResources {
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
 
-            // cpass.set_pipeline(&self.compute_pipelines.compute);
-            // cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            // cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+            cpass.set_pipeline(&self.compute_pipelines.compute);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
 
 
             cpass.set_pipeline(&self.compute_pipelines.displacement);
@@ -748,10 +748,15 @@ impl GraphicsResources {
 
 
         }
+        queue.submit(Some(command_encoder.finish()));
+        self.compute_frame_count += 1;
+        device.poll(wgpu::Maintain::Wait);
+
+        return;
+
         let debugger = &mut self.debugger;
         command_encoder.copy_buffer_to_buffer(&self.tree_node_buffer, 0, &debugger.debug_buffer, 0, debugger.buffer_size as _);
         queue.submit(Some(command_encoder.finish()));
-        self.compute_frame_count += 1;
 
         let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
         let buffer_slice = debugger.debug_buffer.slice(..);
@@ -766,9 +771,6 @@ impl GraphicsResources {
                 drop(data);
                 debugger.debug_buffer.unmap();
 
-                // if result[0] != -1 {
-                //     println!("{:?}", result);
-                // }
                 for item in result {
                     print!("{}, ", item._sort);
                 }

@@ -15,6 +15,7 @@ pub struct GraphicsView;
 impl AppView for GraphicsView {
     fn show(&mut self, models: &mut Models, ui: &mut Ui, _frame: &mut eframe::Frame) {
 
+        if ui.input().key_down(egui::Key::Space) { models.graphics_model.set_computing(false); }
 
         // 获取是否持续计算、下一帧是否 Dispatch
         let is_computing = models.graphics_model.is_computing;
@@ -37,9 +38,12 @@ impl AppView for GraphicsView {
                         // 则获取 Compute Resource
                         if let Some(compute_resources) = &mut models.graphics_model.graphics_resources {
 
-                            // 如果正在持续计算，则计算一次
-                            if is_computing {
-                                compute_resources.compute();
+                            if compute_resources.compute_frame_count < 1000 {
+
+                                // 如果正在持续计算，则计算一次
+                                if is_computing {
+                                    compute_resources.compute();
+                                }
                             }
 
                             // 如果当前帧需要 Dispatch，则 Dispatch 一次
