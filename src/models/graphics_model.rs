@@ -692,55 +692,72 @@ impl GraphicsResources {
             // compute pass
             let mut cpass =
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-            cpass.set_pipeline(&self.compute_pipelines.cal_gravity);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
 
-            cpass.set_pipeline(&self.compute_pipelines.attractive_force);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
+            println!("compute frame count % 12: {}", self.compute_frame_count % 12);
+            match self.compute_frame_count % 12 {
+                0 => {
+                    cpass.set_pipeline(&self.compute_pipelines.cal_gravity);
+                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                    cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+                },
+                1 => {
+                    cpass.set_pipeline(&self.compute_pipelines.attractive_force);
+                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                    cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
+                },
+                2 => {
+                    cpass.set_pipeline(&self.compute_pipelines.reduction_bounding);
+                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                    cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+                },
+                3 => {
+                    cpass.set_pipeline(&self.compute_pipelines.bounding_box);
+                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                    cpass.dispatch_workgroups(1, 1, 1);
+                },
+                4 => {
+                    cpass.set_pipeline(&self.compute_pipelines.clear_1);
+                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                    cpass.dispatch_workgroups(self.tree_node_work_group_count, 1, 1);
+                },
+                5 => {
+                    cpass.set_pipeline(&self.compute_pipelines.tree_building);
+                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                    cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
+                },
+                6 => {
+                    cpass.set_pipeline(&self.compute_pipelines.clear_2);
+                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                    cpass.dispatch_workgroups(self.tree_node_work_group_count, 1, 1);
+                },
+                7 => {
+                    cpass.set_pipeline(&self.compute_pipelines.summarization);
+                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                    cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
+                },
+                8 => {
+                    cpass.set_pipeline(&self.compute_pipelines.sort);
+                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                    cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
+                },
+                9 => {
+                    cpass.set_pipeline(&self.compute_pipelines.electron_force);
+                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                    cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
+                },
+                10 => {
+                    cpass.set_pipeline(&self.compute_pipelines.compute);
+                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                    cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+                },
+                11 => {
 
-            cpass.set_pipeline(&self.compute_pipelines.reduction_bounding);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
-
-            cpass.set_pipeline(&self.compute_pipelines.bounding_box);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(1, 1, 1);
-
-            cpass.set_pipeline(&self.compute_pipelines.clear_1);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.tree_node_work_group_count, 1, 1);
-
-            cpass.set_pipeline(&self.compute_pipelines.tree_building);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
-
-            // if cfg!(windows) {
-                cpass.set_pipeline(&self.compute_pipelines.clear_2);
-                cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                cpass.dispatch_workgroups(self.tree_node_work_group_count, 1, 1);
-
-                cpass.set_pipeline(&self.compute_pipelines.summarization);
-                cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
-
-                cpass.set_pipeline(&self.compute_pipelines.sort);
-                cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
-
-                cpass.set_pipeline(&self.compute_pipelines.electron_force);
-                cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
-            // }
-
-            cpass.set_pipeline(&self.compute_pipelines.compute);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
-
-            cpass.set_pipeline(&self.compute_pipelines.displacement);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+                    cpass.set_pipeline(&self.compute_pipelines.displacement);
+                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                    cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+                },
+                _ => !unreachable!()
+            }
         }
         let debugger = &mut self.debugger;
         command_encoder.copy_buffer_to_buffer(&self.tree_child_buffer, 0, &debugger.debug_buffer, 0, debugger.tree_child_buffer_size as _);
