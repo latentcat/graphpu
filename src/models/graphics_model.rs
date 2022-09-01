@@ -56,8 +56,9 @@ pub struct BHTree {
 }
 
 #[repr(C)]
+#[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
 pub struct BHTreeNode {
-    _position: [f32; 3],
+    _position: [f32; 4],
     _mass: i32,
     _count: i32,
     _start: i32,
@@ -245,7 +246,7 @@ pub struct GraphicsResources {
 
 struct GraphicsDebugger {
     debug_buffer:                   wgpu::Buffer,
-    tree_child_buffer_size:         u32,
+    buffer_size:         u32,
 
 }
 
@@ -486,7 +487,7 @@ impl GraphicsResources {
         let tree_node_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Tree Node Buffer"),
             size: tree_node_buffer_size,
-            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+            usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false
         });
 
@@ -612,10 +613,15 @@ impl GraphicsResources {
 
         let debug_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Debug Buffer"),
-            size: tree_child_buffer_size as _,
+            size: tree_node_buffer_size as _,
             usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
+
+        let debugger = GraphicsDebugger {
+            debug_buffer,
+            buffer_size: tree_node_buffer_size as _,
+        };
 
         let mut boids_resources = GraphicsResources {
             status: model.status.clone(),
@@ -667,10 +673,7 @@ impl GraphicsResources {
                 is_showing_debug: false
             },
             need_update: true,
-            debugger: GraphicsDebugger {
-                debug_buffer,
-                tree_child_buffer_size,
-            }
+            debugger,
         };
 
         boids_resources.gen_node();
@@ -694,76 +697,59 @@ impl GraphicsResources {
             let mut cpass =
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
 
-            print!("{}, ", self.compute_frame_count % 12);
-            std::io::stdout().flush().unwrap();
-            if self.compute_frame_count % 12 == 11 { println!(" ") }
-            match self.compute_frame_count % 12 {
-                0 => {
-                    cpass.set_pipeline(&self.compute_pipelines.cal_gravity);
-                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                    cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
-                },
-                1 => {
-                    cpass.set_pipeline(&self.compute_pipelines.attractive_force);
-                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                    cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
-                },
-                2 => {
-                    cpass.set_pipeline(&self.compute_pipelines.reduction_bounding);
-                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                    cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
-                },
-                3 => {
-                    cpass.set_pipeline(&self.compute_pipelines.bounding_box);
-                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                    cpass.dispatch_workgroups(1, 1, 1);
-                },
-                4 => {
-                    cpass.set_pipeline(&self.compute_pipelines.clear_1);
-                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                    cpass.dispatch_workgroups(self.tree_node_work_group_count, 1, 1);
-                },
-                5 => {
-                    cpass.set_pipeline(&self.compute_pipelines.tree_building);
-                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                    cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
-                },
-                6 => {
-                    cpass.set_pipeline(&self.compute_pipelines.clear_2);
-                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                    cpass.dispatch_workgroups(self.tree_node_work_group_count, 1, 1);
-                },
-                7 => {
-                    cpass.set_pipeline(&self.compute_pipelines.summarization);
-                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                    cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
-                },
-                8 => {
-                    cpass.set_pipeline(&self.compute_pipelines.sort);
-                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                    cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
-                },
-                9 => {
-                    cpass.set_pipeline(&self.compute_pipelines.electron_force);
-                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                    cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
-                },
-                10 => {
-                    // cpass.set_pipeline(&self.compute_pipelines.compute);
-                    // cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                    // cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
-                },
-                11 => {
+            cpass.set_pipeline(&self.compute_pipelines.cal_gravity);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
 
-                    cpass.set_pipeline(&self.compute_pipelines.displacement);
-                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.set_pipeline(&self.compute_pipelines.attractive_force);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
+
+            cpass.set_pipeline(&self.compute_pipelines.reduction_bounding);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+
+            cpass.set_pipeline(&self.compute_pipelines.bounding_box);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(1, 1, 1);
+
+            cpass.set_pipeline(&self.compute_pipelines.clear_1);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.tree_node_work_group_count, 1, 1);
+
+            cpass.set_pipeline(&self.compute_pipelines.tree_building);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
+
+            cpass.set_pipeline(&self.compute_pipelines.clear_2);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.tree_node_work_group_count, 1, 1);
+
+            cpass.set_pipeline(&self.compute_pipelines.summarization);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
+
+            cpass.set_pipeline(&self.compute_pipelines.sort);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
+
+            cpass.set_pipeline(&self.compute_pipelines.electron_force);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
+
+            // cpass.set_pipeline(&self.compute_pipelines.compute);
+            // cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            // cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+
+
+            cpass.set_pipeline(&self.compute_pipelines.displacement);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
                     cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
-                },
-                _ => !unreachable!()
-            }
+
+
         }
         let debugger = &mut self.debugger;
-        command_encoder.copy_buffer_to_buffer(&self.tree_child_buffer, 0, &debugger.debug_buffer, 0, debugger.tree_child_buffer_size as _);
+        command_encoder.copy_buffer_to_buffer(&self.tree_node_buffer, 0, &debugger.debug_buffer, 0, debugger.buffer_size as _);
         queue.submit(Some(command_encoder.finish()));
         self.compute_frame_count += 1;
 
@@ -775,14 +761,19 @@ impl GraphicsResources {
         pollster::block_on(async {
             if let Some(Ok(())) = receiver.receive().await {
                 let data = buffer_slice.get_mapped_range();
-                let result: Vec<i32> = bytemuck::cast_slice(&data).to_vec();
+                let result: Vec<BHTreeNode> = bytemuck::cast_slice(&data).to_vec();
         
                 drop(data);
                 debugger.debug_buffer.unmap();
 
-                if result[0] != -1 {
-                    println!("{:?}", result);
+                // if result[0] != -1 {
+                //     println!("{:?}", result);
+                // }
+                for item in result {
+                    print!("{}, ", item._sort);
                 }
+                std::io::stdout().flush().unwrap();
+                println!("\n");
             } else {
                 panic!("failed to run compute on gpu!")
             }

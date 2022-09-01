@@ -644,7 +644,7 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
                         } else if (dist2 >= sdq[depth]) {
                             if (dist2 > 0.0) {
                                 let factor = scale * f32(atomicLoad(&nodeSrc[order].mass)) * f32(atomicLoad(&treeNode[n].mass)) / dist2;
-                                af += dp * factor; 
+                                af += dp * factor;
                             }
                         } else {
                             spos[depth] = pd;
