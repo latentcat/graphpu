@@ -11,7 +11,7 @@ pub const ROOT: &str = env!("CARGO_MANIFEST_DIR");
 async fn main() {
     let dataset_folder =  PathBuf::from(ROOT).join("examples").join("dataset");
     let test_node_data = dataset_folder.join("test_data_node.csv");
-    let test_edge_data = dataset_folder.join("small_data_edge_raw.csv");
+    let test_edge_data = dataset_folder.join("small_data_edge.csv");
 
     let config_builder = ConfigBuilder::default().app_creator(Box::new(move |cc| {
         let mut app = MainApp::new(cc);

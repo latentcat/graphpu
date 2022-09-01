@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::io::Write;
 use std::mem;
 use chrono::Local;
 use egui::{Ui, Vec2};
@@ -693,7 +694,9 @@ impl GraphicsResources {
             let mut cpass =
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
 
-            println!("compute frame count % 12: {}", self.compute_frame_count % 12);
+            print!("{}, ", self.compute_frame_count % 12);
+            std::io::stdout().flush().unwrap();
+            if self.compute_frame_count % 12 == 11 { println!(" ") }
             match self.compute_frame_count % 12 {
                 0 => {
                     cpass.set_pipeline(&self.compute_pipelines.cal_gravity);
@@ -746,9 +749,9 @@ impl GraphicsResources {
                     cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
                 },
                 10 => {
-                    cpass.set_pipeline(&self.compute_pipelines.compute);
-                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                    cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+                    // cpass.set_pipeline(&self.compute_pipelines.compute);
+                    // cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                    // cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
                 },
                 11 => {
 
@@ -777,10 +780,9 @@ impl GraphicsResources {
                 drop(data);
                 debugger.debug_buffer.unmap();
 
-                if result[result.len() - 1] != 0 {
+                if result[0] != -1 {
                     println!("{:?}", result);
                 }
-                // println!("{:?}", result);
             } else {
                 panic!("failed to run compute on gpu!")
             }

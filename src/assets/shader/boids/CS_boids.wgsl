@@ -87,9 +87,9 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
     vPos.z = random_xy(index, 2u + 3u * uniforms.frame_num) * 2.0 - 1.0;
 
-    if (index == 0u) {
-        vPos = vec3<f32>(0.0);
-    }
+//    if (index == 0u) {
+//        vPos = vec3<f32>(0.0);
+//    }
 
     // Write back
     nodeSrc[index].position = vPos;
@@ -542,8 +542,19 @@ fn sort(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     let inc = min(node_count, 16384u);
     var index = tree_node_count + 1u - inc + global_invocation_id.x;
 
+    var limit = 1000;
+
     while (index >= bottom) {
+
+        limit--;
+        if (limit < 0) {
+            treeChild[index] = 1000;
+            treeChild[0] = 1000;
+            return;
+        }
+        workgroupBarrier();
         var start = atomicLoad(&treeNode[index].start);
+
         if (start >= 0) {
             var j = 0u;
             for (var i = 0u; i < 8u; i++) {
@@ -704,9 +715,9 @@ fn displacement(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) 
     nodeSrc[index].force = vec3<f32>(0.0);
     nodeSrc[index].prev_force = force;
 
-    if (index == 0u) {
-        return;
-    }
+//    if (index == 0u) {
+//        return;
+//    }
 
     nodeSrc[index].position += force * factor * 0.01;
 }
