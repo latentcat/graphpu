@@ -88,20 +88,15 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
     vPos.z = random_xy(index, 2u + 3u * uniforms.frame_num) * 2.0 - 1.0;
 
-//    if (index == 0u) {
-//        vPos = vec3<f32>(0.0);
-//    }
-
     // Write back
     nodeSrc[index].position = vPos;
     nodeSrc[index].force = vec3<f32>(0.0);
     nodeSrc[index].prev_force = vec3<f32>(0.0);
-    atomicStore(&nodeSrc[index].mass, 1u);
-    atomicStore(&springForceSrc[index * 3u + 0u], 0);
-    atomicStore(&springForceSrc[index * 3u + 1u], 0);
-    atomicStore(&springForceSrc[index * 3u + 2u], 0);
-    let target_node: u32 = index * 3u + 2u;
-    let aa = atomicExchange(&springForceSrc[target_node], 0);
+    nodeSrc[index].mass = 1u;
+    springForceSrc[index * 3u + 0u] = 0;
+    springForceSrc[index * 3u + 1u] = 0;
+    springForceSrc[index * 3u + 2u] = 0;
+
 }
 
 @compute
@@ -147,8 +142,9 @@ fn cal_gravity_force(@builtin(global_invocation_id) global_invocation_id: vec3<u
             gravity_force = 0.0;
         }
     }
-    nodeSrc[index].force +=  -pos * gravity_force;
-//    nodeSrc[index].force +=  -pos * 2.;
+//    nodeSrc[index].force +=  -pos * gravity_force;
+//    nodeSrc[index].force +=  -pos * min(gravity_force, 1.0);
+    nodeSrc[index].force +=  -pos * 0.5;
 }
 
 @compute
@@ -286,7 +282,7 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
             n = tree_node_count;
             r = root_r * 0.5;
             depth = 1u;
-            
+
             let compare = step(root_pos, pos);
             j = (u32(compare.x) << 0u) | (u32(compare.y) << 1u) + (u32(compare.z) << 2u); // 八个象限
             dp = -r + compare * (2.0 * r);
@@ -297,7 +293,7 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
         var ch = atomicLoad(&treeChild[n * 8u + j]);
 
         // 迭代至叶节点
-        while (ch >= i32(node_count)) { 
+        while (ch >= i32(node_count)) {
             n = u32(ch);
             depth++;
             r *= 0.5;
@@ -347,7 +343,7 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
                         if (cell <= node_count) {
                             return;
                         }
-                        
+
                         if (locked_ch != -1) {
                             atomicStore(&treeChild[n * 8u + j], i32(cell));
                         }
@@ -663,7 +659,7 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
                 }
                 depth--;
             }
-            nodeSrc[order].force += af;
+            nodeSrc[order].force += af * 0.25;
         }
     }
 }

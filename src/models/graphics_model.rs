@@ -270,11 +270,11 @@ impl GraphicsResources {
         // 从文件中创建 Shader
 
         let shader_files = [
-            include_str!("../assets/shader/boids/S_node.wgsl"),
-            include_str!("../assets/shader/boids/S_edge.wgsl"),
-            include_str!("../assets/shader/boids/S_axis.wgsl"),
-            include_str!("../assets/shader/boids/S_bounding_box.wgsl"),
-            include_str!("../assets/shader/boids/CS_boids.wgsl"),
+            include_str!("../assets/shaders/S_node.wgsl"),
+            include_str!("../assets/shaders/S_edge.wgsl"),
+            include_str!("../assets/shaders/S_axis.wgsl"),
+            include_str!("../assets/shaders/S_bounding_box.wgsl"),
+            include_str!("../assets/shaders/CS_graph_solver.wgsl"),
         ];
 
         let mut shaders = shader_files.par_iter().map(|shader_file| unsafe {
@@ -669,7 +669,7 @@ impl GraphicsResources {
             render_options: RenderOptions {
                 is_rendering_node: true,
                 is_rendering_edge: true,
-                is_rendering_axis: true,
+                is_rendering_axis: false,
                 is_showing_debug: false
             },
             need_update: true,
@@ -677,8 +677,6 @@ impl GraphicsResources {
         };
 
         boids_resources.gen_node();
-        // boids_resources.update_viewport(Vec2::from([100., 100.]));
-        // boids_resources.render();
 
         boids_resources
 
@@ -691,7 +689,7 @@ impl GraphicsResources {
 
         let mut command_encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        command_encoder.push_debug_group("compute boids movement");
+        command_encoder.push_debug_group("compute render movement");
         {
             // compute pass
             let mut cpass =
@@ -744,8 +742,7 @@ impl GraphicsResources {
 
             cpass.set_pipeline(&self.compute_pipelines.displacement);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                    cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
-
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
 
         }
         queue.submit(Some(command_encoder.finish()));
@@ -790,17 +787,17 @@ impl GraphicsResources {
 
         let mut command_encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        command_encoder.push_debug_group("compute boids movement");
+        command_encoder.push_debug_group("compute render movement");
         {
             // compute pass
-            let mut cpass =
-                command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+            let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
             cpass.set_pipeline(&self.compute_pipelines.gen_node);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
             cpass.set_pipeline(&self.compute_pipelines.cal_mass);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
+
             cpass.set_pipeline(&self.compute_pipelines.reduction_bounding);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
@@ -822,17 +819,23 @@ impl GraphicsResources {
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[self.compute_frame_count as u32]));
-        command_encoder.push_debug_group("randomize boids position");
+        command_encoder.push_debug_group("randomize render position");
         {
             // compute pass
-            let mut cpass =
-                command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+            let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
             cpass.set_pipeline(&self.compute_pipelines.randomize);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
             cpass.set_pipeline(&self.compute_pipelines.copy);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+
+            cpass.set_pipeline(&self.compute_pipelines.reduction_bounding);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+            cpass.set_pipeline(&self.compute_pipelines.bounding_box);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(1, 1, 1);
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));
@@ -849,7 +852,14 @@ impl GraphicsResources {
         let is_render_output = self.is_render_output;
         self.is_render_output = false;
 
-        let (resolve_target, view, depth_view) = if !is_render_output {
+        let
+            (
+                resolve_target,
+                view,
+                depth_view
+            )
+            = if !is_render_output
+        {
             (
                 Some(&self.viewport_texture.as_ref().unwrap().view),
                 &self.viewport_msaa_texture.as_ref().unwrap().view,
@@ -874,8 +884,6 @@ impl GraphicsResources {
             },
         });
 
-
-
         let render_pass_descriptor = wgpu::RenderPassDescriptor {
             label: None,
             color_attachments: &[color_attachment],
@@ -887,18 +895,14 @@ impl GraphicsResources {
                 }),
                 stencil_ops: None,
             }),
-            // depth_stencil_attachment: None,
         };
-
 
         update_transform_matrix(queue, &mut self.camera, &self.render_uniform_buffer, glam::Vec2::new(self.viewport_size.x, self.viewport_size.y));
 
-        // get command encoder
-        let mut command_encoder =
-            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        command_encoder.push_debug_group("render boids");
+        let mut command_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        command_encoder.push_debug_group("render render");
         {
-            // render pass
+
             let mut rpass = command_encoder.begin_render_pass(&render_pass_descriptor);
 
             if !is_render_output {
