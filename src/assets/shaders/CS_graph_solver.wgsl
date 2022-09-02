@@ -127,7 +127,7 @@ fn cal_gravity_force(@builtin(global_invocation_id) global_invocation_id: vec3<u
 
     // TODO: Global Param
     let strong_gravity = true;
-    let k_gravity = 1.0;
+    let k_gravity = 0.25;
 
     let pos = nodeSrc[index].position;
     let mass = f32(atomicLoad(&nodeSrc[index].mass));
@@ -144,7 +144,7 @@ fn cal_gravity_force(@builtin(global_invocation_id) global_invocation_id: vec3<u
     }
 //    nodeSrc[index].force +=  -pos * gravity_force;
 //    nodeSrc[index].force +=  -pos * min(gravity_force, 1.0);
-    nodeSrc[index].force +=  -pos * 0.5;
+    nodeSrc[index].force +=  -pos * 0.25;
 }
 
 @compute
@@ -659,7 +659,7 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
                 }
                 depth--;
             }
-            nodeSrc[order].force += af * 0.25;
+            nodeSrc[order].force += af * 0.1;
         }
     }
 }
