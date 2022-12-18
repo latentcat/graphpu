@@ -375,9 +375,7 @@ impl GraphicsResources {
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(&[0u32]),
-            usage: wgpu::BufferUsages::COPY_DST
-                | wgpu::BufferUsages::MAP_WRITE
-                | wgpu::BufferUsages::UNIFORM,
+            usage: wgpu::BufferUsages::UNIFORM,
         });
 
         // Quad 顶点数据
@@ -966,9 +964,9 @@ impl GraphicsResources {
             let depth_texture = Texture::create_depth_texture(&device, &texture_extent, "depth_texture");
 
             if self.viewport_texture.is_some() {
-                self.render_state.egui_rpass.write().free_texture(&self.viewport_texture_id);
+                self.render_state.renderer.write().free_texture(&self.viewport_texture_id);
             }
-            let texture_id = self.render_state.egui_rpass.write().register_native_texture(device, &texture.view, wgpu::FilterMode::Linear);
+            let texture_id = self.render_state.renderer.write().register_native_texture(device, &texture.view, wgpu::FilterMode::Linear);
 
             self.viewport_texture_extent = texture_extent;
             self.viewport_texture = Some(texture);

@@ -22,17 +22,16 @@ test = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-#egui = { path = "./lib/egui/egui" }
-egui = "0.19.0"
+egui = "0.20.1"
 #egui_extras = { version = "0.18.0", path = "./lib/egui/egui_extras" }
-egui_extras = { version = "0.19.0" }
+egui_extras = { version = "0.20.0" }
 #eframe = { path = "./lib/egui/eframe", features = ["wgpu"] }
-eframe = { version = "0.19.0", features = ["wgpu"] }
+eframe = { version = "0.20.1", features = ["wgpu"] }
 #egui-wgpu = { path= "./lib/egui/egui-wgpu" }
-egui-wgpu = "0.19.0"
+egui-wgpu = "0.20.0"
 
 bytemuck = { version = "1.9.1" }
-wgpu = { version = "0.13", features = ["webgl"] }
+wgpu = { version = "0.14", features = ["webgl"] }
 pollster = { version = "0.2.5" }
 glam = { version = "0.20.2" }
 

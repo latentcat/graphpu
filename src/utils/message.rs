@@ -55,12 +55,11 @@ impl Display for Message {
 
 impl Message {
     pub fn display_time(&self) -> String {
-        let time = chrono::NaiveDateTime::from_timestamp(self.time, 0);
+        let time = chrono::NaiveDateTime::from_timestamp_opt(self.time, 0).unwrap();
         let time: DateTime<Local> = DateTime::from_utc(time, Local::now().offset().to_owned());
         let time_text = format!("{:02}:{:02}:{:02}", time.hour(), time.minute(), time.second());
 
         time_text
-
     }
 }
 
