@@ -14,12 +14,27 @@ pub fn window_frame(style: &egui::Style) -> egui::Frame {
   }
 }
 
+pub fn menu_panel_style(style: &egui::Style) -> egui::Frame {
+    egui::Frame {
+        inner_margin: egui::style::Margin {
+            left: 8.0,
+            right: 8.0,
+            top: 3.0,
+            bottom: 3.0
+        },
+        rounding: egui::Rounding::none(),
+        fill: style.visuals.window_fill(),
+        // stroke: style.visuals.window_stroke(),
+        ..Default::default()
+    }
+}
+
 pub fn central_panel_frame(style: &egui::Style) -> egui::Frame {
     egui::Frame {
         inner_margin: egui::style::Margin::symmetric(8.0, 8.0),
         rounding: egui::Rounding::none(),
         fill: style.visuals.window_fill(),
-        stroke: style.visuals.window_stroke(),
+        // stroke: style.visuals.window_stroke(),
         ..Default::default()
     }
 }
@@ -60,7 +75,7 @@ pub fn inspector_frame(style: &egui::Style) -> egui::Frame {
         inner_margin: egui::style::Margin::symmetric(0.0, 0.0),
         rounding: egui::Rounding::none(),
         fill: style.visuals.window_fill(),
-        stroke: style.visuals.window_stroke(),
+        // stroke: style.visuals.window_stroke(),
         ..Default::default()
     }
 }
@@ -78,7 +93,7 @@ pub fn graphics_frame(style: &egui::Style) -> egui::Frame {
         inner_margin: egui::style::Margin::symmetric(0.5, 0.5),
         rounding: egui::Rounding::none(),
         fill: Color32::from_gray(20),
-        stroke: style.visuals.window_stroke(),
+        // stroke: style.visuals.window_stroke(),
         ..Default::default()
     }
 }
@@ -132,10 +147,15 @@ pub fn toolbar_timeline_frame(style: &egui::Style) -> egui::Frame {
 
 pub fn dock_frame(style: &egui::Style) -> egui::Frame {
     egui::Frame {
-        inner_margin: egui::style::Margin::symmetric(8.0, 0.0),
+        inner_margin: egui::style::Margin {
+            left: 8.0,
+            right: 8.0,
+            top: 2.0,
+            bottom: 0.0
+        },
         rounding: egui::Rounding::none(),
         fill: style.visuals.window_fill(),
-        stroke: style.visuals.window_stroke(),
+        // stroke: style.visuals.window_stroke(),
         ..Default::default()
     }
 }
@@ -145,7 +165,7 @@ pub fn drawer_frame(style: &egui::Style) -> egui::Frame {
         inner_margin: egui::style::Margin::symmetric(0.0, 0.0),
         rounding: egui::Rounding::none(),
         fill: style.visuals.window_fill(),
-        stroke: style.visuals.window_stroke(),
+        // stroke: style.visuals.window_stroke(),
         ..Default::default()
     }
 }

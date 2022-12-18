@@ -92,6 +92,7 @@ impl AppView for GraphicsView {
 
                     egui::SidePanel::left("toolbar-left-11")
                         .frame(toolbar_inner_frame(ui.style()))
+                        .show_separator_line(false)
                         .width_range(0.0..=0.0)
                         .resizable(false)
                         .show_inside(ui, |ui| {
@@ -142,6 +143,7 @@ impl AppView for GraphicsView {
 
                     egui::TopBottomPanel::top("toolbar-top")
                         .frame(toolbar_inner_frame_top(ui.style()))
+                        .show_separator_line(false)
                         .show_inside(ui, |ui| {
                             ui.set_style(ui.ctx().style());
                             ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
@@ -182,6 +184,7 @@ impl AppView for GraphicsView {
 
                         egui::TopBottomPanel::bottom("toolbar-top-2")
                             .frame(toolbar_inner_frame_bottom(ui.style()))
+                            .show_separator_line(false)
                             .show_inside(ui, |ui| {
                                 ui.set_style(ui.ctx().style());
                                 ui.spacing_mut().item_spacing = egui::vec2(4.0, 0.0);

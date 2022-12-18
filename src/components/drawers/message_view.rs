@@ -1,5 +1,6 @@
 use egui::{Color32, epaint, Ui, Vec2};
 use crate::components::AppView;
+use crate::constant::FONT_SIZE_BODY;
 
 use crate::models::Models;
 use crate::utils::message::{MessageLevel, messenger};
@@ -57,7 +58,7 @@ impl AppView for MessageView {
                                     });
 
                                     let mut job = egui::text::LayoutJob::single_section(content_text.to_owned(), egui::TextFormat {
-                                        font_id: egui::FontId::new(13.0, Default::default()),
+                                        font_id: egui::FontId::new(FONT_SIZE_BODY, Default::default()),
                                         color: egui::Color32::from_gray(120),
                                         ..Default::default()
                                     });

@@ -1,6 +1,7 @@
 use egui::Ui;
 
 use crate::{models::{app_model::{MainStage, ImportState}, Models}, widgets::frames::button_group_style};
+use crate::widgets::frames::menu_panel_style;
 
 use super::AppView;
 
@@ -12,25 +13,10 @@ impl Default for MenuBarView {
     }
 }
 
-pub fn panel_style(style: &egui::Style) -> egui::Frame {
-    egui::Frame {
-        inner_margin: egui::style::Margin {
-            left: 8.0,
-            right: 8.0,
-            top: 3.0,
-            bottom: 1.0
-        },
-        rounding: egui::Rounding::none(),
-        fill: style.visuals.window_fill(),
-        stroke: style.visuals.window_stroke(),
-        ..Default::default()
-    }
-}
-
 impl AppView for MenuBarView {
     fn show(&mut self, models: &mut Models, ui: &mut Ui, frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("menubar_view")
-            .frame(panel_style(ui.style()))
+            .frame(menu_panel_style(ui.style()))
             .show_inside(ui, |ui| {
                 ui.set_style(ui.ctx().style());
                 egui::menu::bar(ui, |ui| {

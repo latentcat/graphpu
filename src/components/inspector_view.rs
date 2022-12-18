@@ -27,6 +27,7 @@ impl AppView for InspectorView {
                 // Render Section
                 egui::TopBottomPanel::bottom("render")
                     .frame(inspector_inner_frame(ui.style()))
+                    .show_separator_line(false)
                     .show_inside(ui, |ui| {
                         ui.set_style(ui.ctx().style());
                         ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);

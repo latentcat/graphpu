@@ -1,5 +1,6 @@
 use std::borrow::BorrowMut;
 use egui::{Ui, Vec2};
+use crate::constant::FONT_SIZE_BODY;
 use crate::models::app_model::DockStage;
 
 use crate::models::Models;
@@ -20,7 +21,7 @@ impl AppView for DockView {
 
                     ui.set_style(models.app_model.dock_style.clone());
                     ui.spacing_mut().item_spacing = Vec2::ZERO;
-                    ui.style_mut().text_styles.get_mut(&egui::TextStyle::Button).unwrap().size = 13.0;
+                    ui.style_mut().text_styles.get_mut(&egui::TextStyle::Button).unwrap().size = FONT_SIZE_BODY;
 
                     dock_button(ui, models, DockStage::Messages, "🕫 Messages");
                     dock_button(ui, models, DockStage::Timeline, "🕙 Timeline");

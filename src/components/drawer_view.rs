@@ -1,5 +1,6 @@
 use egui::{Response, Ui, Vec2};
 use crate::components::drawers::MessageView;
+use crate::constant::FONT_SIZE_TITLE;
 use crate::models::app_model::DockStage;
 
 use crate::models::Models;
@@ -41,7 +42,7 @@ impl AppView for DrawerView {
                                         DockStage::Timeline => "Timeline",
                                     };
 
-                                    ui.style_mut().text_styles.get_mut(&egui::TextStyle::Body).unwrap().size = 14.0;
+                                    ui.style_mut().text_styles.get_mut(&egui::TextStyle::Body).unwrap().size = FONT_SIZE_TITLE;
                                     ui.label(egui::RichText::new(format!("{}", title)).strong());
 
                                 },

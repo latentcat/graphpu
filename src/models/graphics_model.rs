@@ -375,7 +375,8 @@ impl GraphicsResources {
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
             contents: bytemuck::cast_slice(&[0u32]),
-            usage: wgpu::BufferUsages::UNIFORM,
+            usage: wgpu::BufferUsages::UNIFORM |
+                wgpu::BufferUsages::COPY_DST,
         });
 
         // Quad 顶点数据
