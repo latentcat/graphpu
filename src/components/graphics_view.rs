@@ -140,6 +140,7 @@ impl AppView for GraphicsView {
                         });
 
                     egui::TopBottomPanel::top("toolbar-top")
+                        .show_separator_line(false)
                         .frame(toolbar_inner_frame_top(ui.style()))
                         .show_inside(ui, |ui| {
                             ui.set_style(ui.ctx().style());

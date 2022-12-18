@@ -88,14 +88,14 @@ impl Default for AppModel {
                     },
                     hovered: WidgetVisuals {
                         bg_fill: Color32::from_gray(45),
-                        bg_stroke: Stroke::none(), // e.g. hover over window edge or button
+                        bg_stroke: Stroke::NONE, // e.g. hover over window edge or button
                         fg_stroke: Stroke::new(1.5, Color32::from_gray(240)),
                         rounding: Rounding::none(),
                         expansion: 0.0,
                     },
                     active: WidgetVisuals {
                         bg_fill: Color32::from_gray(70),
-                        bg_stroke: Stroke::none(),
+                        bg_stroke: Stroke::NONE,
                         fg_stroke: Stroke::new(2.0, Color32::WHITE),
                         rounding: Rounding::none(),
                         expansion: 0.0,

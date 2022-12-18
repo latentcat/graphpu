@@ -1,4 +1,4 @@
-use egui_extras::{TableBuilder, Size};
+use egui_extras::{TableBuilder, Size, Column};
 
 use crate::{
     models::{app_model::TableTab, data_model::ExternalData, Models},
@@ -57,8 +57,8 @@ impl AppView for TableView {
                         TableBuilder::new(ui)
                             .striped(true)
                             .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-                            .columns(Size::initial(100.0).at_least(60.0), if data_headers.len() > 0 { data_headers.len() } else { 0 })
-                            .columns(Size::remainder().at_least(60.0), 1)
+                            .columns(Column::initial(100.0).at_least(60.0), if data_headers.len() > 0 { data_headers.len() } else { 0 })
+                            .columns(Column::remainder().at_least(60.0), 1)
                             .resizable(true)
                             .header(20.0, |mut header| {
                                 header.col(|ui| {

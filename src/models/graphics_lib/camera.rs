@@ -19,7 +19,7 @@ impl Camera {
         let mut camera = Self {
             position,
             aspect_ratio: 1.0,
-            near_far: glam::Vec2::new(0.01, 10000.0),
+            near_far: glam::Vec2::new(0.01, 2000.0),
             ..Default::default()
         };
 
@@ -46,7 +46,7 @@ impl Camera {
         let dir = self.position - self.center;
         let ( mut length, norm_dir ) = ( dir.length(), dir.normalize() );
 
-        length = f32::clamp(length * zoom_factor, 0.1, 1000.0);
+        length = f32::clamp(length * zoom_factor, 1.0, 1000.0);
 
         self.position = length * norm_dir + self.center;
         self.is_updated = true;

@@ -22,7 +22,7 @@ pub fn panel_style(style: &egui::Style) -> egui::Frame {
         },
         rounding: egui::Rounding::none(),
         fill: style.visuals.window_fill(),
-        stroke: style.visuals.window_stroke(),
+        // stroke: style.visuals.window_stroke(),
         ..Default::default()
     }
 }

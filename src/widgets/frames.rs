@@ -19,7 +19,7 @@ pub fn central_panel_frame(style: &egui::Style) -> egui::Frame {
         inner_margin: egui::style::Margin::symmetric(8.0, 8.0),
         rounding: egui::Rounding::none(),
         fill: style.visuals.window_fill(),
-        stroke: style.visuals.window_stroke(),
+        // stroke: style.visuals.window_stroke(),
         ..Default::default()
     }
 }
@@ -37,7 +37,7 @@ pub fn button_group_style(_: &egui::Style) -> egui::Frame {
       inner_margin: egui::style::Margin::symmetric(0.0, 0.0),
       rounding: egui::Rounding::same(2.0),
       fill: Color32::from_gray(60),
-      stroke: egui::Stroke::none(),
+      stroke: Stroke::NONE,
       ..Default::default()
   }
 }
@@ -60,7 +60,7 @@ pub fn inspector_frame(style: &egui::Style) -> egui::Frame {
         inner_margin: egui::style::Margin::symmetric(0.0, 0.0),
         rounding: egui::Rounding::none(),
         fill: style.visuals.window_fill(),
-        stroke: style.visuals.window_stroke(),
+        // stroke: style.visuals.window_stroke(),
         ..Default::default()
     }
 }
@@ -78,7 +78,7 @@ pub fn graphics_frame(style: &egui::Style) -> egui::Frame {
         inner_margin: egui::style::Margin::symmetric(0.5, 0.5),
         rounding: egui::Rounding::none(),
         fill: Color32::from_gray(20),
-        stroke: style.visuals.window_stroke(),
+        // stroke: style.visuals.window_stroke(),
         ..Default::default()
     }
 }
@@ -135,7 +135,7 @@ pub fn dock_frame(style: &egui::Style) -> egui::Frame {
         inner_margin: egui::style::Margin::symmetric(8.0, 0.0),
         rounding: egui::Rounding::none(),
         fill: style.visuals.window_fill(),
-        stroke: style.visuals.window_stroke(),
+        // stroke: style.visuals.window_stroke(),
         ..Default::default()
     }
 }

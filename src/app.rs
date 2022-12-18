@@ -5,10 +5,12 @@ use crate::{
     },
     models::{app_model::{AppModel, MainStage}, graphics_model::GraphicsModel, data_model::DataModel, Models},
 };
-use egui::{Color32, TextStyle};
+use egui::{Color32, FontId, TextStyle};
+use egui::FontFamily::Proportional;
 use crate::components::dock_view::DockView;
 use crate::components::drawer_view::DrawerView;
 use crate::models::app_model::DockStage;
+use egui::TextStyle::*;
 
 pub struct MainApp {
     pub models: Models,
@@ -30,8 +32,19 @@ impl MainApp {
         style.spacing.icon_width = 12.0;
         style.spacing.indent = 16.0;
 
-        style.text_styles.get_mut(&TextStyle::Body).unwrap().size = 13.0;
-        style.text_styles.get_mut(&TextStyle::Button).unwrap().size = 13.0;
+        style.text_styles.get_mut(&TextStyle::Body).unwrap().size = 11.5;
+        style.text_styles.get_mut(&TextStyle::Button).unwrap().size = 11.5;
+
+
+        // style.text_styles = [
+        //     (Heading, FontId::new(30.0, Proportional)),
+        //     (Name("Heading2".into()), FontId::new(25.0, Proportional)),
+        //     (Name("Context".into()), FontId::new(23.0, Proportional)),
+        //     (Body, FontId::new(12.0, Proportional)),
+        //     (Monospace, FontId::new(11.0, Proportional)),
+        //     (Button, FontId::new(11.0, Proportional)),
+        //     (Small, FontId::new(10.0, Proportional)),
+        // ].into();
 
         style.spacing.button_padding = egui::vec2(8.0, 1.0);
 

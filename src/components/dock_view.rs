@@ -20,7 +20,7 @@ impl AppView for DockView {
 
                     ui.set_style(models.app_model.dock_style.clone());
                     ui.spacing_mut().item_spacing = Vec2::ZERO;
-                    ui.style_mut().text_styles.get_mut(&egui::TextStyle::Button).unwrap().size = 13.0;
+                    ui.style_mut().text_styles.get_mut(&egui::TextStyle::Button).unwrap().size = 11.5;
 
                     dock_button(ui, models, DockStage::Messages, "🕫 Messages");
                     dock_button(ui, models, DockStage::Timeline, "🕙 Timeline");

@@ -40,7 +40,7 @@ impl AppView for DetailView {
                                         ui.add_space(3.0);
 
                                         let mut job = egui::text::LayoutJob::single_section(message.to_owned(), egui::TextFormat {
-                                            font_id: egui::FontId::new(13.0, Default::default()),
+                                            font_id: egui::FontId::new(11.5, Default::default()),
                                             color: egui::Color32::from_gray(120),
                                             ..Default::default()
                                         });

@@ -386,7 +386,7 @@ impl GraphicsResources {
         model.clear_source_target_list();
 
 
-        let camera = Camera::from(Vec3::new(3.0, 3.0, 6.0));
+        let camera = Camera::from(Vec3::new(6.0, 6.0, 12.0));
         let control = Controls::new();
 
         let uniform_data = generate_uniform_data(&camera);
@@ -719,9 +719,9 @@ impl GraphicsResources {
             let depth_texture = Texture::create_depth_texture(&device, &texture_extent, "depth_texture");
 
             if self.viewport_texture.is_some() {
-                self.render_state.egui_rpass.write().free_texture(&self.viewport_texture_id);
+                self.render_state.renderer.write().free_texture(&self.viewport_texture_id);
             }
-            let texture_id = self.render_state.egui_rpass.write().register_native_texture(device, &texture.view, wgpu::FilterMode::Linear);
+            let texture_id = self.render_state.renderer.write().register_native_texture(device, &texture.view, wgpu::FilterMode::Linear);
 
             self.viewport_texture_extent = texture_extent;
             self.viewport_texture = Some(texture);

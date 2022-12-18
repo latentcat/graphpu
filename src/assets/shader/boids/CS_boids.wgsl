@@ -43,14 +43,14 @@ fn atomic_add_f32(springIndex: u32, updateValue: f32) {
     let atomic_ptr = &springForceSrc[springIndex];
     var new_u32 = bitcast<i32>(updateValue);
     var assumed: i32 = 0;
-    var origin: i32;
+//    var origin: i32;
     while (true) {
-        origin = atomicCompareExchangeWeak(atomic_ptr, assumed, new_u32);
-        if (origin == assumed) {
+        var origin = atomicCompareExchangeWeak(atomic_ptr, assumed, new_u32);
+        if (origin.old_value == assumed) {
             break;
         }
-        assumed = origin;
-        new_u32 = bitcast<i32>(bitcast<f32>(origin) + updateValue);
+        assumed = origin.old_value;
+        new_u32 = bitcast<i32>(bitcast<f32>(origin.old_value) + updateValue);
     }
 }
 
