@@ -5,6 +5,7 @@ pub mod render_pipeline;
 pub mod buffer_dimensions;
 pub mod bind_group_layout;
 pub mod compute_shader;
+pub mod unifrom;
 
 pub use {
     camera::Camera,

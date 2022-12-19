@@ -88,7 +88,7 @@ pub fn inspector_inner_frame(_style: &egui::Style) -> egui::Frame {
     }
 }
 
-pub fn graphics_frame(style: &egui::Style) -> egui::Frame {
+pub fn graphics_frame(_style: &egui::Style) -> egui::Frame {
     egui::Frame {
         inner_margin: egui::style::Margin::symmetric(0.5, 0.5),
         rounding: egui::Rounding::none(),

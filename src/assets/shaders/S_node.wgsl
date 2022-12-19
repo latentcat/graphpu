@@ -19,6 +19,9 @@ struct Node {
 struct Transform {
     view: mat4x4<f32>,
     projection: mat4x4<f32>,
+    time: vec4<f32>,
+    screen: vec4<f32>,
+    camera: vec4<f32>,
 }
 
 @group(0) @binding(0) var<uniform> transform: Transform;

@@ -12,6 +12,7 @@ use crate::models::graphics_lib::{BufferDimensions, Camera, Controls, RenderPipe
 use rayon::prelude::*;
 use crate::models::graphics_lib::bind_group_layout::BindGroupLayout;
 use crate::models::graphics_lib::compute_shader::ComputeShader;
+use crate::models::graphics_lib::unifrom::{generate_uniforms, Uniforms};
 use crate::utils::file::create_png;
 
 use super::data_model::DataModel;
@@ -507,13 +508,12 @@ impl GraphicsResources {
         let camera = Camera::from(Vec3::new(3.0, 3.0, 6.0));
         let control = Controls::new();
 
-        let uniform_data = generate_uniform_data(&camera);
-
-        // 指定大小，创建 Node Buffer，不初始化数据
-        let render_uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Edge Buffer"),
-            contents: bytemuck::cast_slice(&uniform_data),
+        //
+        let render_uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Render Uniform Buffer"),
+            size: mem::size_of::<Uniforms>() as _,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false
         });
 
         // Bind Group
@@ -740,7 +740,6 @@ impl GraphicsResources {
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
 
-
             cpass.set_pipeline(&self.compute_pipelines.displacement);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
@@ -898,7 +897,7 @@ impl GraphicsResources {
             }),
         };
 
-        update_transform_matrix(queue, &mut self.camera, &self.render_uniform_buffer, glam::Vec2::new(self.viewport_size.x, self.viewport_size.y));
+        update_render_uniforms(queue, &mut self.camera, &self.render_uniform_buffer, glam::Vec2::new(self.viewport_size.x, self.viewport_size.y));
 
         let mut command_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         command_encoder.push_debug_group("render render");
@@ -1078,29 +1077,18 @@ impl GraphicsResources {
 
 }
 
-fn update_transform_matrix(queue: &Queue, camera: &mut Camera, render_uniform_buffer: &wgpu::Buffer, _viewport_size: glam::Vec2) {
+fn update_render_uniforms(queue: &Queue, camera: &mut Camera, render_uniform_buffer: &wgpu::Buffer, viewport_size: glam::Vec2) {
 
     if camera.is_updated {
 
         camera.update_projection_matrix();
 
-        let uniform_data = generate_uniform_data(camera);
+        let uniform = generate_uniforms(camera, viewport_size);
 
-        queue.write_buffer(&render_uniform_buffer, 0, bytemuck::cast_slice(&uniform_data));
+        queue.write_buffer(&render_uniform_buffer, 0, bytemuck::cast_slice(&[uniform]));
         camera.is_updated = false;
 
     }
-
-}
-
-fn generate_uniform_data(camera: &Camera) -> Vec<f32> {
-
-    let mut uniform_data: Vec<f32> = camera.view_matrix.as_ref().to_vec();
-    uniform_data.append(&mut camera.projection_matrix.as_ref().to_vec());
-    uniform_data.append(&mut [camera.aspect_ratio, camera.zoom_factor].to_vec());
-    uniform_data.append(&mut camera.near_far.to_array().to_vec());
-
-    uniform_data
 
 }
 

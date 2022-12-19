@@ -154,6 +154,6 @@ fn spacing_ui_start (ui: &mut Ui) {
     // ui.add_space(4.0);
 }
 
-fn spacing_ui_end (ui: &mut Ui) {
+fn spacing_ui_end (_ui: &mut Ui) {
     // ui.add_space(2.0);
 }

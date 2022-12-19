@@ -10,6 +10,9 @@ struct Varing {
 struct Transform {
     view: mat4x4<f32>,
     projection: mat4x4<f32>,
+    time: vec4<f32>,
+    screen: vec4<f32>,
+    camera: vec4<f32>,
 }
 
 struct Bound {
