@@ -148,10 +148,12 @@ fn spacing_ui (ui: &mut Ui) {
 }
 
 fn spacing_ui_start (ui: &mut Ui) {
-    spacing_ui(ui);
-    ui.add_space(4.0);
+    ui.spacing_mut().item_spacing = egui::vec2(0.0, 2.0);
+    ui.spacing_mut().button_padding = egui::vec2(6.0, 0.0);
+    ui.add_space(2.0);
+    // ui.add_space(4.0);
 }
 
 fn spacing_ui_end (ui: &mut Ui) {
-    ui.add_space(2.0);
+    // ui.add_space(2.0);
 }

@@ -9,7 +9,7 @@ use egui::{Color32, TextStyle};
 use crate::components::dock_view::DockView;
 use crate::components::drawer_view::DrawerView;
 use crate::models::app_model::DockStage;
-use crate::constant::FONT_SIZE_BODY;
+use crate::constant::{FONT_SIZE_BODY, FONT_SIZE_HEADING};
 
 pub struct MainApp {
     pub models: Models,
@@ -33,6 +33,17 @@ impl MainApp {
 
         style.text_styles.get_mut(&TextStyle::Body).unwrap().size = FONT_SIZE_BODY;
         style.text_styles.get_mut(&TextStyle::Button).unwrap().size = FONT_SIZE_BODY;
+        style.text_styles.get_mut(&TextStyle::Heading).unwrap().size = FONT_SIZE_HEADING;
+
+        // style.text_styles = [
+        //     (Heading, FontId::new(30.0, Proportional)),
+        //     (Name("Heading2".into()), FontId::new(25.0, Proportional)),
+        //     (Name("Context".into()), FontId::new(23.0, Proportional)),
+        //     (Body, FontId::new(18.0, Proportional)),
+        //     (Monospace, FontId::new(14.0, Proportional)),
+        //     (Button, FontId::new(14.0, Proportional)),
+        //     (Small, FontId::new(10.0, Proportional)),
+        // ].into();
 
         style.spacing.button_padding = egui::vec2(8.0, 1.0);
 

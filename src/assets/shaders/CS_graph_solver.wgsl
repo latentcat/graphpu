@@ -418,7 +418,6 @@ fn summarization(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     }
 
     // TODO: ch bounds check
-    var cm = 0;
     var schild: array<u32, 8>;
     var smass: array<i32, 8>;
     let restart = index;
@@ -437,6 +436,7 @@ fn summarization(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
                     }
                 }
                 if (i == 8u) {
+                    var cm = 0;
                     var pos = vec3<f32>(0.0);
                     var cnt = 0;
                     for (i = 0u; i < 8u; i++) {
@@ -495,10 +495,10 @@ fn summarization(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
             }
 
             if (j == 0) {
-                cm = 0;
+                var cm = 0;
                 var pos = vec3<f32>(0.0);
                 var cnt = 0;
-                for (var i = 0u; i < 8u; i++) {
+                for (i = 0u; i < 8u; i++) {
                     let ch = schild[i];
                     if (ch >= node_count) {
                         let m = smass[i];
