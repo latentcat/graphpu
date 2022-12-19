@@ -149,6 +149,7 @@ pub struct RenderOptions {
     pub is_rendering_node: bool,
     pub is_rendering_edge: bool,
     pub is_rendering_axis: bool,
+    pub is_rendering_bounding_box: bool,
     pub is_showing_debug:  bool,
 }
 
@@ -669,6 +670,7 @@ impl GraphicsResources {
                 is_rendering_node: true,
                 is_rendering_edge: true,
                 is_rendering_axis: false,
+                is_rendering_bounding_box: false,
                 is_showing_debug: false
             },
             need_update: true,
@@ -910,7 +912,9 @@ impl GraphicsResources {
                     rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
                     rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
                     rpass.draw(0..4, 0..2);
+                }
 
+                if self.render_options.is_rendering_bounding_box {
                     rpass.set_pipeline(&self.bounding_box_render_pipeline);
                     rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
                     rpass.set_bind_group(1, &self.bounding_box_render_bind_group, &[]);

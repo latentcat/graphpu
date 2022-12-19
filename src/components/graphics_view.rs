@@ -153,7 +153,11 @@ impl AppView for GraphicsView {
                                 ui.horizontal(|ui| {
                                     if let Some(graphics_resources) = &mut models.graphics_model.graphics_resources {
 
-                                        toggle_button(ui, &mut graphics_resources.render_options.is_rendering_axis, "⛶")
+                                        toggle_button(ui, &mut graphics_resources.render_options.is_rendering_bounding_box, "⛶")
+                                            .on_hover_text("Toggle Bounding Box")
+                                            .clicked().then(|| { need_update(ui, graphics_resources) });
+
+                                        toggle_button(ui, &mut graphics_resources.render_options.is_rendering_axis, "×")
                                             .on_hover_text("Toggle Axes")
                                             .clicked().then(|| { need_update(ui, graphics_resources) });
 
