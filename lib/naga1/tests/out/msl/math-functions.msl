@@ -1,0 +1,19 @@
+// language: metal2.0
+#include <metal_stdlib>
+#include <simd/simd.h>
+
+using metal::uint;
+
+constant metal::int2 const_type = {0, 0};
+
+vertex void main_(
+) {
+    metal::float4 v = metal::float4(0.0);
+    float a = ((1.0) * 57.295779513082322865);
+    float b = ((1.0) * 0.017453292519943295474);
+    metal::float4 c = ((v) * 57.295779513082322865);
+    metal::float4 d = ((v) * 0.017453292519943295474);
+    metal::float4 e = metal::saturate(v);
+    int const_dot = ( + const_type.x * const_type.x + const_type.y * const_type.y);
+    uint first_leading_bit_abs = (((metal::clz(metal::abs(0u)) + 1) % 33) - 1);
+}

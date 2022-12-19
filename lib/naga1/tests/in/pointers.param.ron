@@ -1,0 +1,10 @@
+(
+	bounds_check_policies: (
+		image: ReadZeroSkipWrite,
+	),
+	spv: (
+		version: (1, 2),
+		debug: true,
+		adjust_coordinate_space: false,
+	),
+)
