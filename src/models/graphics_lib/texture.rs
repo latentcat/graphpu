@@ -1,3 +1,4 @@
+use crate::constant::TEXTURE_FORMAT;
 
 pub struct Texture {
     pub texture: wgpu::Texture,
@@ -57,7 +58,7 @@ impl Texture {
             mip_level_count: 1,
             sample_count,
             dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            format: TEXTURE_FORMAT,
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT
                 | wgpu::TextureUsages::COPY_SRC
                 | wgpu::TextureUsages::TEXTURE_BINDING,

@@ -1,13 +1,5 @@
-
+use crate::constant::{MULTISAMPLE_STATE, TEXTURE_FORMAT};
 use crate::models::graphics_lib::Texture;
-
-const MULTISAMPLE_STATE: wgpu::MultisampleState = wgpu::MultisampleState {
-    count: 4,
-    mask: !0,
-    alpha_to_coverage_enabled: false
-};
-
-const TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
 
 pub struct RenderPipeline {
     pub render_pipeline: wgpu::RenderPipeline,
