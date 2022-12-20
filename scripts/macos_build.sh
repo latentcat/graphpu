@@ -8,6 +8,7 @@ MACOS_APP_NAME=GraphPU
 MACOS_APP_NAME_APP=$MACOS_APP_NAME.app
 MACOS_APP_DIR=App/$MACOS_APP_NAME_APP
 
+cd ../
 
 mkdir -p macos_build
 cd macos_build
@@ -97,3 +98,4 @@ xcrun notarytool submit $MACOS_DMG_NAME.dmg \
 xcrun stapler staple $MACOS_DMG_NAME.dmg
 
 cd ../
+cd ./scripts/

@@ -1,4 +1,4 @@
 #!/bin/bash
 
-. ./scripts/macos_build.sh
-. ./scripts/macos_build.sh -a
+. ./macos_build.sh
+. ./macos_build.sh -a
