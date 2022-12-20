@@ -38,8 +38,11 @@ fn main_vs(
     var v: Varing;
     v.position = vec4<f32>(node.position.xyz, 1.0);
     v.position = transform.view * v.position;
-    v.position += vec4<f32>(quad_pos * 0.0075 * (1.0 + f32(length(node.prev_force)) * 0.0), 0.0, 0.0);
+    v.position += vec4<f32>(quad_pos * 0.0075, 0.0, 0.0);
     v.position = transform.projection * v.position;
+    var quad_pos_ratio = quad_pos;
+    quad_pos_ratio.x /= transform.camera.x;
+    v.position += vec4<f32>(quad_pos_ratio * (2.0 / transform.screen.y) * v.position.w, 0.0, 0.0);
     v.tex_coords = quad_pos;
     v.color = mix(vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), f32(i.instance_index) / f32(arrayLength(&nodeSrc)));
     if (i.instance_index == 0u) {
