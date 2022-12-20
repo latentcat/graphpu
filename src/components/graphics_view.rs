@@ -198,12 +198,7 @@ impl AppView for GraphicsView {
                                 ui.with_layout(egui::Layout::from_main_dir_and_cross_align(egui::Direction::TopDown, egui::Align::Max), |ui| {
 
                                     ui.horizontal(|ui| {
-                                        let fps = if models.graphics_model.is_computing {
-                                            1e3 / graphics_resources.delta_time as f64
-                                        } else {
-                                            0f64
-                                        };
-                                        ui.label(format!("{:.1}", fps));
+                                        ui.label(format!("{}", graphics_resources.frames_per_second));
                                         ui.label(egui::RichText::new("FPS: ").weak());
                                     });
 
