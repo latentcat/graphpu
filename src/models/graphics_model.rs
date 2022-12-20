@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::io::Write;
 use std::mem;
-use chrono::Local;
+use chrono::{Local, Utc};
 use egui::{Ui, Vec2};
 use glam::Vec3;
 use wgpu::{ Queue, ShaderModule };
@@ -238,6 +238,9 @@ pub struct GraphicsResources {
     step_work_group_count:          u32,
     pub compute_frame_count:        u32,                      // 帧计数器
     pub render_frame_count:         u32,                      // 帧计数器
+    last_time:                      i64,                      // 上次记录时间
+    last_frame:                     u32,                      // 上次记录帧数
+    pub frames_per_second:          u32,                      // FPS
 
     pub render_options:             RenderOptions,
     pub need_update:                bool,
@@ -666,6 +669,9 @@ impl GraphicsResources {
             step_work_group_count,
             compute_frame_count: 0,
             render_frame_count: 0,
+            last_time: 0,
+            last_frame: 0,
+            frames_per_second: 0,
             render_options: RenderOptions {
                 is_rendering_node: true,
                 is_rendering_edge: true,
@@ -844,6 +850,14 @@ impl GraphicsResources {
     }
 
     pub fn render(&mut self) {
+
+        let new_time = Utc::now().timestamp_millis();
+        let delta_time = new_time - self.last_time;
+        if delta_time >= 1000 {
+            self.frames_per_second = ((1000 * (self.render_frame_count - self.last_frame)) as i64 / delta_time) as u32;
+            self.last_time = new_time;
+            self.last_frame = self.render_frame_count;
+        }
 
         self.render_frame_count += 1u32;
 
