@@ -20,9 +20,9 @@ struct Node {
 struct Transform {
     view: mat4x4<f32>,
     projection: mat4x4<f32>,
-    aspect_ratio: f32,
-    zoom_factor: f32,
-    near_far: vec2<f32>,
+    time: vec4<f32>,
+    screen: vec4<f32>,
+    camera: vec4<f32>,
 }
 
 @group(0) @binding(0) var<uniform> transform: Transform;
@@ -42,7 +42,7 @@ fn main_vs(
     var node_a = transform.projection * transform.view * vec4<f32>(nodeSrc[edge[0]].position, 1.0);
     var node_b = transform.projection * transform.view * vec4<f32>(nodeSrc[edge[1]].position, 1.0);
     var dir = node_a / node_a.w - node_b / node_b.w;
-    dir.y = dir.y / transform.aspect_ratio;
+    dir.y = dir.y / transform.camera.x;
     var quad_dir = normalize(vec2<f32>(dir.y, -dir.x));
 
     var v: Varing;
