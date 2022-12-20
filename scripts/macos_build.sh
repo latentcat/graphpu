@@ -34,6 +34,9 @@ mkdir -p $MACOS_APP_DIR/Contents/Resources
 cp ../resources/Info.plist $MACOS_APP_DIR/Contents/
 cp ../resources/app.icns $MACOS_APP_DIR/Contents/Resources/
 
+echo "Code Signing"
+codesign -s "5BW8DTZV3H" --deep -v -f -o runtime $MACOS_APP_DIR
+
 echo "Creating dmg"
 mkdir -p $MACOS_APP_NAME
 cp -r $MACOS_APP_DIR $MACOS_APP_NAME/
@@ -43,3 +46,9 @@ FULL_NAME=$MACOS_APP_NAME
 
 hdiutil create $FULL_NAME.dmg -srcfolder $MACOS_APP_NAME -ov
 rm -rf $MACOS_APP_NAME
+
+xcrun notarytool submit $FULL_NAME.dmg \
+    --keychain-profile "nhciao" \
+    --wait
+
+xcrun stapler staple $FULL_NAME.dmg

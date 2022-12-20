@@ -3,42 +3,15 @@
 <plist version="1.0">
 <dict>
 	<key>LSMinimumSystemVersion</key>
-	<string>10.13</string>
-	<key>CFBundleDocumentTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeExtensions</key>
-			<array>
-				<string>blend</string>
-			</array>
-			<key>CFBundleTypeIconFile</key>
-			<string>Blender_Legacy_Document_Icon.icns</string>
-			<key>CFBundleTypeName</key>
-			<string>Blender File</string>
-			<key>CFBundleTypeOSTypes</key>
-			<array>
-				<string>BLND</string>
-			</array>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>LSIsAppleDefaultForType</key>
-			<true/>
-			<key>LSItemContentTypes</key>
-			<array>
-				<string>org.blenderfoundation.blender.file</string>
-			</array>
-			<key>CFBundleTypeIconSystemGenerated</key>
-			<true/>
-		</dict>
-	</array>
+	<string>12.0</string>
 	<key>CFBundleExecutable</key>
 	<string>GraphPU</string>
 	<key>CFBundleGetInfoString</key>
-	<string>3.2.1 2022-07-06, Blender Foundation</string>
+	<string>0.3.0 2022-12-20, Wlab</string>
 	<key>CFBundleIconFile</key>
 	<string>app.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>org.blenderfoundation.blender</string>
+	<string>org.wlab.graphpu</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -46,41 +19,14 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>3.2.1</string>
+	<string>0.3.0</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>3.2.1 2022-07-06</string>
+	<string>0.3.0 2022-12-20</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
-	<key>UTExportedTypeDeclarations</key>
-	<array>
-		<dict>
-			<key>UTTypeConformsTo</key>
-			<array>
-				<string>public.data</string>
-			</array>
-			<key>UTTypeIdentifier</key>
-			<string>org.blenderfoundation.blender.file</string>
-			<key>UTTypeDescription</key>
-			<string>Blender File</string>
-			<key>UTTypeIcons</key>
-			<dict>
-				<key>UTTypeIconName</key>
-				<string>Blender File</string>
-				<key>UTTypeIconText</key>
-				<string>blend</string>
-			</dict>
-			<key>UTTypeTagSpecification</key>
-			<dict>
-				<key>public.filename-extension</key>
-				<array>
-					<string>blend</string>
-				</array>
-			</dict>
-		</dict>
-	</array>
 </dict>
 </plist>
