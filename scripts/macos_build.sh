@@ -5,10 +5,9 @@ set -e
 APP_NAME=graphpu
 MACOS_BIN_NAME=GraphPU_bin
 MACOS_APP_NAME=GraphPU
-MACOS_APP_DIR=$MACOS_APP_NAME.app
+MACOS_APP_NAME_APP=$MACOS_APP_NAME.app
+MACOS_APP_DIR=App/$MACOS_APP_NAME_APP
 
-MACOS_DMG_NAME=GraphPU_Installer
-MACOS_DMG_DIR=$MACOS_DMG_NAME.dmg
 
 mkdir -p macos_build
 cd macos_build
@@ -18,13 +17,31 @@ rm -rf $MACOS_APP_NAME
 rm -rf $MACOS_APP_DIR
 mkdir -p $MACOS_APP_DIR/Contents/MacOS
 
+ARCH=x86_64-apple-darwin
+ARCH_NAME=x86_64
+
+rustup target add x86_64-apple-darwin
+
+if [ $# -ne 0 ]; then
+    echo "111"
+    if [ "$1" == "-a" ]; then
+        echo "222"
+        ARCH=aarch64-apple-darwin
+        ARCH_NAME=arm64
+        rustup target add aarch64-apple-darwin
+    fi
+fi
+
+MACOS_DMG_NAME=graphpu-0.4.0-macos-${ARCH_NAME}
+
 cargo rustc \
     --verbose \
-    --release
+    --release \
+    --target=$ARCH
 
 echo "Copying binary"
 MACOS_APP_BIN=$MACOS_APP_DIR/Contents/MacOS/$MACOS_BIN_NAME
-cp ../target/release/$APP_NAME $MACOS_APP_BIN
+cp ../target/$ARCH/release/$APP_NAME $MACOS_APP_BIN
 chmod 755 $MACOS_APP_BIN
 
 echo "Copying resources directory"
@@ -64,13 +81,13 @@ create-dmg \
   --window-pos 200 120 \
   --window-size 540 375 \
   --icon-size 120 \
-  --hide-extension $MACOS_APP_DIR \
+  --hide-extension $MACOS_APP_NAME_APP \
   --text-size 12 \
-  --icon $MACOS_APP_DIR 140 190 \
-  --hide-extension $MACOS_APP_DIR \
+  --icon $MACOS_APP_NAME_APP 140 190 \
+  --hide-extension $MACOS_APP_NAME_APP \
   --app-drop-link 400 190 \
   $MACOS_DMG_NAME.dmg \
-  "./"
+  "./App"
 
 
 xcrun notarytool submit $MACOS_DMG_NAME.dmg \
@@ -78,3 +95,5 @@ xcrun notarytool submit $MACOS_DMG_NAME.dmg \
     --wait
 
 xcrun stapler staple $MACOS_DMG_NAME.dmg
+
+cd ../
