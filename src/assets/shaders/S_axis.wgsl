@@ -48,7 +48,7 @@ fn main_vs(
     var dir_normal = normalize(vec2<f32>(dir.y / ratio / ratio, -dir.x));
 
     v.position = v.position / abs(v.position.w);
-    v.position += vec4<f32>(dir_normal * quad_pos.y * 0.0015, 0.0, 0.0);
+    v.position += vec4<f32>(dir_normal * quad_pos.y * (2.0 / transform.screen.y), 0.0, 0.0);
 
     v.tex_coords = quad_pos;
 
