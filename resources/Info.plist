@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>LSMinimumSystemVersion</key>
-	<string>12.0</string>
+	<string>11.0.0</string>
 	<key>CFBundleExecutable</key>
 	<string>GraphPU</string>
 	<key>CFBundleGetInfoString</key>
@@ -28,5 +28,7 @@
 	<string>NSApplication</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.graphics-design</string>
 </dict>
 </plist>
