@@ -198,7 +198,7 @@ impl AppView for GraphicsView {
                                 ui.with_layout(egui::Layout::from_main_dir_and_cross_align(egui::Direction::TopDown, egui::Align::Max), |ui| {
 
                                     ui.horizontal(|ui| {
-                                        ui.label(format!("{}", graphics_resources.frames_per_second));
+                                        ui.label(format!("{:.1}", graphics_resources.frames_per_second));
                                         ui.label(egui::RichText::new("FPS: ").weak());
                                     });
 
