@@ -7,7 +7,7 @@ APP_BUNDLE_NAME=graphpu-0.4.0-windows-x86_64
 APP_BUNDLE_DIR=${BUILD_DIR}/${APP_BUNDLE_NAME}
 
 rm -rf ${APP_BUNDLE_DIR}
-cargo build --release
+cargo build --release --features exe
 mkdir -p ${APP_BUNDLE_DIR}/
 
 cp target/release/graphpu.exe ${APP_BUNDLE_DIR}/GraphPU.exe

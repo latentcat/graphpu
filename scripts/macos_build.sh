@@ -40,6 +40,7 @@ cargo rustc \
     --verbose \
     --release \
     --target=$ARCH
+    --features exe
 
 echo "Copying binary"
 MACOS_APP_BIN=$MACOS_APP_DIR/Contents/MacOS/$MACOS_BIN_NAME
