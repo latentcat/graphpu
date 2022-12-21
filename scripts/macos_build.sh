@@ -2,22 +2,6 @@
 
 set -e
 
-APP_NAME=graphpu
-MACOS_BIN_NAME=GraphPU_bin
-MACOS_APP_NAME=GraphPU
-MACOS_APP_NAME_APP=$MACOS_APP_NAME.app
-MACOS_APP_DIR=App/$MACOS_APP_NAME_APP
-
-cd ../
-
-mkdir -p macos_build
-cd macos_build
-
-echo "Creating app directory structure"
-rm -rf $MACOS_APP_NAME
-rm -rf $MACOS_APP_DIR
-mkdir -p $MACOS_APP_DIR/Contents/MacOS
-
 ARCH=x86_64-apple-darwin
 ARCH_NAME=x86_64
 
@@ -34,6 +18,23 @@ if [ $# -ne 0 ]; then
 fi
 
 MACOS_DMG_NAME=graphpu-0.4.0-macos-${ARCH_NAME}
+
+APP_NAME=graphpu
+MACOS_BIN_NAME=GraphPU_bin
+MACOS_APP_NAME=GraphPU
+MACOS_APP_NAME_APP=$MACOS_APP_NAME.app
+MACOS_APP_DIR_PREFIX=app_${ARCH_NAME}
+MACOS_APP_DIR=${MACOS_APP_DIR_PREFIX}/${MACOS_APP_NAME_APP}
+
+cd ../
+
+mkdir -p macos_build
+cd macos_build
+
+echo "Creating app directory structure"
+rm -rf $MACOS_APP_NAME
+rm -rf $MACOS_APP_DIR
+mkdir -p $MACOS_APP_DIR/Contents/MacOS
 
 cargo rustc \
     --verbose \
@@ -75,7 +76,7 @@ echo "Creating dmg"
 [[ -f $MACOS_DMG_NAME.dmg ]] && rm $MACOS_DMG_NAME.dmg
 
 # Create the DMG
-create-dmg \
+../scripts/create-dmg-1.1.0/create-dmg \
   --volname $MACOS_DMG_NAME \
   --volicon "../resources/app.icns" \
   --background "../scripts/installer_background.jpg" \
@@ -88,7 +89,7 @@ create-dmg \
   --hide-extension $MACOS_APP_NAME_APP \
   --app-drop-link 400 190 \
   $MACOS_DMG_NAME.dmg \
-  "./App"
+  "./${MACOS_APP_DIR_PREFIX}"
 
 
 xcrun notarytool submit $MACOS_DMG_NAME.dmg \
