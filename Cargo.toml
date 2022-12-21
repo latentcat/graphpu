@@ -9,6 +9,7 @@ readme = "README.md"
 homepage = "https://graphpu.com/"
 repository = "https://github.com/TO_BE_PUBLISHED"
 license-file = "LICENSE_TO_BE_WRITE.txt"
+build = "build.rs"
 
 [features]
 test-file = []
@@ -52,5 +53,9 @@ tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"] }
 chrono = "0.4.22"
 lazy_static = "1.4.0"
 
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1"
+
 [patch.crates-io]
 naga = { path = "./lib/naga" }
+
