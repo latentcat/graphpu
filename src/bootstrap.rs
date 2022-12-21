@@ -1,7 +1,6 @@
 use eframe::AppCreator;
-use image::open;
 
-use crate::{MainApp, APP_VERSION};
+use crate::{MainApp, APP_VERSION, utils::file::get_resource_path};
 
 pub struct Config {
     native_options: eframe::NativeOptions,
@@ -24,7 +23,7 @@ impl Default for ConfigBuilder {
             renderer: eframe::Renderer::Wgpu,
             follow_system_theme: false,
             default_theme: eframe::Theme::Dark,
-            icon_data: Some(load_icon(concat!(env!("CARGO_MANIFEST_DIR"), "/resources/app_bar_icon.ico"))),
+            icon_data: Some(load_icon("app_bar_icon.ico")),
             ..Default::default()
         };
 
@@ -62,7 +61,7 @@ impl ConfigBuilder {
 }
 
 fn load_icon(path: &str) -> eframe::IconData {
-    let path = std::path::Path::new(path);
+    let path = get_resource_path(path);
     let (icon_rgba, icon_width, icon_height) = {
         let image = image::open(path).expect("Failed to open icon path").into_rgba8();
         let (width, height) = image.dimensions();

@@ -1,17 +1,15 @@
-use std::{path::PathBuf, process::Command};
+use crate::models::graphics_lib::BufferDimensions;
+use crate::utils::message::{message_error, message_info};
+use directories::UserDirs;
 use std::fs::File;
 use std::io::Write;
 use std::sync::Arc;
-use directories::UserDirs;
-use crate::models::graphics_lib::BufferDimensions;
-use crate::utils::message::{message_error, message_info};
+use std::{path::PathBuf, process::Command};
 
 pub fn pick_folder() -> Option<PathBuf> {
     let dir = desktop_dir_or_empty();
 
-    rfd::FileDialog::new()
-        .set_directory(dir)
-        .pick_folder()
+    rfd::FileDialog::new().set_directory(dir).pick_folder()
 }
 
 pub fn pick_csv() -> Option<PathBuf> {
@@ -48,7 +46,21 @@ pub fn desktop_dir_or_empty() -> String {
     dir
 }
 
+pub fn get_resource_path(relative_path: &str) -> PathBuf {
+    #[cfg(feature = "exe")]
+    let base = match std::env::current_exe() {
+        Ok(mut p) => {
+            p.pop();
+            p
+        }
+        Err(_) => PathBuf::new(),
+    };
 
+    #[cfg(not(feature = "exe"))]
+    let base = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+
+    base.join("resources").join(relative_path)
+}
 
 pub async fn create_png(
     png_output_path: String,
@@ -110,7 +122,7 @@ pub async fn create_png(
                 output_buffer.unmap();
 
                 message_info("Output Succeeded", png_output_path.to_owned().as_str())
-            },
+            }
             Err(err) => {
                 message_error("create_png", &err.to_string());
             }

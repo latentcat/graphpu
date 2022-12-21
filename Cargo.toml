@@ -13,6 +13,7 @@ build = "build.rs"
 
 [features]
 test-file = []
+exe = []
 
 [lib]
 
