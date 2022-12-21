@@ -39,7 +39,7 @@ mkdir -p $MACOS_APP_DIR/Contents/MacOS
 cargo rustc \
     --verbose \
     --release \
-    --target=$ARCH
+    --target=$ARCH \
     --features exe
 
 echo "Copying binary"
