@@ -171,6 +171,7 @@ pub struct ComputePipelines {
     displacement:          wgpu::ComputePipeline,
     randomize:             wgpu::ComputePipeline,
     copy:                  wgpu::ComputePipeline,
+    cal_depth:             wgpu::ComputePipeline,
 }
 
 // 绘图资源 Model，存放和计算和绘图相关的一切资源
@@ -215,6 +216,7 @@ pub struct GraphicsResources {
     tree_buffer:                    wgpu::Buffer,
     tree_node_buffer:               wgpu::Buffer,
     tree_child_buffer:              wgpu::Buffer,
+    depth_sort_buffer:              wgpu::Buffer,
 
     // Bind Group
     compute_bind_group:             wgpu::BindGroup,
@@ -356,6 +358,7 @@ impl GraphicsResources {
             displacement:           graph_compute.create_pipeline("displacement"),
             randomize:              graph_compute.create_pipeline("randomize"),
             copy:                   graph_compute.create_pipeline("copy"),
+            cal_depth:              graph_compute.create_pipeline("cal_depth"),
         };
 
 
@@ -468,6 +471,17 @@ impl GraphicsResources {
             mapped_at_creation: false
         });
 
+        let depth_sort_buffer_size = node_count * 2 * 4;
+
+        let depth_sort_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Depth Sort Buffer"),
+            size: depth_sort_buffer_size as wgpu::BufferAddress,
+            usage: wgpu::BufferUsages::VERTEX
+                | wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false
+        });
+
         // 新建 Edge Buffer 并传入数据
         let edge_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Edge Buffer"),
@@ -559,6 +573,14 @@ impl GraphicsResources {
                     binding: 7,
                     resource: tree_child_buffer.as_entire_binding(),
                 },
+                wgpu::BindGroupEntry {
+                    binding: 8,
+                    resource: depth_sort_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 9,
+                    resource: render_uniform_buffer.as_entire_binding(),
+                },
             ],
             label: None,
         });
@@ -570,6 +592,10 @@ impl GraphicsResources {
                 wgpu::BindGroupEntry {
                     binding: 0,
                     resource: node_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: depth_sort_buffer.as_entire_binding(),
                 },
             ],
             label: None,
@@ -653,6 +679,7 @@ impl GraphicsResources {
             tree_buffer,
             tree_node_buffer,
             tree_child_buffer,
+            depth_sort_buffer,
             compute_bind_group,
             node_render_bind_group,
             edge_render_bind_group,
@@ -793,13 +820,14 @@ impl GraphicsResources {
 
         let mut command_encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        command_encoder.push_debug_group("compute render movement");
+        command_encoder.push_debug_group("Gen Node");
         {
             // compute pass
             let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
             cpass.set_pipeline(&self.compute_pipelines.gen_node);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+
             cpass.set_pipeline(&self.compute_pipelines.cal_mass);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
@@ -807,6 +835,7 @@ impl GraphicsResources {
             cpass.set_pipeline(&self.compute_pipelines.reduction_bounding);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+
             cpass.set_pipeline(&self.compute_pipelines.bounding_box);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(1, 1, 1);
@@ -914,6 +943,18 @@ impl GraphicsResources {
         update_render_uniforms(queue, &mut self.camera, &self.render_uniform_buffer, glam::Vec2::new(self.viewport_size.x, self.viewport_size.y));
 
         let mut command_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+        command_encoder.push_debug_group("Depth Sort");
+        {
+            // compute pass
+            let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+
+            cpass.set_pipeline(&self.compute_pipelines.cal_depth);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+        }
+        command_encoder.pop_debug_group();
+
         command_encoder.push_debug_group("render render");
         {
 
@@ -1086,6 +1127,7 @@ impl GraphicsResources {
         self.tree_buffer.destroy();
         self.tree_node_buffer.destroy();
         self.tree_child_buffer.destroy();
+        self.depth_sort_buffer.destroy();
     }
 
 

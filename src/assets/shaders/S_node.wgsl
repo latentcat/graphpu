@@ -24,9 +24,15 @@ struct Transform {
     camera: vec4<f32>,
 }
 
+struct Kvp {
+    sort_key: f32,
+    index: u32,
+}
+
 @group(0) @binding(0) var<uniform> transform: Transform;
 
 @group(1) @binding(0) var<storage, read> nodeSrc : array<Node>;
+@group(1) @binding(1) var<storage, read> kvps: array<Kvp>;
 
 @vertex
 fn main_vs(
@@ -34,6 +40,7 @@ fn main_vs(
     i: Input
 ) -> Varing {
     var node = nodeSrc[i.instance_index];
+    var kvp = kvps[i.instance_index];
 
     var v: Varing;
     v.position = vec4<f32>(node.position.xyz, 1.0);
@@ -44,7 +51,8 @@ fn main_vs(
     quad_pos_ratio.x /= transform.camera.x;
     v.position += vec4<f32>(quad_pos_ratio * (2.0 / transform.screen.y) * v.position.w, 0.0, 0.0);
     v.tex_coords = quad_pos;
-    v.color = mix(vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), f32(i.instance_index) / f32(arrayLength(&nodeSrc)));
+    v.color = mix(vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), kvp.sort_key * 0.1 );
+//    v.color = mix(vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), f32(i.instance_index) / f32(arrayLength(&nodeSrc)));
     if (i.instance_index == 0u) {
         v.color = vec3<f32>(1.0);
     }

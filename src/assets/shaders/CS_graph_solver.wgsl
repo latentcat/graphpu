@@ -29,6 +29,19 @@ struct BHTreeNode {
     sort: i32,
 }
 
+struct Kvp {
+    sort_key: f32,
+    index: u32,
+}
+
+struct Transform {
+    view: mat4x4<f32>,
+    projection: mat4x4<f32>,
+    time: vec4<f32>,
+    screen: vec4<f32>,
+    camera: vec4<f32>,
+}
+
 @group(0) @binding(0) var<uniform> uniforms: Uniforms;
 @group(0) @binding(1) var<storage, read_write> nodeSrc: array<Node>;
 @group(0) @binding(2) var<storage, read> edgeSrc: array<vec2<u32>>;
@@ -37,6 +50,8 @@ struct BHTreeNode {
 @group(0) @binding(5) var<storage, read_write> bhTree: BHTree;
 @group(0) @binding(6) var<storage, read_write> treeNode: array<BHTreeNode>;
 @group(0) @binding(7) var<storage, read_write> treeChild: array<atomic<i32>>;
+@group(0) @binding(8) var<storage, read_write> kvps: array<Kvp>;
+@group(0) @binding(9) var<uniform> transform: Transform;
 
 fn hash(s: u32) -> u32 {
     var t : u32 = s;
@@ -755,4 +770,23 @@ fn copy(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 
   // Write back
     //  nodeSrc[index] = Node(vPos, vVel);
+}
+
+@compute
+@workgroup_size(256)
+fn cal_depth(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
+
+    let total = arrayLength(&nodeSrc);
+    let index = global_invocation_id.x;
+    if (index >= total) {
+        return;
+    }
+
+    var vPos : vec3<f32> = nodeSrc[index].position;
+
+    var clip_pos = transform.projection * transform.view * vec4<f32>(vPos, 1.0);
+
+    kvps[index].index = index;
+    kvps[index].sort_key = clip_pos.z;
+
 }
