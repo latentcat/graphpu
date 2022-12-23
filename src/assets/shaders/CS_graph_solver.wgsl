@@ -34,6 +34,11 @@ struct Kvp {
     index: u32,
 }
 
+struct KvpParam {
+    dim: u32,
+    block_count: u32,
+}
+
 struct Transform {
     view: mat4x4<f32>,
     projection: mat4x4<f32>,
@@ -51,7 +56,8 @@ struct Transform {
 @group(0) @binding(6) var<storage, read_write> treeNode: array<BHTreeNode>;
 @group(0) @binding(7) var<storage, read_write> treeChild: array<atomic<i32>>;
 @group(0) @binding(8) var<storage, read_write> kvps: array<Kvp>;
-@group(0) @binding(9) var<uniform> transform: Transform;
+@group(0) @binding(9) var<uniform> kvps_param: KvpParam;
+@group(0) @binding(10) var<uniform> transform: Transform;
 
 fn hash(s: u32) -> u32 {
     var t : u32 = s;
@@ -789,4 +795,31 @@ fn cal_depth(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     kvps[index].index = index;
     kvps[index].sort_key = clip_pos.z;
 
+}
+
+@compute
+@workgroup_size(256)
+fn sort_by_depth(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
+    let i = global_invocation_id.x;
+    let j = i ^ kvps_param.block_count;
+    
+    let total = arrayLength(&nodeSrc);
+    if (j < i || i >= total) {
+        return;
+    }
+
+    let index_i= kvps[i].index;
+    let index_j = kvps[j].index;
+    let key_i = kvps[i].sort_key;
+    let key_j = kvps[j].sort_key;
+    
+    var diff = key_i - key_j;
+    if ((i & kvps_param.dim) != u32(0)) {
+        diff = -diff; 
+    }
+
+    if (diff > 0.0) {
+        kvps[i].index = index_j;
+        kvps[j].index = index_i;
+    }
 }

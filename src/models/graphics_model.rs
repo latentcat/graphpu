@@ -172,6 +172,7 @@ pub struct ComputePipelines {
     randomize:             wgpu::ComputePipeline,
     copy:                  wgpu::ComputePipeline,
     cal_depth:             wgpu::ComputePipeline,
+    sort_by_depth:         wgpu::ComputePipeline,
 }
 
 // 绘图资源 Model，存放和计算和绘图相关的一切资源
@@ -217,6 +218,7 @@ pub struct GraphicsResources {
     tree_node_buffer:               wgpu::Buffer,
     tree_child_buffer:              wgpu::Buffer,
     depth_sort_buffer:              wgpu::Buffer,
+    depth_sort_param_buffer:        wgpu::Buffer,
 
     // Bind Group
     compute_bind_group:             wgpu::BindGroup,
@@ -359,6 +361,7 @@ impl GraphicsResources {
             randomize:              graph_compute.create_pipeline("randomize"),
             copy:                   graph_compute.create_pipeline("copy"),
             cal_depth:              graph_compute.create_pipeline("cal_depth"),
+            sort_by_depth:          graph_compute.create_pipeline("sort_by_depth"),
         };
 
 
@@ -482,6 +485,15 @@ impl GraphicsResources {
             mapped_at_creation: false
         });
 
+        let depth_sort_param_buffer_size = 2 * 4;
+        
+        let depth_sort_param_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Depth Sort Param Buffer"),
+            size: depth_sort_param_buffer_size as wgpu::BufferAddress,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false
+        });
+
         // 新建 Edge Buffer 并传入数据
         let edge_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Edge Buffer"),
@@ -579,6 +591,10 @@ impl GraphicsResources {
                 },
                 wgpu::BindGroupEntry {
                     binding: 9,
+                    resource: depth_sort_param_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 10,
                     resource: render_uniform_buffer.as_entire_binding(),
                 },
             ],
@@ -680,6 +696,7 @@ impl GraphicsResources {
             tree_node_buffer,
             tree_child_buffer,
             depth_sort_buffer,
+            depth_sort_param_buffer,
             compute_bind_group,
             node_render_bind_group,
             edge_render_bind_group,
@@ -952,6 +969,21 @@ impl GraphicsResources {
             cpass.set_pipeline(&self.compute_pipelines.cal_depth);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+
+            cpass.set_pipeline(&self.compute_pipelines.sort_by_depth);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+
+            let mut dim = 2;
+            while dim <= self.status.node_count {
+                let mut block_count = dim >> 1;
+                while block_count > 0 {
+                    queue.write_buffer(&self.depth_sort_param_buffer, 0, bytemuck::cast_slice(&[dim as u32]));
+                    queue.write_buffer(&self.depth_sort_param_buffer, 0, bytemuck::cast_slice(&[block_count as u32]));
+                    cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+                    block_count = block_count >> 1;
+                }
+                dim = dim << 1;
+            }
         }
         command_encoder.pop_debug_group();
 
@@ -1128,6 +1160,7 @@ impl GraphicsResources {
         self.tree_node_buffer.destroy();
         self.tree_child_buffer.destroy();
         self.depth_sort_buffer.destroy();
+        self.depth_sort_param_buffer.destroy();
     }
 
 
