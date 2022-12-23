@@ -57,8 +57,10 @@ impl RenderPipeline {
             },
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: Texture::DEPTH_FORMAT,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Less, // 1.
+                depth_write_enabled: false,
+                depth_compare: wgpu::CompareFunction::Always, // 1.
+                // depth_write_enabled: true,
+                // depth_compare: wgpu::CompareFunction::Less, // 1.
                 stencil: wgpu::StencilState::default(), // 2.
                 bias: wgpu::DepthBiasState::default(),
             }),
