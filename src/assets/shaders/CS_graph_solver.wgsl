@@ -819,6 +819,8 @@ fn sort_by_depth(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     }
 
     if (diff > 0.0) {
+        kvps[i].sort_key = key_j;
+        kvps[j].sort_key = key_i;
         kvps[i].index = index_j;
         kvps[j].index = index_i;
     }

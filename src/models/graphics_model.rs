@@ -959,79 +959,84 @@ impl GraphicsResources {
 
         update_render_uniforms(queue, &mut self.camera, &self.render_uniform_buffer, glam::Vec2::new(self.viewport_size.x, self.viewport_size.y));
 
-        let mut command_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        // calc depth
+        let command_buffer = {
+            let mut command_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+            {
+                let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+                cpass.set_pipeline(&self.compute_pipelines.cal_depth);
+                cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+            }
+            command_encoder.finish()
+        };
+        queue.submit(Some(command_buffer));
 
-        command_encoder.push_debug_group("Depth Sort");
+        // sort
         {
-            // compute pass
-            let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-
-            cpass.set_pipeline(&self.compute_pipelines.cal_depth);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
-
-            cpass.set_pipeline(&self.compute_pipelines.sort_by_depth);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-
             let mut dim = 2;
             while dim <= self.status.node_count {
                 let mut block_count = dim >> 1;
+                queue.write_buffer(&self.depth_sort_param_buffer, 0, bytemuck::cast_slice(&[dim as u32]));
                 while block_count > 0 {
-                    queue.write_buffer(&self.depth_sort_param_buffer, 0, bytemuck::cast_slice(&[dim as u32]));
-                    queue.write_buffer(&self.depth_sort_param_buffer, 0, bytemuck::cast_slice(&[block_count as u32]));
-                    cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+                    queue.write_buffer(&self.depth_sort_param_buffer, 4, bytemuck::cast_slice(&[block_count as u32]));
+                    let mut command_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+                    {
+                        let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+                        cpass.set_pipeline(&self.compute_pipelines.sort_by_depth);
+                        cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                        cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+                    }
+                    queue.submit(Some(command_encoder.finish()));
                     block_count = block_count >> 1;
                 }
                 dim = dim << 1;
             }
-        }
-        command_encoder.pop_debug_group();
+        };
 
-        command_encoder.push_debug_group("render render");
-        {
+        // render
+        let command_buffer = {
+            let mut command_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+            {
+                let mut rpass = command_encoder.begin_render_pass(&render_pass_descriptor);
+                if !is_render_output {
+                    if self.render_options.is_rendering_axis {
+                        rpass.set_pipeline(&self.axis_render_pipeline);
+                        rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
+                        rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
+                        rpass.draw(0..4, 0..2);
+                    }
 
-            let mut rpass = command_encoder.begin_render_pass(&render_pass_descriptor);
+                    if self.render_options.is_rendering_bounding_box {
+                        rpass.set_pipeline(&self.bounding_box_render_pipeline);
+                        rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
+                        rpass.set_bind_group(1, &self.bounding_box_render_bind_group, &[]);
+                        rpass.set_index_buffer(self.bounding_box_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                        rpass.set_vertex_buffer(0, self.bounding_box_vertex_buffer.slice(..));
+                        rpass.draw_indexed(0..24, 0, 0..1);
+                    }
+                }
 
-            if !is_render_output {
-                if self.render_options.is_rendering_axis {
-                    rpass.set_pipeline(&self.axis_render_pipeline);
+                if self.render_options.is_rendering_node {
+                    rpass.set_pipeline(&self.node_render_pipeline);
                     rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
+                    rpass.set_bind_group(1, &self.node_render_bind_group, &[]);
                     rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
-                    rpass.draw(0..4, 0..2);
+                    rpass.draw(0..4, 0..self.status.node_count as u32);
                 }
 
-                if self.render_options.is_rendering_bounding_box {
-                    rpass.set_pipeline(&self.bounding_box_render_pipeline);
+
+                if self.render_options.is_rendering_edge {
+                    rpass.set_pipeline(&self.edge_render_pipeline);
                     rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
-                    rpass.set_bind_group(1, &self.bounding_box_render_bind_group, &[]);
-                    rpass.set_index_buffer(self.bounding_box_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-                    rpass.set_vertex_buffer(0, self.bounding_box_vertex_buffer.slice(..));
-                    rpass.draw_indexed(0..24, 0, 0..1);
-                }
+                    rpass.set_bind_group(1, &self.edge_render_bind_group, &[]);
+                    rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
+                    rpass.draw(0..4, 0..self.status.edge_count as u32);
+                } 
             }
-
-            if self.render_options.is_rendering_node {
-                rpass.set_pipeline(&self.node_render_pipeline);
-                rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
-                rpass.set_bind_group(1, &self.node_render_bind_group, &[]);
-                rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
-                rpass.draw(0..4, 0..self.status.node_count as u32);
-            }
-
-
-            if self.render_options.is_rendering_edge {
-                rpass.set_pipeline(&self.edge_render_pipeline);
-                rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
-                rpass.set_bind_group(1, &self.edge_render_bind_group, &[]);
-                rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
-                rpass.draw(0..4, 0..self.status.edge_count as u32);
-            }
-
-        }
-        command_encoder.pop_debug_group();
-
-        queue.submit(Some(command_encoder.finish()));
-
+            command_encoder.finish()
+        };
+        queue.submit(Some(command_buffer));
     }
 
     pub fn update_viewport(&mut self, new_size: Vec2) {
