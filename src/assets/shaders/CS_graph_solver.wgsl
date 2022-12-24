@@ -804,23 +804,21 @@ fn sort_by_depth(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     let j = i ^ kvps_param.block_count;
     
     let total = arrayLength(&nodeSrc);
-    if (j < i || i >= total) {
+    if (j < i || i >= total || j >= total) {
         return;
     }
 
     let index_i= kvps[i].index;
     let index_j = kvps[j].index;
-    let key_i = kvps[i].sort_key;
-    let key_j = kvps[j].sort_key;
+    let key_i = kvps[index_i].sort_key;
+    let key_j = kvps[index_j].sort_key;
     
-    var diff = key_i - key_j;
+    var diff = key_j - key_i;
     if ((i & kvps_param.dim) != u32(0)) {
         diff = -diff; 
     }
 
     if (diff > 0.0) {
-        kvps[i].sort_key = key_j;
-        kvps[j].sort_key = key_i;
         kvps[i].index = index_j;
         kvps[j].index = index_i;
     }

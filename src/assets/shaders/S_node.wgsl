@@ -39,7 +39,7 @@ fn main_vs(
     @location(0) quad_pos: vec2<f32>,
     i: Input
 ) -> Varing {
-    var node = nodeSrc[i.instance_index];
+    var node = nodeSrc[kvps[i.instance_index].index];
     var kvp = kvps[i.instance_index];
 
     var v: Varing;
