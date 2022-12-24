@@ -876,13 +876,7 @@ impl GraphicsResources {
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
 
-            cpass.set_pipeline(&self.compute_pipelines.reduction_bounding);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
-
-            cpass.set_pipeline(&self.compute_pipelines.bounding_box);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(1, 1, 1);
+            cpass = GraphicsResources::calc_bounding_box(&self, cpass);
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));
@@ -909,12 +903,7 @@ impl GraphicsResources {
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
 
-            cpass.set_pipeline(&self.compute_pipelines.reduction_bounding);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
-            cpass.set_pipeline(&self.compute_pipelines.bounding_box);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(1, 1, 1);
+            cpass = GraphicsResources::calc_bounding_box(&self, cpass);
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));
