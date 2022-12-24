@@ -4,7 +4,7 @@ use std::mem;
 use chrono::{Local, Utc};
 use egui::{Ui, Vec2};
 use glam::Vec3;
-use wgpu::{ Queue, ShaderModule };
+use wgpu::{ Queue, ShaderModule, ComputePass };
 use wgpu::util::DeviceExt;
 use crate::models::data_model::GraphicsStatus;
 use crate::models::graphics_lib::{BufferDimensions, Camera, Controls, RenderPipeline, Texture};
@@ -761,23 +761,23 @@ impl GraphicsResources {
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
 
-            cpass.set_pipeline(&self.compute_pipelines.reduction_bounding);
-            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+            // cpass.set_pipeline(&self.compute_pipelines.reduction_bounding);
+            // cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            // cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
 
-            let mut bound_range = self.bb_work_group_count;
+            // let mut bound_range = self.bb_work_group_count;
 
-            loop {
-                cpass.set_pipeline(&self.compute_pipelines.reduction_bounding_2);
-                cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                cpass.dispatch_workgroups(bound_range, 1, 1);
+            // loop {
+            //     cpass.set_pipeline(&self.compute_pipelines.reduction_bounding_2);
+            //     cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            //     cpass.dispatch_workgroups(bound_range, 1, 1);
 
-                println!("{}", bound_range);
+            //     println!("{}", bound_range);
 
-                if bound_range <= 1 { break; }
-                bound_range = ((bound_range as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
+            //     if bound_range <= 1 { break; }
+            //     bound_range = ((bound_range as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
 
-            }
+            // }
 
             cpass.set_pipeline(&self.compute_pipelines.bounding_box);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
@@ -848,6 +848,26 @@ impl GraphicsResources {
                 panic!("failed to run compute on gpu!")
             }
         });
+    }
+
+    pub fn calc_bounding_box<'a, 'b>(&'a mut self, cpass: &'b mut ComputePass<'b>) where 'a: 'b {
+        cpass.set_pipeline(&self.compute_pipelines.reduction_bounding);
+        cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+        cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+
+        let mut bound_range = self.bb_work_group_count;
+
+        loop {
+            cpass.set_pipeline(&self.compute_pipelines.reduction_bounding_2);
+            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+            cpass.dispatch_workgroups(bound_range, 1, 1);
+
+            println!("{}", bound_range);
+
+            if bound_range <= 1 { break; }
+            bound_range = ((bound_range as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
+
+        }
     }
 
 
