@@ -761,7 +761,7 @@ impl GraphicsResources {
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
 
-            cpass = GraphicsResources::calc_bounding_box(&self, cpass);
+            GraphicsResources::calc_bounding_box(&self, &mut cpass);
 
             cpass.set_pipeline(&self.compute_pipelines.bounding_box);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
@@ -834,8 +834,7 @@ impl GraphicsResources {
         });
     }
 
-    pub fn calc_bounding_box<'a, 'b>(&'a self, mut cpass: ComputePass<'b>) -> ComputePass<'b>
-    where 'a: 'b {
+    pub fn calc_bounding_box<'a>(&'a self, cpass: &mut ComputePass<'a>) {
         cpass.set_pipeline(&self.compute_pipelines.reduction_bounding);
         cpass.set_bind_group(0, &self.compute_bind_group, &[]);
         cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
@@ -853,7 +852,6 @@ impl GraphicsResources {
             bound_range = ((bound_range as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
 
         }
-        cpass
     }
 
 
