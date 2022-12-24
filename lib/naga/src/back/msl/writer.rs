@@ -2767,7 +2767,7 @@ impl<W: Write> Writer<W> {
                             self.put_expression(value, &context.expression, true)?;
                             write!(self.out, ", {}::memory_order_relaxed)", NAMESPACE)?;
                         }
-                        _ => !unreachable!(),
+                        _ => {},
                     }
                     // done
                     writeln!(self.out, ";")?;

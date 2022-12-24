@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(unused_variables)]
+
 use std::borrow::Cow;
 use std::io::Write;
 use std::mem;
@@ -804,7 +807,16 @@ impl GraphicsResources {
         self.compute_frame_count += 1;
         device.poll(wgpu::Maintain::Wait);
 
-        return;
+    }
+
+    pub fn debug(&mut self) {
+
+        let device = &self.render_state.device;
+        let queue = &self.render_state.queue;
+
+        let mut command_encoder =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        command_encoder.push_debug_group("compute render movement");
 
         let debugger = &mut self.debugger;
         command_encoder.copy_buffer_to_buffer(&self.tree_node_buffer, 0, &debugger.debug_buffer, 0, debugger.buffer_size as _);
@@ -819,7 +831,7 @@ impl GraphicsResources {
             if let Some(Ok(())) = receiver.receive().await {
                 let data = buffer_slice.get_mapped_range();
                 let result: Vec<BHTreeNode> = bytemuck::cast_slice(&data).to_vec();
-        
+
                 drop(data);
                 debugger.debug_buffer.unmap();
 
@@ -845,8 +857,6 @@ impl GraphicsResources {
             cpass.set_pipeline(&self.compute_pipelines.reduction_bounding_2);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(bound_range, 1, 1);
-
-            println!("{}", bound_range);
 
             if bound_range <= 1 { break; }
             bound_range = ((bound_range as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
@@ -1213,10 +1223,10 @@ fn pad_size(node_struct_size: usize, num_particles: u32) -> wgpu::BufferAddress 
 
 fn get_tree_node_count(node_count: &u32) -> u32 {
     let mut tree_node_count = node_count * 2;
-    println!("{}", node_count);
+    // println!("{}", node_count);
     while tree_node_count & (PARTICLES_PER_GROUP - 1) != 0 {
         tree_node_count += 1;
     }
-    println!("{}", tree_node_count - 1);
+    // println!("{}", tree_node_count - 1);
     tree_node_count - 1
 }
