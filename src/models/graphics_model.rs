@@ -874,7 +874,7 @@ impl GraphicsResources {
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
 
-            cpass = GraphicsResources::calc_bounding_box(&self, cpass);
+            GraphicsResources::calc_bounding_box(&self, &mut cpass);
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));
@@ -901,7 +901,7 @@ impl GraphicsResources {
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
 
-            cpass = GraphicsResources::calc_bounding_box(&self, cpass);
+            GraphicsResources::calc_bounding_box(&self, &mut cpass);
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));
