@@ -801,12 +801,17 @@ fn cal_depth(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 @workgroup_size(256)
 fn sort_by_depth(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     let i = global_invocation_id.x;
-    let j = i ^ kvps_param.block_count;
+    var j = i ^ kvps_param.block_count;
+
+    if (kvps_param.block_count == kvps_param.dim >> 1u) {
+        j = i ^ (kvps_param.block_count * 2u - 1u);
+    }
     
     let total = arrayLength(&nodeSrc);
     if (j < i || i >= total || j >= total) {
         return;
     }
+
 
     let index_i= kvps[i].index;
     let index_j = kvps[j].index;
@@ -814,9 +819,9 @@ fn sort_by_depth(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     let key_j = kvps[index_j].sort_key;
     
     var diff = key_j - key_i;
-    if ((i & kvps_param.dim) != u32(0)) {
-        diff = -diff; 
-    }
+//    if ((i & kvps_param.dim) != u32(0)) {
+//        diff = -diff;
+//    }
 
     if (diff > 0.0) {
         kvps[i].index = index_j;

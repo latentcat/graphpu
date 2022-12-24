@@ -975,7 +975,7 @@ impl GraphicsResources {
         // sort
         {
             let mut dim = 2;
-            while dim <= self.status.node_count {
+            while dim < self.status.node_count * 2 {
                 let mut block_count = dim >> 1;
                 queue.write_buffer(&self.depth_sort_param_buffer, 0, bytemuck::cast_slice(&[dim as u32]));
                 while block_count > 0 {
