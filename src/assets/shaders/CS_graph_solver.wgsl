@@ -228,15 +228,48 @@ fn reduction_bounding(
 }
 
 @compute
+@workgroup_size(256)
+fn reduction_bounding_2(
+    @builtin(local_invocation_index) local_index: u32,
+    @builtin(global_invocation_id) global_id: vec3<u32>,
+    @builtin(workgroup_id) group_id: vec3<u32>,
+) {
+
+    var index = global_id.x;
+    let total = arrayLength(&bounding);
+    if (index >= total) {
+        index = total - 1u;
+    }
+
+    smin[local_index] = bounding[index].bound_min;
+    smax[local_index] = bounding[index].bound_max;
+    workgroupBarrier();
+
+    for (var s = 256u / 2u; s > 0u; s >>= 1u) {
+        if (local_index < s) {
+            let k = local_index + s;
+            smin[local_index] = min(smin[local_index], smin[k]);
+            smax[local_index] = max(smax[local_index], smax[k]);
+        }
+        workgroupBarrier();
+    }
+
+    if (local_index == 0u) {
+        bounding[group_id.x].bound_min = smin[0];
+        bounding[group_id.x].bound_max = smax[0];
+    }
+}
+
+@compute
 @workgroup_size(1)
 fn bounding_box() {
     var bound_min_min = bounding[0].bound_min;
     var bound_max_max = bounding[0].bound_max;
     let node_group_count = u32(ceil(f32(arrayLength(&nodeSrc)) / 256.0));
-    for (var i = 0u; i < node_group_count; i++) {
-        bound_min_min = min(bound_min_min, bounding[i].bound_min);
-        bound_max_max = max(bound_max_max, bounding[i].bound_max);
-    }
+//    for (var i = 0u; i < node_group_count; i++) {
+//        bound_min_min = min(bound_min_min, bounding[i].bound_min);
+//        bound_max_max = max(bound_max_max, bounding[i].bound_max);
+//    }
 
     bounding[0].bound_min = bound_min_min;
     bounding[0].bound_max = bound_max_max;

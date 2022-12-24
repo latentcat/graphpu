@@ -160,6 +160,7 @@ pub struct ComputePipelines {
     cal_gravity:           wgpu::ComputePipeline,
     attractive_force:      wgpu::ComputePipeline,
     reduction_bounding:    wgpu::ComputePipeline,
+    reduction_bounding_2:  wgpu::ComputePipeline,
     bounding_box:          wgpu::ComputePipeline,
     clear_1:               wgpu::ComputePipeline,
     tree_building:         wgpu::ComputePipeline,
@@ -241,6 +242,7 @@ pub struct GraphicsResources {
     edge_work_group_count:          u32,
     tree_node_work_group_count:     u32,
     step_work_group_count:          u32,
+    bb_work_group_count:            u32,
     pub compute_frame_count:        u32,                      // 帧计数器
     pub render_frame_count:         u32,                      // 帧计数器
     last_time:                      i64,                      // 上次记录时间
@@ -349,6 +351,7 @@ impl GraphicsResources {
             cal_gravity:            graph_compute.create_pipeline("cal_gravity_force"),
             attractive_force:       graph_compute.create_pipeline("attractive_force"),
             reduction_bounding:     graph_compute.create_pipeline("reduction_bounding"),
+            reduction_bounding_2:   graph_compute.create_pipeline("reduction_bounding_2"),
             bounding_box:           graph_compute.create_pipeline("bounding_box"),
             clear_1:                graph_compute.create_pipeline("clear_1"),
             tree_building:          graph_compute.create_pipeline("tree_building"),
@@ -379,6 +382,9 @@ impl GraphicsResources {
 
         let step_work_group_count = 
             (std::cmp::min(node_count, 16384) as f32 / PARTICLES_PER_GROUP as f32).ceil() as u32;
+
+        let bb_work_group_count =
+            ((node_work_group_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
 
         // Buffer 创建
 
@@ -711,6 +717,7 @@ impl GraphicsResources {
             edge_work_group_count,
             tree_node_work_group_count,
             step_work_group_count,
+            bb_work_group_count,
             compute_frame_count: 0,
             render_frame_count: 0,
             last_time: 0,
@@ -757,6 +764,20 @@ impl GraphicsResources {
             cpass.set_pipeline(&self.compute_pipelines.reduction_bounding);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+
+            let mut bound_range = self.bb_work_group_count;
+
+            loop {
+                cpass.set_pipeline(&self.compute_pipelines.reduction_bounding_2);
+                cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                cpass.dispatch_workgroups(bound_range, 1, 1);
+
+                println!("{}", bound_range);
+
+                if bound_range <= 1 { break; }
+                bound_range = ((bound_range as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
+
+            }
 
             cpass.set_pipeline(&self.compute_pipelines.bounding_box);
             cpass.set_bind_group(0, &self.compute_bind_group, &[]);
