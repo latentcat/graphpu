@@ -18,6 +18,7 @@ struct BHTree {
     max_depth: atomic<u32>,
     bottom: atomic<u32>,
     radius: f32,
+    _empty: i32,
 }
 
 struct BHTreeNode {

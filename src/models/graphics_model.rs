@@ -57,6 +57,7 @@ pub struct BHTree {
     _max_depth: u32,
     _bottom: u32,
     _radius: f32,
+    _empty: i32,
 }
 
 #[repr(C)]
@@ -522,10 +523,10 @@ impl GraphicsResources {
         });
 
         // Tree Node Buffer
-        let tree_node_buffer_size = pad_size(mem::size_of::<BHTreeNode>(), tree_node_count + 1);
+        let tree_node_buffer_size = 4 * ((tree_node_count + 1) * 8);
         let tree_node_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Tree Node Buffer"),
-            size: tree_node_buffer_size,
+            size: tree_node_buffer_size as _,
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false
         });
@@ -667,14 +668,14 @@ impl GraphicsResources {
 
         let debug_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Debug Buffer"),
-            size: tree_node_buffer_size as _,
+            size: tree_child_buffer_size as _,
             usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
 
         let debugger = GraphicsDebugger {
             debug_buffer,
-            buffer_size: tree_node_buffer_size as _,
+            buffer_size: tree_child_buffer_size as _,
         };
 
         let mut boids_resources = GraphicsResources {
@@ -803,9 +804,38 @@ impl GraphicsResources {
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
 
         }
-        queue.submit(Some(command_encoder.finish()));
+        // queue.submit(Some(command_encoder.finish()));
         self.compute_frame_count += 1;
+        // device.poll(wgpu::Maintain::Wait);
+
+        let debugger = &mut self.debugger;
+        command_encoder.copy_buffer_to_buffer(&self.tree_child_buffer, 0, &debugger.debug_buffer, 0, debugger.buffer_size as _);
+        queue.submit(Some(command_encoder.finish()));
+
+        let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
+        let buffer_slice = debugger.debug_buffer.slice(..);
+        buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
         device.poll(wgpu::Maintain::Wait);
+
+        pollster::block_on(async {
+            if let Some(Ok(())) = receiver.receive().await {
+                let data = buffer_slice.get_mapped_range();
+                let result: Vec<i32> = bytemuck::cast_slice(&data).to_vec();
+
+                drop(data);
+                debugger.debug_buffer.unmap();
+
+                println!("{:?}", result);
+
+                // for item in result {
+                //     print!("{}, ", item._sort);
+                // }
+                std::io::stdout().flush().unwrap();
+                println!("\n");
+            } else {
+                panic!("failed to run compute on gpu!")
+            }
+        });
 
     }
 
@@ -818,32 +848,6 @@ impl GraphicsResources {
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         command_encoder.push_debug_group("compute render movement");
 
-        let debugger = &mut self.debugger;
-        command_encoder.copy_buffer_to_buffer(&self.tree_node_buffer, 0, &debugger.debug_buffer, 0, debugger.buffer_size as _);
-        queue.submit(Some(command_encoder.finish()));
-
-        let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
-        let buffer_slice = debugger.debug_buffer.slice(..);
-        buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
-        device.poll(wgpu::Maintain::Wait);
-
-        pollster::block_on(async {
-            if let Some(Ok(())) = receiver.receive().await {
-                let data = buffer_slice.get_mapped_range();
-                let result: Vec<BHTreeNode> = bytemuck::cast_slice(&data).to_vec();
-
-                drop(data);
-                debugger.debug_buffer.unmap();
-
-                for item in result {
-                    print!("{}, ", item._sort);
-                }
-                std::io::stdout().flush().unwrap();
-                println!("\n");
-            } else {
-                panic!("failed to run compute on gpu!")
-            }
-        });
     }
 
     pub fn calc_bounding_box<'a>(&'a self, cpass: &mut ComputePass<'a>) {
