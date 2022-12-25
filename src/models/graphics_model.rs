@@ -19,7 +19,7 @@ use crate::models::graphics_lib::unifrom::{generate_uniforms, Uniforms};
 use crate::utils::file::create_png;
 
 use super::data_model::DataModel;
-
+use bytemuck::{Pod, Zeroable};
 
 // 须同步修改 Compute WGSL 中每一个函数的 @workgroup_size
 // WGSL 中没有宏，不能使用类似 HLSL 的 #define 方法
@@ -29,10 +29,10 @@ const PARTICLES_PER_GROUP: u32 = 256;
 // 须同步修改各个 WGSL 中的 Node struct
 #[repr(C)]
 pub struct Node {
-    _position: [f32; 3],
-    _force: [f32; 3],
-    _prev_force: [f32; 3],
-    _mass: u32,
+    _position:      [f32; 3],
+    _force:         [f32; 3],
+    _prev_force:    [f32; 3],
+    _mass:          u32,
 }
 
 #[repr(C)]
@@ -55,19 +55,29 @@ pub struct Bound {
 #[repr(C)]
 pub struct BHTree {
     _max_depth: u32,
-    _bottom: u32,
-    _radius: f32,
-    _empty: i32,
+    _bottom:    u32,
+    _radius:    f32,
+    _empty:     i32,
 }
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
 pub struct BHTreeNode {
-    _position: [f32; 4],
-    _mass: i32,
-    _count: i32,
-    _start: i32,
-    _sort: i32,
+    _position:  [f32; 4],
+    _mass:      i32,
+    _count:     i32,
+    _start:     i32,
+    _sort:      i32,
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, PartialEq, Pod, Zeroable)]
+pub struct ComputeUniforms {
+    frame_num:          u32,
+    node_count:         u32,
+    edge_count:         u32,
+    tree_node_count:    u32,
+    bounding_count:     u32,
 }
 
 // 计算方法的类型
@@ -392,10 +402,19 @@ impl GraphicsResources {
 
         // Buffer 创建
 
+
+        let compute_uniform = ComputeUniforms {
+            frame_num: 0,
+            node_count,
+            edge_count,
+            tree_node_count,
+            bounding_count: node_work_group_count,
+        };
+
         // 创建 Uniform Buffer
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: bytemuck::cast_slice(&[0u32]),
+            contents: bytemuck::cast_slice(&[compute_uniform]),
             usage: wgpu::BufferUsages::UNIFORM |
                 wgpu::BufferUsages::COPY_DST,
         });
@@ -804,38 +823,38 @@ impl GraphicsResources {
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
 
         }
-        // queue.submit(Some(command_encoder.finish()));
-        self.compute_frame_count += 1;
-        // device.poll(wgpu::Maintain::Wait);
-
-        let debugger = &mut self.debugger;
-        command_encoder.copy_buffer_to_buffer(&self.tree_child_buffer, 0, &debugger.debug_buffer, 0, debugger.buffer_size as _);
         queue.submit(Some(command_encoder.finish()));
-
-        let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
-        let buffer_slice = debugger.debug_buffer.slice(..);
-        buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
+        self.compute_frame_count += 1;
         device.poll(wgpu::Maintain::Wait);
 
-        pollster::block_on(async {
-            if let Some(Ok(())) = receiver.receive().await {
-                let data = buffer_slice.get_mapped_range();
-                let result: Vec<i32> = bytemuck::cast_slice(&data).to_vec();
-
-                drop(data);
-                debugger.debug_buffer.unmap();
-
-                println!("{:?}", result);
-
-                // for item in result {
-                //     print!("{}, ", item._sort);
-                // }
-                std::io::stdout().flush().unwrap();
-                println!("\n");
-            } else {
-                panic!("failed to run compute on gpu!")
-            }
-        });
+        // let debugger = &mut self.debugger;
+        // command_encoder.copy_buffer_to_buffer(&self.tree_child_buffer, 0, &debugger.debug_buffer, 0, debugger.buffer_size as _);
+        // queue.submit(Some(command_encoder.finish()));
+        //
+        // let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
+        // let buffer_slice = debugger.debug_buffer.slice(..);
+        // buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
+        // device.poll(wgpu::Maintain::Wait);
+        //
+        // pollster::block_on(async {
+        //     if let Some(Ok(())) = receiver.receive().await {
+        //         let data = buffer_slice.get_mapped_range();
+        //         let result: Vec<i32> = bytemuck::cast_slice(&data).to_vec();
+        //
+        //         drop(data);
+        //         debugger.debug_buffer.unmap();
+        //
+        //         println!("{:?}", result);
+        //
+        //         // for item in result {
+        //         //     print!("{}, ", item._sort);
+        //         // }
+        //         std::io::stdout().flush().unwrap();
+        //         println!("\n");
+        //     } else {
+        //         panic!("failed to run compute on gpu!")
+        //     }
+        // });
 
     }
 

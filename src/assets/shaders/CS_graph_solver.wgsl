@@ -1,12 +1,18 @@
 struct Node {
     position: vec3<f32>,
+    _empty_1: i32,
     force: vec3<f32>,
+    _empty_2: i32,
     prev_force: vec3<f32>,
     mass: atomic<u32>,
 };
 
 struct Uniforms {
     frame_num: u32,
+    node_count: u32,
+    edge_count: u32,
+    tree_node_count: u32,
+    bounding_count: u32,
 };
 
 struct Bound {
@@ -98,7 +104,7 @@ fn atomic_add_f32(springIndex: u32, updateValue: f32) {
 @workgroup_size(256)
 fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 
-    let total = arrayLength(&nodeSrc);
+    let total = uniforms.node_count;
     let index = global_invocation_id.x;
     if (index >= total) {
         return;
@@ -124,7 +130,7 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 @compute
 @workgroup_size(256)
 fn cal_mass(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
-    let total = arrayLength(&edgeSrc);
+    let total = uniforms.edge_count;
     let index = global_invocation_id.x;
     if (index >= total) {
         return;
@@ -141,7 +147,7 @@ fn cal_mass(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 @compute
 @workgroup_size(256)
 fn cal_gravity_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
-    let total = arrayLength(&nodeSrc);
+    let total = uniforms.node_count;
     let index = global_invocation_id.x;
     if (index >= total) {
         return;
@@ -172,7 +178,7 @@ fn cal_gravity_force(@builtin(global_invocation_id) global_invocation_id: vec3<u
 @compute
 @workgroup_size(256)
 fn attractive_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
-    let total = arrayLength(&edgeSrc);
+    let total = uniforms.edge_count;
     let index = global_invocation_id.x;
     if (index >= total) {
         return;
@@ -204,7 +210,7 @@ fn reduction_bounding(
 ) {
 
     var index = global_id.x;
-    let total = arrayLength(&nodeSrc);
+    let total = uniforms.node_count;
     if (index >= total) {
         index = total - 1u;
     }
@@ -237,7 +243,7 @@ fn reduction_bounding_2(
 ) {
 
     var index = global_id.x;
-    let total = arrayLength(&bounding);
+    let total = uniforms.bounding_count;
     if (index >= total) {
         index = total - 1u;
     }
@@ -266,17 +272,9 @@ fn reduction_bounding_2(
 fn bounding_box() {
     var bound_min_min = bounding[0].bound_min;
     var bound_max_max = bounding[0].bound_max;
-    let node_group_count = u32(ceil(f32(arrayLength(&nodeSrc)) / 256.0));
-//    for (var i = 0u; i < node_group_count; i++) {
-//        bound_min_min = min(bound_min_min, bounding[i].bound_min);
-//        bound_max_max = max(bound_max_max, bounding[i].bound_max);
-//    }
-
-    bounding[0].bound_min = bound_min_min;
-    bounding[0].bound_max = bound_max_max;
 
     let box = bound_max_max - bound_min_min;
-    let tree_node_count = arrayLength(&treeNode) - 1u;
+    let tree_node_count = uniforms.tree_node_count - 1u;
     bhTree.radius = max(max(box.x, box.y), box.z) * 0.5;
     atomicStore(&bhTree.bottom, tree_node_count);
     atomicStore(&bhTree.max_depth, 0u);
@@ -290,7 +288,7 @@ fn bounding_box() {
 @compute
 @workgroup_size(256)
 fn clear_1(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
-    let total = arrayLength(&treeNode);
+    let total = uniforms.tree_node_count;
     let index = global_invocation_id.x;
     if (index >= total) {
         return;
@@ -305,8 +303,8 @@ fn clear_1(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 @workgroup_size(256)
 fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     var index = global_invocation_id.x;
-    let node_count = arrayLength(&nodeSrc);
-    let tree_node_count = arrayLength(&treeNode) - 1u;
+    let node_count = uniforms.node_count;
+    let tree_node_count = uniforms.tree_node_count - 1u;
     let root_pos = treeNode[tree_node_count].position;
     let inc = min(node_count, 16384u); // should change
 
@@ -448,7 +446,7 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
 @compute
 @workgroup_size(256)
 fn clear_2(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
-    let total = arrayLength(&treeNode) - 1u;
+    let total = uniforms.tree_node_count - 1u;
     let index = global_invocation_id.x;
     if (index >= total) {
         return;
@@ -464,8 +462,8 @@ fn clear_2(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 @workgroup_size(256)
 fn summarization(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     let bottom = atomicLoad(&bhTree.bottom);
-    let tree_node_count = arrayLength(&treeNode) - 1u;
-    let node_count = arrayLength(&nodeSrc);
+    let tree_node_count = uniforms.tree_node_count - 1u;
+    let node_count = uniforms.node_count;
     let inc = min(node_count, 16384u);
     var index = u32((i32(bottom) & -32) + i32(global_invocation_id.x));
     if (index < bottom) {
@@ -589,9 +587,9 @@ fn summarization(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
 @compute
 @workgroup_size(256)
 fn sort(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
-    let tree_node_count = arrayLength(&treeNode) - 1u;
+    let tree_node_count = uniforms.tree_node_count - 1u;
     let bottom = atomicLoad(&bhTree.bottom);
-    let node_count = arrayLength(&nodeSrc);
+    let node_count = uniforms.node_count;
     let inc = min(node_count, 16384u);
     var index = tree_node_count + 1u - inc + global_invocation_id.x;
 
@@ -639,8 +637,8 @@ fn sort(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 @compute
 @workgroup_size(256)
 fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
-    let tree_node_count = arrayLength(&treeNode) - 1u;
-    let node_count = arrayLength(&nodeSrc);
+    let tree_node_count = uniforms.tree_node_count - 1u;
+    let node_count = uniforms.node_count;
     let inc = min(node_count, 16384u);
 
     // TODO: Global Param
@@ -723,7 +721,7 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
 @compute
 @workgroup_size(256)
 fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
-    let total = arrayLength(&nodeSrc);
+    let total = uniforms.node_count;
     let index = global_invocation_id.x;
     if (index >= total) {
         return;
@@ -751,7 +749,7 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 @compute
 @workgroup_size(256)
 fn displacement(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
-    let total = arrayLength(&nodeSrc);
+    let total = uniforms.node_count;
     let index = global_invocation_id.x;
     if (index >= total) {
         return;
@@ -778,7 +776,7 @@ fn displacement(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) 
 @compute
 @workgroup_size(256)
 fn randomize(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
-    let total = arrayLength(&nodeSrc);
+    let total = uniforms.node_count;
     let index = global_invocation_id.x;
     if (index >= total) {
         return;
@@ -799,7 +797,7 @@ fn randomize(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 @compute
 @workgroup_size(256)
 fn copy(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
-    let total = arrayLength(&nodeSrc);
+    let total = uniforms.node_count;
     let index = global_invocation_id.x;
     if (index >= total) {
         return;
@@ -816,7 +814,7 @@ fn copy(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 @workgroup_size(256)
 fn cal_depth(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 
-    let total = arrayLength(&nodeSrc);
+    let total = uniforms.node_count;
     let index = global_invocation_id.x;
     if (index >= total) {
         return;
@@ -841,7 +839,7 @@ fn sort_by_depth(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
         j = i ^ (kvps_param.block_count * 2u - 1u);
     }
     
-    let total = arrayLength(&nodeSrc);
+    let total = uniforms.node_count;
     if (j < i || i >= total || j >= total) {
         return;
     }
