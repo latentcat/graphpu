@@ -17,7 +17,7 @@ if [ $# -ne 0 ]; then
     fi
 fi
 
-MACOS_DMG_NAME=graphpu-0.4.0-macos-${ARCH_NAME}
+MACOS_DMG_NAME=graphpu-0.4.1-macos-${ARCH_NAME}
 
 APP_NAME=graphpu
 MACOS_BIN_NAME=GraphPU_bin

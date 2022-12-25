@@ -2,7 +2,6 @@
 #![allow(unused_variables)]
 
 use std::borrow::Cow;
-use std::io::Write;
 use std::mem;
 use chrono::{Local, Utc};
 use egui::{Ui, Vec2};
@@ -1006,40 +1005,44 @@ impl GraphicsResources {
 
         update_render_uniforms(queue, &mut self.camera, &self.render_uniform_buffer, glam::Vec2::new(self.viewport_size.x, self.viewport_size.y));
 
-        // calc depth
-        let command_buffer = {
-            let mut command_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
-            {
-                let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-                cpass.set_pipeline(&self.compute_pipelines.cal_depth);
-                cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
-            }
-            command_encoder.finish()
-        };
-        queue.submit(Some(command_buffer));
+        if self.render_options.is_rendering_node {
 
-        // sort
-        {
-            let mut dim = 2;
-            while dim < self.status.node_count * 2 {
-                let mut block_count = dim >> 1;
-                queue.write_buffer(&self.depth_sort_param_buffer, 0, bytemuck::cast_slice(&[dim as u32]));
-                while block_count > 0 {
-                    queue.write_buffer(&self.depth_sort_param_buffer, 4, bytemuck::cast_slice(&[block_count as u32]));
-                    let mut command_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
-                    {
-                        let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-                        cpass.set_pipeline(&self.compute_pipelines.sort_by_depth);
-                        cpass.set_bind_group(0, &self.compute_bind_group, &[]);
-                        cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
-                    }
-                    queue.submit(Some(command_encoder.finish()));
-                    block_count = block_count >> 1;
+            // calc depth
+            let command_buffer = {
+                let mut command_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+                {
+                    let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+                    cpass.set_pipeline(&self.compute_pipelines.cal_depth);
+                    cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                    cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
                 }
-                dim = dim << 1;
-            }
-        };
+                command_encoder.finish()
+            };
+            queue.submit(Some(command_buffer));
+
+            // sort
+            {
+                let mut dim = 2;
+                while dim < self.status.node_count * 2 {
+                    let mut block_count = dim >> 1;
+                    queue.write_buffer(&self.depth_sort_param_buffer, 0, bytemuck::cast_slice(&[dim as u32]));
+                    while block_count > 0 {
+                        queue.write_buffer(&self.depth_sort_param_buffer, 4, bytemuck::cast_slice(&[block_count as u32]));
+                        let mut command_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+                        {
+                            let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+                            cpass.set_pipeline(&self.compute_pipelines.sort_by_depth);
+                            cpass.set_bind_group(0, &self.compute_bind_group, &[]);
+                            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+                        }
+                        queue.submit(Some(command_encoder.finish()));
+                        block_count = block_count >> 1;
+                    }
+                    dim = dim << 1;
+                }
+            };
+
+        }
 
         // render
         let command_buffer = {
