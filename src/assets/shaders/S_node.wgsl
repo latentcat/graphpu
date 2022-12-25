@@ -53,7 +53,7 @@ fn main_vs(
     v.tex_coords = quad_pos;
 //    v.color = mix(vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), kvp.sort_key * 0.1 );
     v.color = mix(vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), f32(i.instance_index) / f32(arrayLength(&nodeSrc)));
-    if (i.instance_index == 0u) {
+    if (kvp.index == 0u) {
         v.color = vec3<f32>(1.0);
     }
 
