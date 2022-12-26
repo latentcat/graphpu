@@ -45,7 +45,7 @@ fn main_vs(
     var v: Varing;
     v.position = vec4<f32>(node.position.xyz, 1.0);
     v.position = transform.view * v.position;
-    v.position += vec4<f32>(quad_pos * 0.0075, 0.0, 0.0);
+    v.position += vec4<f32>(quad_pos * 0.0025, 0.0, 0.0);
     v.position = transform.projection * v.position;
     var quad_pos_ratio = quad_pos;
     quad_pos_ratio.x /= transform.camera.x;

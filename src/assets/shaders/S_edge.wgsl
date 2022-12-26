@@ -48,8 +48,13 @@ fn main_vs(
     var v: Varing;
     v.position = vec4<f32>(node.position.xyz, 1.0);
     v.position = transform.view * v.position;
-    v.position += vec4<f32>(quad_pos.y * quad_dir * 0.01 * 0.25, 0.0, 0.0);
+    v.position += vec4<f32>(quad_pos.y * quad_dir * 0.01 * 0.03, 0.0, 0.0);
     v.position = transform.projection * v.position;
+
+    var quad_pos_ratio = quad_pos.y * quad_dir;
+    quad_pos_ratio.x /= transform.camera.x;
+    v.position += vec4<f32>(quad_pos_ratio * (0.5 / transform.screen.y) * v.position.w, 0.0, 0.0);
+
     v.tex_coords = vec2<f32>(0.0);
 
     return v;
@@ -58,7 +63,7 @@ fn main_vs(
 @fragment
 fn main_fs(v: Varing) -> @location(0) vec4<f32> {
 
-    var out_color = vec4<f32>(1.0, 1.0, 1.0, 0.1);
+    var out_color = vec4<f32>(1.0, 1.0, 1.0, 0.02);
 
     return out_color;
 }

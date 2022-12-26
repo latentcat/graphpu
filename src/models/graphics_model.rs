@@ -824,7 +824,7 @@ impl GraphicsResources {
         }
         queue.submit(Some(command_encoder.finish()));
         self.compute_frame_count += 1;
-        device.poll(wgpu::Maintain::Wait);
+        // device.poll(wgpu::Maintain::Wait);
 
         // let debugger = &mut self.debugger;
         // command_encoder.copy_buffer_to_buffer(&self.tree_child_buffer, 0, &debugger.debug_buffer, 0, debugger.buffer_size as _);
