@@ -25,7 +25,7 @@ impl AppView for GraphicsView {
         models.graphics_model.set_dispatching(false);
     
         egui::CentralPanel::default()
-            .frame(graphics_frame(ui.style()))
+            .frame(graphics_frame(ui.style(), models.app_model.is_fullscreen_graphics))
             .show_inside(ui, |ui| {
 
                 let max_rect = ui.max_rect();
