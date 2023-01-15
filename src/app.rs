@@ -8,6 +8,7 @@ use crate::{
 use egui::{Color32, TextStyle};
 use crate::components::dock_view::DockView;
 use crate::components::drawer_view::DrawerView;
+use crate::components::shortcuts::Shortcut;
 use crate::models::app_model::DockStage;
 use crate::constant::{FONT_SIZE_BODY, FONT_SIZE_HEADING};
 
@@ -96,6 +97,9 @@ impl eframe::App for MainApp {
             .show(ctx, |ui| {
                 ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
                 // ui.set_enabled(false);
+
+                Shortcut::default().apply(&mut self.models, ui, frame);
+
                 if !self.models.app_model.is_fullscreen_graphics {
 
                     MenuBarView::default().show(&mut self.models, ui, frame);

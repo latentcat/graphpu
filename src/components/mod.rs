@@ -11,6 +11,7 @@ pub mod table_view;
 pub mod dock_view;
 pub mod drawer_view;
 pub mod drawers;
+pub mod shortcuts;
 
 pub trait AppView {
   fn show(&mut self, models: &mut Models, ui: &mut Ui, frame: &mut eframe::Frame);

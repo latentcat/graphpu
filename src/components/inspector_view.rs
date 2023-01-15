@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-use egui::{CollapsingHeader, CollapsingResponse, Color32, Modifiers, Ui};
+use egui::{CollapsingHeader, CollapsingResponse, Color32, Ui};
 
 use crate::models::Models;
 use crate::models::app_model::{ImportState, InspectorTab};
@@ -170,18 +170,6 @@ impl InspectorView {
             ui.end_row();
 
             grid_label(ui, "");
-
-            let organize_shortcut =
-                egui::KeyboardShortcut::new(Modifiers::COMMAND, egui::Key::R);
-
-            if ui.input_mut().consume_shortcut(&organize_shortcut) {
-                println!("123");
-                if node_settings.position_compute.1 == ComputeMethodType::Continuous {
-                    models.graphics_model.switch_computing();
-                } else {
-                    models.graphics_model.set_dispatching(true);
-                }
-            }
 
             if node_settings.position_compute.1 == ComputeMethodType::Continuous {
                 let continuous_button = ui.button(if !models.graphics_model.is_computing { "Start Computing" } else { "Pause Computing" });
