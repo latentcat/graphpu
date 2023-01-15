@@ -1,6 +1,6 @@
 use std::borrow::BorrowMut;
 use std::ops::Mul;
-use egui::{InnerResponse, Response, Ui, Vec2, Widget, WidgetText};
+use egui::{InnerResponse, Modifiers, Response, Ui, Vec2, Widget, WidgetText};
 use crate::models::app_model::Tool;
 use crate::models::graphics_model::GraphicsResources;
 
@@ -84,7 +84,18 @@ impl AppView for GraphicsView {
 
                     });
 
+                models.graphics_model.is_hover_toolbar = false;
 
+                let organize_shortcut =
+                    egui::KeyboardShortcut::new(Modifiers::NONE, egui::Key::Escape);
+
+                if ui.input_mut().consume_shortcut(&organize_shortcut) {
+                    models.app_model.is_fullscreen_graphics = false;
+                    if !models.app_model.is_fullscreen {
+                        _frame.set_fullscreen(false);
+                    }
+                }
+                if models.app_model.is_fullscreen_graphics { return; }
 
                 ui.allocate_ui_at_rect(max_rect, |ui| {
 
@@ -152,6 +163,15 @@ impl AppView for GraphicsView {
                             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                                 ui.horizontal(|ui| {
                                     if let Some(graphics_resources) = &mut models.graphics_model.graphics_resources {
+
+                                        let fullscreen_btn = ui.button("🗖");
+                                        // let fullscreen = _frame.info().window_info.fullscreen;
+
+                                        fullscreen_btn.clicked().then(|| {
+                                            models.app_model.is_fullscreen_graphics = true;
+                                            _frame.set_fullscreen(true);
+                                        });
+
 
                                         toggle_button(ui, &mut graphics_resources.render_options.is_rendering_bounding_box, "⛶")
                                             .on_hover_text("Toggle Bounding Box")

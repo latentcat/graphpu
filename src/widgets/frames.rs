@@ -92,7 +92,8 @@ pub fn graphics_frame(_style: &egui::Style) -> egui::Frame {
     egui::Frame {
         inner_margin: egui::style::Margin::symmetric(0.5, 0.5),
         rounding: egui::Rounding::none(),
-        fill: Color32::from_gray(20),
+        fill: Color32::from_gray(0),
+        // fill: Color32::from_gray(20),
         // stroke: style.visuals.window_stroke(),
         ..Default::default()
     }

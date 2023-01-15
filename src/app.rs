@@ -96,17 +96,22 @@ impl eframe::App for MainApp {
             .show(ctx, |ui| {
                 ui.spacing_mut().item_spacing = egui::vec2(0.0, 0.0);
                 // ui.set_enabled(false);
-                MenuBarView::default().show(&mut self.models, ui, frame);
-                DetailView::default().show(&mut self.models, ui, frame);
-                self.inspector_view.show(&mut self.models, ui, frame);
-                DockView::default().show(&mut self.models, ui, frame);
-                if self.models.app_model.dock_stage != DockStage::None {
-                    DrawerView::default().show(&mut self.models, ui, frame);
+                if !self.models.app_model.is_fullscreen_graphics {
+
+                    MenuBarView::default().show(&mut self.models, ui, frame);
+                    DetailView::default().show(&mut self.models, ui, frame);
+                    self.inspector_view.show(&mut self.models, ui, frame);
+                    DockView::default().show(&mut self.models, ui, frame);
+                    if self.models.app_model.dock_stage != DockStage::None {
+                        DrawerView::default().show(&mut self.models, ui, frame);
+                    }
+                    match self.models.app_model.main_stage {
+                        MainStage::Graphics => GraphicsView::default().show(&mut self.models, ui, frame),
+                        MainStage::Table => TableView::default().show(&mut self.models, ui, frame),
+                    };
+                } else {
+                    GraphicsView::default().show(&mut self.models, ui, frame)
                 }
-                match self.models.app_model.main_stage {
-                    MainStage::Graphics => GraphicsView::default().show(&mut self.models, ui, frame),
-                    MainStage::Table => TableView::default().show(&mut self.models, ui, frame),
-                };
             });
 
         if self.models.app_model.is_import_visible {
