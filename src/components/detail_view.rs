@@ -12,7 +12,8 @@ pub struct DetailView;
 
 impl AppView for DetailView {
     fn show(&mut self, models: &mut Models, ui: &mut Ui, _frame: &mut eframe::Frame) {
-        egui::TopBottomPanel::bottom("detail").show_inside(ui, |ui| {
+        egui::TopBottomPanel::bottom("detail")
+            .show_inside(ui, |ui| {
 
             ui.horizontal(|ui| {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
