@@ -1197,7 +1197,7 @@ impl GraphicsResources {
     pub fn update_control(&mut self, ui: &mut Ui, is_hover_toolbar: bool) {
 
         self.control.update_interaction(ui, is_hover_toolbar);
-        self.control.update_camera(&mut self.camera);
+        self.control.update_camera(ui, &mut self.camera);
 
         if self.control.is_update {
             self.need_update = true;

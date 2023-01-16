@@ -1,5 +1,5 @@
 use std::f32::consts::{PI};
-use egui::{Pos2, Ui, Vec2};
+use egui::{Key, Pos2, Ui, Vec2};
 use crate::models::graphics_lib::Camera;
 
 pub struct Controls {
@@ -117,7 +117,7 @@ impl Controls {
 
     }
 
-    pub fn update_camera(&mut self, camera: &mut Camera) {
+    pub fn update_camera(&mut self, ui: &mut Ui, camera: &mut Camera) {
 
         // 滚轮缩放
         // 如果鼠标指针在绘图区域内，且当前帧滚轮纵向 delta 不为零
@@ -129,6 +129,31 @@ impl Controls {
             camera.zoom(f32::powf(1.2, -self.scroll_delta.y * 0.03) );
             self.is_update = true;
 
+        }
+
+        if ui.input().key_down(Key::Minus) {
+            camera.zoom(f32::powf(1.2, 0.03) );
+            self.is_update = true;
+        }
+        if ui.input().key_pressed(Key::Minus) && ui.input().key_released(Key::Minus) {
+            camera.zoom(f32::powf(1.2, 1.0) );
+            self.is_update = true;
+        }
+        if ui.input().key_down(Key::PlusEquals) {
+            camera.zoom(f32::powf(1.2, -0.03) );
+            self.is_update = true;
+        }
+        if ui.input().key_pressed(Key::PlusEquals) && ui.input().key_released(Key::PlusEquals) {
+            camera.zoom(f32::powf(1.2, -1.0) );
+            self.is_update = true;
+        }
+        if ui.input().key_pressed(Key::Num9) {
+            camera.rotate(glam::Vec2::new(0.03, 0.0) * PI);
+            self.is_update = true;
+        }
+        if ui.input().key_pressed(Key::Num0) {
+            camera.rotate(glam::Vec2::new(-0.03, 0.0) * PI);
+            self.is_update = true;
         }
 
         if !self.is_pointer_press_inside { return; }
