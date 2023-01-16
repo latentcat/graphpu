@@ -217,7 +217,7 @@ pub struct GraphicsResources {
 
     // 相机
     camera:                         Camera,
-    control:                        Controls,
+    pub control:                        Controls,
 
     // Buffers
     uniform_buffer:                 wgpu::Buffer,

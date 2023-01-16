@@ -1,6 +1,6 @@
 use std::borrow::BorrowMut;
 use std::ops::Mul;
-use egui::{InnerResponse, Modifiers, Response, Ui, Vec2, Widget, WidgetText};
+use egui::{InnerResponse, Modifiers, PointerButton, Response, Ui, Vec2, Widget, WidgetText};
 use crate::models::app_model::Tool;
 use crate::models::graphics_model::GraphicsResources;
 
@@ -59,6 +59,19 @@ impl AppView for GraphicsView {
                             );
 
                             compute_resources.update_control(ui, models.graphics_model.is_hover_toolbar);
+                            if compute_resources.control.pointer_pos.is_some() {
+                                if ui.input().pointer.button_double_clicked(PointerButton::Primary) {
+                                    if !models.app_model.is_fullscreen_graphics {
+                                        models.app_model.is_fullscreen_graphics = true;
+                                        _frame.set_fullscreen(true);
+                                    } else {
+                                        models.app_model.is_fullscreen_graphics = false;
+                                        if !models.app_model.is_fullscreen {
+                                            _frame.set_fullscreen(false);
+                                        }
+                                    }
+                                }
+                            }
 
                             // 若有任何变化，渲染并请求 egui UI 更新
                             if is_computing || is_dispatching || compute_resources.need_update {

@@ -5,7 +5,7 @@ use crate::models::graphics_lib::Camera;
 pub struct Controls {
 
     // 鼠标指针位置，存在时为 Some
-    pointer_pos: Option<Pos2>,
+    pub pointer_pos: Option<Pos2>,
 
     is_pointer_press_inside: bool,
 
