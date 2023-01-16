@@ -1,6 +1,6 @@
 #!/bin/bash
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-BIN=GraphPU_bin
+BIN=GraphPU
 
-$DIR/$BIN
+$DIR/bin/$BIN

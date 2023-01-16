@@ -8,8 +8,8 @@ ARCH_NAME=x86_64
 rustup target add x86_64-apple-darwin
 
 if [ $# -ne 0 ]; then
-    echo "111"
-    if [ "$1" == "-a" ]; then
+    echo "$1"
+    if [ "$1" = "-a" ]; then
         echo "222"
         ARCH=aarch64-apple-darwin
         ARCH_NAME=arm64
@@ -20,7 +20,7 @@ fi
 MACOS_DMG_NAME=graphpu-0.4.1-macos-${ARCH_NAME}
 
 APP_NAME=graphpu
-MACOS_BIN_NAME=GraphPU_bin
+MACOS_BIN_NAME=GraphPU
 MACOS_APP_NAME=GraphPU
 MACOS_APP_NAME_APP=$MACOS_APP_NAME.app
 MACOS_APP_DIR_PREFIX=app_${ARCH_NAME}
@@ -34,21 +34,21 @@ cd macos_build
 echo "Creating app directory structure"
 rm -rf $MACOS_APP_NAME
 rm -rf $MACOS_APP_DIR
-mkdir -p $MACOS_APP_DIR/Contents/MacOS
+mkdir -p $MACOS_APP_DIR/Contents/MacOS/bin
 
 cargo rustc \
-    --verbose \
     --release \
     --target=$ARCH \
     --features exe
+#    --verbose \
 
 echo "Copying binary"
-MACOS_APP_BIN=$MACOS_APP_DIR/Contents/MacOS/$MACOS_BIN_NAME
+MACOS_APP_BIN=$MACOS_APP_DIR/Contents/MacOS/bin/$MACOS_BIN_NAME
 cp ../target/$ARCH/release/$APP_NAME $MACOS_APP_BIN
 chmod 755 $MACOS_APP_BIN
 
 echo "Copying resources directory"
-cp -r ../resources $MACOS_APP_DIR/Contents/MacOS
+cp -r ../resources $MACOS_APP_DIR/Contents/MacOS/bin
 
 echo "Copying launcher"
 cp ../scripts/macos_launch.sh $MACOS_APP_DIR/Contents/MacOS/$MACOS_APP_NAME
