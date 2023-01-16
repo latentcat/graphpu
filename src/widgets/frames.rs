@@ -14,10 +14,10 @@ pub fn window_frame(style: &egui::Style) -> egui::Frame {
   }
 }
 
-pub fn menu_panel_style(_style: &egui::Style) -> egui::Frame {
+pub fn menu_panel_style(_style: &egui::Style, is_fullscreen: bool) -> egui::Frame {
     egui::Frame {
         inner_margin: egui::style::Margin {
-            left: if cfg!(target_os = "macos") { 72.0 } else { 8.0 },
+            left: if cfg!(target_os = "macos") && !is_fullscreen { 72.0 } else { 8.0 },
             right: 8.0,
             top: 3.5,
             bottom: 3.5
