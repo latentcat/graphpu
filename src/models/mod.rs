@@ -1,5 +1,6 @@
 use crate::models::data_model::GraphicsStatus;
 use std::path::PathBuf;
+use crate::utils::file::{path_to_string, pick_folder};
 use crate::utils::message::message_info;
 
 use self::{app_model::ImportState, data_model::ExternalData, graphics_model::GraphicsResources};
@@ -74,5 +75,20 @@ impl Models {
         self.graphics_model.reset();
         self.graphics_model.graphics_resources = None;
         self.data_model.status = GraphicsStatus::default();
+    }
+
+    pub fn pick_output_folder_and_then(output_folder: &mut String, mut then: impl FnMut(&str) -> ()) {
+        if output_folder.is_empty() {
+            *output_folder = path_to_string(&pick_folder()).unwrap_or(output_folder.clone());
+        }
+        if !output_folder.is_empty() {
+            then(output_folder);
+        }
+    }
+
+    pub fn render_output(&mut self) {
+        Self::pick_output_folder_and_then(&mut self.app_model.output_folder, |folder| {
+            self.graphics_model.render_output(String::from(folder));
+        });
     }
 }

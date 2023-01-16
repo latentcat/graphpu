@@ -14,7 +14,7 @@ pub fn window_frame(style: &egui::Style) -> egui::Frame {
   }
 }
 
-pub fn menu_panel_style(style: &egui::Style) -> egui::Frame {
+pub fn menu_panel_style(_style: &egui::Style) -> egui::Frame {
     egui::Frame {
         inner_margin: egui::style::Margin {
             left: 8.0,
@@ -22,8 +22,13 @@ pub fn menu_panel_style(style: &egui::Style) -> egui::Frame {
             top: 3.0,
             bottom: 3.0
         },
+        outer_margin: egui::style::Margin {
+            bottom: 1.0,
+            ..Default::default()
+        },
         rounding: egui::Rounding::none(),
-        fill: style.visuals.window_fill(),
+        fill: Color32::from_gray(50),
+        // fill: style.visuals.window_fill(),
         // stroke: style.visuals.window_stroke(),
         ..Default::default()
     }

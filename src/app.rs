@@ -24,6 +24,7 @@ impl MainApp {
         style.visuals.widgets.active.fg_stroke.color = Color32::from_white_alpha(220);
         style.visuals.widgets.inactive.fg_stroke.color = Color32::from_white_alpha(190);
         style.visuals.widgets.noninteractive.fg_stroke.color = Color32::from_white_alpha(170);
+        // style.visuals.widgets.noninteractive.bg_stroke.color = Color32::from_gray(0);
         style.visuals.selection.bg_fill = Color32::from_rgb(86, 89, 225);
         style.visuals.selection.stroke.color = Color32::from_white_alpha(240);
 

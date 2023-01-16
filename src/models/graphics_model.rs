@@ -985,7 +985,7 @@ impl GraphicsResources {
             view,
             resolve_target,
             ops: wgpu::Operations {
-                load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                load: wgpu::LoadOp::Clear(if !is_render_output { wgpu::Color::TRANSPARENT } else { wgpu::Color::BLACK }),
                 store: false,
             },
         });

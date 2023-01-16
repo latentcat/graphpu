@@ -18,5 +18,12 @@ impl Shortcut {
                 models.graphics_model.set_dispatching(true);
             }
         }
+
+        let organize_shortcut =
+            egui::KeyboardShortcut::new(Modifiers::COMMAND, egui::Key::S);
+
+        if ui.input_mut().consume_shortcut(&organize_shortcut) {
+            models.render_output();
+        }
     }
 }

@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use egui::{Color32, Rounding, Stroke, Style, Vec2, Visuals};
 use egui::style::{Selection, Spacing, Widgets, WidgetVisuals};
-use crate::utils::file::desktop_dir_or_empty;
+use crate::utils::file::{desktop_dir_or_empty};
 
 #[derive(Debug, Default, PartialEq)]
 pub enum ImportState {
@@ -143,4 +143,5 @@ impl AppModel {
     pub fn edge_file_name(&self) -> Option<&str> {
         self.edge_file_path.as_ref()?.file_name().and_then(|s| s.to_str())
     }
+
 }

@@ -17,6 +17,7 @@ impl AppView for MenuBarView {
     fn show(&mut self, models: &mut Models, ui: &mut Ui, frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("menubar_view")
             .frame(menu_panel_style(ui.style()))
+            .show_separator_line(false)
             .show_inside(ui, |ui| {
                 ui.set_style(ui.ctx().style());
                 egui::menu::bar(ui, |ui| {

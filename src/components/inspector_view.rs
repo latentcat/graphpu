@@ -42,16 +42,14 @@ impl AppView for InspectorView {
                             |ui| {
                                 let folder_open = ui.button("🗁");
                                 if folder_open.clicked() {
-                                    self.pick_output_folder_and_then(&mut models.app_model.output_folder, |folder| {
+                                    Models::pick_output_folder_and_then(&mut models.app_model.output_folder, |folder| {
                                         system_open_directory(folder);
                                     });
                                 }
                                 ui.vertical_centered_justified(|ui| {
                                     let render_button = ui.button("Render Image");
                                     if render_button.clicked() {
-                                        self.pick_output_folder_and_then(&mut models.app_model.output_folder, |folder| {
-                                            models.graphics_model.render_output(String::from(folder));
-                                        });
+                                        models.render_output();
                                     }
                                 });
                             },
@@ -340,17 +338,6 @@ impl InspectorView {
 
         });
 
-    }
-}
-
-impl InspectorView {
-    fn pick_output_folder_and_then(&self, output_folder: &mut String, mut then: impl FnMut(&str) -> ()) {
-        if output_folder.is_empty() {
-            *output_folder = path_to_string(&pick_folder()).unwrap_or(output_folder.clone());
-        }
-        if !output_folder.is_empty() {
-            then(output_folder);
-        }
     }
 }
 
