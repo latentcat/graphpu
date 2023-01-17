@@ -551,6 +551,28 @@ impl GraphicsResources {
             mapped_at_creation: false
         });
 
+        let kernel_names = vec![
+            "gen_node",
+            "cal_mass",
+            "cal_gravity_force",
+            "attractive_force",
+            "reduction_bounding",
+            "reduction_bounding_2",
+            "bounding_box",
+            "clear_1",
+            "tree_building",
+            "clear_2",
+            "summarization",
+            "sort",
+            "electron_force",
+            "main",
+            "displacement",
+            "randomize",
+            "copy",
+            "cal_depth",
+            "sort_by_depth",
+        ];
+
         let kernel_status_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Kernel Status Buffer"),
             size: (kernel_names.len() * 4) as wgpu::BufferAddress,
@@ -692,27 +714,6 @@ impl GraphicsResources {
             device: device.clone(),
         };
 
-        let kernel_names = vec![
-            "gen_node",
-            "cal_mass",
-            "cal_gravity_force",
-            "attractive_force",
-            "reduction_bounding",
-            "reduction_bounding_2",
-            "bounding_box",
-            "clear_1",
-            "tree_building",
-            "clear_2",
-            "summarization",
-            "sort",
-            "electron_force",
-            "main",
-            "displacement",
-            "randomize",
-            "copy",
-            "cal_depth",
-            "sort_by_depth",
-        ];
 
         let gen_node = graph_compute.create_compute_kernel("gen_node", vec![
             ComputeBuffer {
