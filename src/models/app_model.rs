@@ -25,6 +25,7 @@ pub enum DockStage {
     None,
     Messages,
     Timeline,
+    Kernel,
 }
 
 #[derive(Default, PartialEq)]

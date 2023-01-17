@@ -1,5 +1,5 @@
 use egui::{Response, Ui, Vec2};
-use crate::components::drawers::MessageView;
+use crate::components::drawers::{KernelView, MessageView};
 use crate::constant::FONT_SIZE_TITLE;
 use crate::models::app_model::DockStage;
 
@@ -40,6 +40,7 @@ impl AppView for DrawerView {
                                         DockStage::None => "None",
                                         DockStage::Messages => "Messages",
                                         DockStage::Timeline => "Timeline",
+                                        DockStage::Kernel => "Kernel",
                                     };
 
                                     ui.style_mut().text_styles.get_mut(&egui::TextStyle::Body).unwrap().size = FONT_SIZE_TITLE;
@@ -60,6 +61,9 @@ impl AppView for DrawerView {
                 match models.app_model.dock_stage {
                     DockStage::Messages => {
                         MessageView::default().show(models, ui, frame);
+                    },
+                    DockStage::Kernel => {
+                        KernelView::default().show(models, ui, frame);
                     },
                     _ => {
                         ui.centered_and_justified(|ui| {

@@ -25,6 +25,7 @@ impl AppView for DockView {
 
                     dock_button(ui, models, DockStage::Messages, "🕫 Messages");
                     dock_button(ui, models, DockStage::Timeline, "🕙 Timeline");
+                    dock_button(ui, models, DockStage::Kernel, "✱ Kernel");
 
 
                     ui.allocate_ui_with_layout(

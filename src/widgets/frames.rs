@@ -200,3 +200,10 @@ pub fn drawer_message_content_frame(_style: &egui::Style) -> egui::Frame {
         ..Default::default()
     }
 }
+
+pub fn drawer_kernel_content_frame(_style: &egui::Style) -> egui::Frame {
+    egui::Frame {
+        inner_margin: egui::style::Margin::symmetric(6.0, 6.0),
+        ..Default::default()
+    }
+}
