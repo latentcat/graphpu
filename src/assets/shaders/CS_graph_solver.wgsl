@@ -100,6 +100,7 @@ fn atomic_add_f32(springIndex: u32, updateValue: f32) {
     }
 }
 
+// 0
 @compute
 @workgroup_size(256)
 fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
@@ -127,6 +128,7 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 
 }
 
+// 1
 @compute
 @workgroup_size(256)
 fn cal_mass(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
@@ -144,6 +146,7 @@ fn cal_mass(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     atomicAdd(&nodeSrc[target_node].mass, 1u);
 }
 
+// 2
 @compute
 @workgroup_size(256)
 fn cal_gravity_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
@@ -175,6 +178,7 @@ fn cal_gravity_force(@builtin(global_invocation_id) global_invocation_id: vec3<u
     nodeSrc[index].force +=  -pos * 0.5;
 }
 
+// 3
 @compute
 @workgroup_size(256)
 fn attractive_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
@@ -201,6 +205,7 @@ fn attractive_force(@builtin(global_invocation_id) global_invocation_id: vec3<u3
 var<workgroup> smin: array<vec3<f32>, 256>;
 var<workgroup> smax: array<vec3<f32>, 256>;
 
+// 4
 @compute
 @workgroup_size(256)
 fn reduction_bounding(
@@ -234,6 +239,7 @@ fn reduction_bounding(
     }
 }
 
+// 5
 @compute
 @workgroup_size(256)
 fn reduction_bounding_2(
@@ -267,6 +273,7 @@ fn reduction_bounding_2(
     }
 }
 
+// 6
 @compute
 @workgroup_size(1)
 fn bounding_box() {
@@ -285,6 +292,7 @@ fn bounding_box() {
     treeNode[tree_node_count].sort = 0;
 }
 
+// 7
 @compute
 @workgroup_size(256)
 fn clear_1(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
@@ -299,6 +307,7 @@ fn clear_1(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     }
 }
 
+// 8
 @compute
 @workgroup_size(256)
 fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
@@ -443,6 +452,7 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     atomicMax(&bhTree.max_depth, local_max_depth);
 }
 
+// 9
 @compute
 @workgroup_size(256)
 fn clear_2(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
@@ -458,6 +468,7 @@ fn clear_2(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     atomicStore(&treeNode[index].mass, -1);
 }
 
+// 10
 @compute
 @workgroup_size(256)
 fn summarization(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
@@ -584,6 +595,7 @@ fn summarization(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     }
 }
 
+// 11
 @compute
 @workgroup_size(256)
 fn sort(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
@@ -634,6 +646,7 @@ fn sort(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     }
 }
 
+// 12
 @compute
 @workgroup_size(256)
 fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
@@ -718,6 +731,7 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
     }
 }
 
+// 13
 @compute
 @workgroup_size(256)
 fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
@@ -746,6 +760,7 @@ fn main(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     nodeSrc[index].force += spring_force;
 }
 
+// 14
 @compute
 @workgroup_size(256)
 fn displacement(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
@@ -773,6 +788,7 @@ fn displacement(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) 
     nodeSrc[index].position += force * factor * 0.01;
 }
 
+// 15
 @compute
 @workgroup_size(256)
 fn randomize(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
@@ -794,6 +810,7 @@ fn randomize(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     nodeSrc[index].prev_force = vec3<f32>(0.0);
 }
 
+// 16
 @compute
 @workgroup_size(256)
 fn copy(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
@@ -810,6 +827,7 @@ fn copy(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     //  nodeSrc[index] = Node(vPos, vVel);
 }
 
+// 17
 @compute
 @workgroup_size(256)
 fn cal_depth(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
@@ -829,6 +847,7 @@ fn cal_depth(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 
 }
 
+// 18
 @compute
 @workgroup_size(256)
 fn sort_by_depth(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {

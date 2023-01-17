@@ -1,9 +1,11 @@
 use std::sync::Arc;
-use wgpu::{ComputePipeline, Device, ShaderModule, BindGroupLayoutEntry};
+use egui::epaint::ahash::HashMap;
+use wgpu::{Device, ShaderModule, BindGroupLayoutEntry};
 
 pub struct ComputeShader {
     pub shader: ShaderModule,
     pub device: Arc<Device>,
+    pub kernels: HashMap<String, ComputeKernel>
 }
 
 pub struct ComputeBuffer<'a> {
@@ -18,11 +20,6 @@ pub enum ComputeBufferType {
     StorageReadOnly,
 }
 
-fn demo<T, const N: usize>(v: Vec<T>) -> [T; N] {
-    v.try_into()
-        .unwrap_or_else(|v: Vec<T>| panic!("Expected a Vec of length {} but it was {}", N, v.len()))
-}
-
 impl ComputeShader {
     // pub fn create_pipeline(&mut self, entry_point: &str) -> ComputePipeline {
     //     let compute_pipeline = self.device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
@@ -35,7 +32,7 @@ impl ComputeShader {
     //     compute_pipeline
     // }
 
-    pub fn create_compute_kernel(&mut self, entry_point: &str, buffers: Vec<ComputeBuffer>) -> ComputeKernel {
+    pub fn create_compute_kernel(&mut self, entry_point: &str, buffers: Vec<ComputeBuffer>) {
 
         let bind_group_layout = self.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: buffers.iter().map(|compute_buffer| BindGroupLayoutEntry {
@@ -81,10 +78,16 @@ impl ComputeShader {
             entry_point,
         });
 
-        ComputeKernel {
+        let compute_kernel = ComputeKernel {
             bind_group,
             compute_pipeline
-        }
+        };
+
+        self.kernels.insert(
+            entry_point.parse().unwrap(),
+            compute_kernel
+        );
+
     }
 }
 
