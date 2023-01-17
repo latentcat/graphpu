@@ -14,7 +14,8 @@ pub struct ComputeBuffer<'a> {
 
 pub enum ComputeBufferType {
     Storage,
-    Uniform
+    Uniform,
+    StorageReadOnly,
 }
 
 fn demo<T, const N: usize>(v: Vec<T>) -> [T; N] {
@@ -23,16 +24,16 @@ fn demo<T, const N: usize>(v: Vec<T>) -> [T; N] {
 }
 
 impl ComputeShader {
-    pub fn create_pipeline(&mut self, entry_point: &str) -> ComputePipeline {
-        let compute_pipeline = self.device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label: Some("Gen Node Pipeline"),
-            layout: Some(&self.pipeline_layout),
-            module: &self.shader,
-            entry_point,
-        });
-
-        compute_pipeline
-    }
+    // pub fn create_pipeline(&mut self, entry_point: &str) -> ComputePipeline {
+    //     let compute_pipeline = self.device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+    //         label: Some("Gen Node Pipeline"),
+    //         layout: Some(&self.pipeline_layout),
+    //         module: &self.shader,
+    //         entry_point,
+    //     });
+    //
+    //     compute_pipeline
+    // }
 
     pub fn create_compute_kernel(&mut self, entry_point: &str, buffers: Vec<ComputeBuffer>) -> ComputeKernel {
 
@@ -44,6 +45,7 @@ impl ComputeShader {
                     ty: match compute_buffer.buffer_type {
                         ComputeBufferType::Storage => wgpu::BufferBindingType::Storage { read_only: false },
                         ComputeBufferType::Uniform => wgpu::BufferBindingType::Uniform,
+                        ComputeBufferType::StorageReadOnly => wgpu::BufferBindingType::Storage { read_only: true },
                     },
                     has_dynamic_offset: false,
                     min_binding_size: None,
@@ -59,7 +61,7 @@ impl ComputeShader {
             layout: &bind_group_layout,
             entries: buffers.iter().map(|compute_buffer| wgpu::BindGroupEntry {
                 binding: compute_buffer.binding,
-                resource: compute_buffer.buffer,
+                resource: compute_buffer.buffer.clone(),
             })
             .collect::<Vec<_>>()
             .as_slice(),
