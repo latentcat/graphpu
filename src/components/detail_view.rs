@@ -1,3 +1,4 @@
+use chrono::Utc;
 use egui::{Sense, Ui};
 use crate::constant::FONT_SIZE_BODY;
 use crate::models::app_model::DockStage;
@@ -33,31 +34,7 @@ impl AppView for DetailView {
                         ui.available_size(),
                         egui::Layout::left_to_right(egui::Align::Center),
                         |ui| {
-                            let messages = messenger();
-                            if messages.len() > 0 {
-                                let message = &messages[messages.len() - 1].to_string();
-                                let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::click());
-                                ui.allocate_ui_at_rect(rect, |ui| {
-                                    ui.vertical(|ui| {
-                                        ui.add_space(3.0);
-
-                                        let mut job = egui::text::LayoutJob::single_section(message.to_owned(), egui::TextFormat {
-                                            font_id: egui::FontId::new(FONT_SIZE_BODY, Default::default()),
-                                            color: egui::Color32::from_gray(120),
-                                            ..Default::default()
-                                        });
-                                        job.wrap = egui::epaint::text::TextWrapping {
-                                            max_rows: 1,
-                                            break_anywhere: true,
-                                            overflow_character: Some('…'),
-                                            ..Default::default()
-                                        };
-                                        ui.label(job);
-                                    });
-                                    // ui.label(egui::RichText::new(format!("{}", messages[0])).weak())
-                                });
-                                response.clicked().then(||{ models.app_model.dock_stage = DockStage::Messages });
-                            }
+                            show_message(models, ui, _frame, 12);
                         },
                     );
 
@@ -65,5 +42,35 @@ impl AppView for DetailView {
 
             });
         });
+    }
+}
+
+pub fn show_message(models: &mut Models, ui: &mut Ui, _frame: &mut eframe::Frame, max_time: i32) {
+    let messages = messenger();
+    if messages.len() > 0 {
+        let message = &messages[messages.len() - 1];
+        if Utc::now().timestamp() - message.time > max_time.into() { return; };
+        let message = message.to_string();
+        let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::click());
+        ui.allocate_ui_at_rect(rect, |ui| {
+            ui.vertical(|ui| {
+                ui.add_space(3.0);
+
+                let mut job = egui::text::LayoutJob::single_section(message.to_owned(), egui::TextFormat {
+                    font_id: egui::FontId::new(FONT_SIZE_BODY, Default::default()),
+                    color: egui::Color32::from_gray(120),
+                    ..Default::default()
+                });
+                job.wrap = egui::epaint::text::TextWrapping {
+                    max_rows: 1,
+                    break_anywhere: true,
+                    overflow_character: Some('…'),
+                    ..Default::default()
+                };
+                ui.label(job);
+            });
+            // ui.label(egui::RichText::new(format!("{}", messages[0])).weak())
+        });
+        response.clicked().then(||{ models.app_model.dock_stage = DockStage::Messages });
     }
 }

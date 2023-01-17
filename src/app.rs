@@ -6,6 +6,7 @@ use crate::{
     models::{app_model::{AppModel, MainStage}, graphics_model::GraphicsModel, data_model::DataModel, Models},
 };
 use egui::{Color32, TextStyle};
+use crate::components::detail_view::show_message;
 use crate::components::dock_view::DockView;
 use crate::components::drawer_view::DrawerView;
 use crate::components::shortcuts::Shortcut;
@@ -115,7 +116,8 @@ impl eframe::App for MainApp {
                         MainStage::Table => TableView::default().show(&mut self.models, ui, frame),
                     };
                 } else {
-                    GraphicsView::default().show(&mut self.models, ui, frame)
+                    GraphicsView::default().show(&mut self.models, ui, frame);
+                    show_message(&mut self.models, ui, frame, 2);
                 }
             });
 
