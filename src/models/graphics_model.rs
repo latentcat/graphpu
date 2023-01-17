@@ -670,49 +670,9 @@ impl GraphicsResources {
                     buffer: node_buffer.as_entire_binding(),
                 },
                 ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
                     binding: 3,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
                 },
             ]),
             cal_mass:               graph_compute.create_compute_kernel("cal_mass", vec![
@@ -731,46 +691,6 @@ impl GraphicsResources {
                     buffer_type: ComputeBufferType::StorageReadOnly,
                     buffer: edge_buffer.as_entire_binding(),
                 },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
-                },
             ]),
             cal_gravity:            graph_compute.create_compute_kernel("cal_gravity_force", vec![
                 ComputeBuffer {
@@ -782,51 +702,6 @@ impl GraphicsResources {
                     binding: 1,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
                 },
             ]),
             attractive_force:       graph_compute.create_compute_kernel("attractive_force", vec![
@@ -850,41 +725,6 @@ impl GraphicsResources {
                     buffer_type: ComputeBufferType::Storage,
                     buffer: spring_force_buffer.as_entire_binding(),
                 },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
-                },
             ]),
             reduction_bounding:     graph_compute.create_compute_kernel("reduction_bounding", vec![
                 ComputeBuffer {
@@ -898,49 +738,9 @@ impl GraphicsResources {
                     buffer: node_buffer.as_entire_binding(),
                 },
                 ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
                     binding: 4,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
                 },
             ]),
             reduction_bounding_2:   graph_compute.create_compute_kernel("reduction_bounding_2", vec![
@@ -950,54 +750,9 @@ impl GraphicsResources {
                     buffer: uniform_buffer.as_entire_binding(),
                 },
                 ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
                     binding: 4,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
                 },
             ]),
             bounding_box:           graph_compute.create_compute_kernel("bounding_box", vec![
@@ -1007,21 +762,6 @@ impl GraphicsResources {
                     buffer: uniform_buffer.as_entire_binding(),
                 },
                 ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
                     binding: 4,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: bounding_buffer.as_entire_binding(),
@@ -1035,26 +775,6 @@ impl GraphicsResources {
                     binding: 6,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
                 },
             ]),
             clear_1:                graph_compute.create_compute_kernel("clear_1", vec![
@@ -1064,54 +784,9 @@ impl GraphicsResources {
                     buffer: uniform_buffer.as_entire_binding(),
                 },
                 ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
                     binding: 7,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
                 },
             ]),
             tree_building:          graph_compute.create_compute_kernel("tree_building", vec![
@@ -1126,21 +801,6 @@ impl GraphicsResources {
                     buffer: node_buffer.as_entire_binding(),
                 },
                 ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
                     binding: 5,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: tree_buffer.as_entire_binding(),
@@ -1154,21 +814,6 @@ impl GraphicsResources {
                     binding: 7,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
                 },
             ]),
             clear_2:                graph_compute.create_compute_kernel("clear_2", vec![
@@ -1178,54 +823,9 @@ impl GraphicsResources {
                     buffer: uniform_buffer.as_entire_binding(),
                 },
                 ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
                     binding: 6,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
                 },
             ]),
             summarization:          graph_compute.create_compute_kernel("summarization", vec![
@@ -1240,21 +840,6 @@ impl GraphicsResources {
                     buffer: node_buffer.as_entire_binding(),
                 },
                 ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
                     binding: 5,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: tree_buffer.as_entire_binding(),
@@ -1268,21 +853,6 @@ impl GraphicsResources {
                     binding: 7,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
                 },
             ]),
             sort:                   graph_compute.create_compute_kernel("sort", vec![
@@ -1297,21 +867,6 @@ impl GraphicsResources {
                     buffer: node_buffer.as_entire_binding(),
                 },
                 ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
                     binding: 5,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: tree_buffer.as_entire_binding(),
@@ -1325,21 +880,6 @@ impl GraphicsResources {
                     binding: 7,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
                 },
             ]),
             electron_force:         graph_compute.create_compute_kernel("electron_force", vec![
@@ -1354,21 +894,6 @@ impl GraphicsResources {
                     buffer: node_buffer.as_entire_binding(),
                 },
                 ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
                     binding: 5,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: tree_buffer.as_entire_binding(),
@@ -1382,21 +907,6 @@ impl GraphicsResources {
                     binding: 7,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
                 },
             ]),
             compute:                graph_compute.create_compute_kernel("main", vec![
@@ -1411,49 +921,9 @@ impl GraphicsResources {
                     buffer: node_buffer.as_entire_binding(),
                 },
                 ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
                     binding: 3,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
                 },
             ]),
             displacement:           graph_compute.create_compute_kernel("displacement", vec![
@@ -1467,51 +937,6 @@ impl GraphicsResources {
                     buffer_type: ComputeBufferType::Storage,
                     buffer: node_buffer.as_entire_binding(),
                 },
-                ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
-                },
             ]),
             randomize:              graph_compute.create_compute_kernel("randomize", vec![
                 ComputeBuffer {
@@ -1524,51 +949,6 @@ impl GraphicsResources {
                     buffer_type: ComputeBufferType::Storage,
                     buffer: node_buffer.as_entire_binding(),
                 },
-                ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
-                },
             ]),
             copy:                   graph_compute.create_compute_kernel("copy", vec![
                 ComputeBuffer {
@@ -1580,51 +960,6 @@ impl GraphicsResources {
                     binding: 1,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
                 },
             ]),
             cal_depth:              graph_compute.create_compute_kernel("cal_depth", vec![
@@ -1639,44 +974,9 @@ impl GraphicsResources {
                     buffer: node_buffer.as_entire_binding(),
                 },
                 ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
                     binding: 8,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
                 },
                 ComputeBuffer {
                     binding: 10,
@@ -1691,41 +991,6 @@ impl GraphicsResources {
                     buffer: uniform_buffer.as_entire_binding(),
                 },
                 ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
                     binding: 8,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: depth_sort_buffer.as_entire_binding(),
@@ -1734,11 +999,6 @@ impl GraphicsResources {
                     binding: 9,
                     buffer_type: ComputeBufferType::Uniform,
                     buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
                 },
             ]),
         };
@@ -1824,85 +1084,63 @@ impl GraphicsResources {
 
             // dispatch_compute_kernel(cpass, &self.compute_pipelines.cal_gravity, self.node_work_group_count);
 
-            cpass.set_pipeline(&self.compute_pipelines.cal_gravity.compute_pipeline);
-            cpass.set_bind_group(0, &self.compute_pipelines.cal_gravity.bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+            Self::dispatch_compute_kernel(&self, &mut cpass, &self.compute_pipelines.cal_gravity, self.node_work_group_count);
 
-            cpass.set_pipeline(&self.compute_pipelines.attractive_force.compute_pipeline);
-            cpass.set_bind_group(0, &self.compute_pipelines.attractive_force.bind_group, &[]);
-            cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
+            Self::dispatch_compute_kernel(&self, &mut cpass, &self.compute_pipelines.attractive_force, self.edge_work_group_count);
 
-            GraphicsResources::calc_bounding_box(&self, &mut cpass);
+            Self::calc_bounding_box(&self, &mut cpass);
 
-            cpass.set_pipeline(&self.compute_pipelines.bounding_box.compute_pipeline);
-            cpass.set_bind_group(0, &self.compute_pipelines.bounding_box.bind_group, &[]);
-            cpass.dispatch_workgroups(1, 1, 1);
+            Self::dispatch_compute_kernel(&self, &mut cpass, &self.compute_pipelines.bounding_box, 1);
 
-            cpass.set_pipeline(&self.compute_pipelines.clear_1.compute_pipeline);
-            cpass.set_bind_group(0, &self.compute_pipelines.clear_1.bind_group, &[]);
-            cpass.dispatch_workgroups(self.tree_node_work_group_count, 1, 1);
+            Self::dispatch_compute_kernel(&self, &mut cpass, &self.compute_pipelines.clear_1, self.tree_node_work_group_count);
 
-            cpass.set_pipeline(&self.compute_pipelines.tree_building.compute_pipeline);
-            cpass.set_bind_group(0, &self.compute_pipelines.tree_building.bind_group, &[]);
-            cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
+            Self::dispatch_compute_kernel(&self, &mut cpass, &self.compute_pipelines.tree_building, self.step_work_group_count);
 
-            cpass.set_pipeline(&self.compute_pipelines.clear_2.compute_pipeline);
-            cpass.set_bind_group(0, &self.compute_pipelines.cal_gravity.bind_group, &[]);
-            cpass.dispatch_workgroups(self.tree_node_work_group_count, 1, 1);
+            Self::dispatch_compute_kernel(&self, &mut cpass, &self.compute_pipelines.clear_2, self.tree_node_work_group_count);
 
-            cpass.set_pipeline(&self.compute_pipelines.summarization.compute_pipeline);
-            cpass.set_bind_group(0, &self.compute_pipelines.cal_gravity.bind_group, &[]);
-            cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
+            Self::dispatch_compute_kernel(&self, &mut cpass, &self.compute_pipelines.summarization, self.step_work_group_count);
 
-            cpass.set_pipeline(&self.compute_pipelines.sort.compute_pipeline);
-            cpass.set_bind_group(0, &self.compute_pipelines.cal_gravity.bind_group, &[]);
-            cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
+            Self::dispatch_compute_kernel(&self, &mut cpass, &self.compute_pipelines.sort, self.step_work_group_count);
 
-            cpass.set_pipeline(&self.compute_pipelines.electron_force.compute_pipeline);
-            cpass.set_bind_group(0, &self.compute_pipelines.cal_gravity.bind_group, &[]);
-            cpass.dispatch_workgroups(self.step_work_group_count, 1, 1);
+            Self::dispatch_compute_kernel(&self, &mut cpass, &self.compute_pipelines.electron_force, self.step_work_group_count);
 
-            cpass.set_pipeline(&self.compute_pipelines.compute.compute_pipeline);
-            cpass.set_bind_group(0, &self.compute_pipelines.cal_gravity.bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+            Self::dispatch_compute_kernel(&self, &mut cpass, &self.compute_pipelines.compute, self.node_work_group_count);
 
-            cpass.set_pipeline(&self.compute_pipelines.displacement.compute_pipeline);
-            cpass.set_bind_group(0, &self.compute_pipelines.cal_gravity.bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+            Self::dispatch_compute_kernel(&self, &mut cpass, &self.compute_pipelines.displacement, self.node_work_group_count);
 
         }
-        // queue.submit(Some(command_encoder.finish()));
+        queue.submit(Some(command_encoder.finish()));
         self.compute_frame_count += 1;
         // device.poll(wgpu::Maintain::Wait);
 
-        let debugger = &mut self.debugger;
-        command_encoder.copy_buffer_to_buffer(&self.tree_child_buffer, 0, &debugger.debug_buffer, 0, debugger.buffer_size as _);
-        queue.submit(Some(command_encoder.finish()));
-
-        let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
-        let buffer_slice = debugger.debug_buffer.slice(..);
-        buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
-        device.poll(wgpu::Maintain::Wait);
-
-        pollster::block_on(async {
-            if let Some(Ok(())) = receiver.receive().await {
-                let data = buffer_slice.get_mapped_range();
-                let result: Vec<i32> = bytemuck::cast_slice(&data).to_vec();
-
-                drop(data);
-                debugger.debug_buffer.unmap();
-
-                println!("{:?}", result);
-
-                // for item in result {
-                //     print!("{}, ", item._sort);
-                // }
-                std::io::stdout().flush().unwrap();
-                println!("\n");
-            } else {
-                panic!("failed to run compute on gpu!")
-            }
-        });
+        // let debugger = &mut self.debugger;
+        // command_encoder.copy_buffer_to_buffer(&self.tree_child_buffer, 0, &debugger.debug_buffer, 0, debugger.buffer_size as _);
+        // queue.submit(Some(command_encoder.finish()));
+        //
+        // let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
+        // let buffer_slice = debugger.debug_buffer.slice(..);
+        // buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
+        // device.poll(wgpu::Maintain::Wait);
+        //
+        // pollster::block_on(async {
+        //     if let Some(Ok(())) = receiver.receive().await {
+        //         let data = buffer_slice.get_mapped_range();
+        //         let result: Vec<i32> = bytemuck::cast_slice(&data).to_vec();
+        //
+        //         drop(data);
+        //         debugger.debug_buffer.unmap();
+        //
+        //         println!("{:?}", result);
+        //
+        //         // for item in result {
+        //         //     print!("{}, ", item._sort);
+        //         // }
+        //         std::io::stdout().flush().unwrap();
+        //         println!("\n");
+        //     } else {
+        //         panic!("failed to run compute on gpu!")
+        //     }
+        // });
 
     }
 
@@ -1918,21 +1156,23 @@ impl GraphicsResources {
     }
 
     pub fn calc_bounding_box<'a>(&'a self, cpass: &mut ComputePass<'a>) {
-        cpass.set_pipeline(&self.compute_pipelines.reduction_bounding.compute_pipeline);
-        cpass.set_bind_group(0, &self.compute_pipelines.cal_gravity.bind_group, &[]);
-        cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+        Self::dispatch_compute_kernel(&self, cpass, &self.compute_pipelines.reduction_bounding, self.node_work_group_count);
 
         let mut bound_range = self.bb_work_group_count;
 
         loop {
-            cpass.set_pipeline(&self.compute_pipelines.reduction_bounding_2.compute_pipeline);
-            cpass.set_bind_group(0, &self.compute_pipelines.cal_gravity.bind_group, &[]);
-            cpass.dispatch_workgroups(bound_range, 1, 1);
+            Self::dispatch_compute_kernel(&self, cpass, &self.compute_pipelines.reduction_bounding_2, bound_range);
 
             if bound_range <= 1 { break; }
             bound_range = ((bound_range as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
 
         }
+    }
+
+    pub fn dispatch_compute_kernel<'a>(&'a self, cpass: &mut ComputePass<'a>, compute_kernel: &'a ComputeKernel, work_group_count: u32) {
+        cpass.set_pipeline(&compute_kernel.compute_pipeline);
+        cpass.set_bind_group(0, &compute_kernel.bind_group, &[]);
+        cpass.dispatch_workgroups(work_group_count, 1, 1);
     }
 
 
@@ -1947,15 +1187,11 @@ impl GraphicsResources {
         {
             // compute pass
             let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-            cpass.set_pipeline(&self.compute_pipelines.gen_node.compute_pipeline);
-            cpass.set_bind_group(0, &self.compute_pipelines.cal_gravity.bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+            Self::dispatch_compute_kernel(&self, &mut cpass, &self.compute_pipelines.gen_node, self.node_work_group_count);
 
-            cpass.set_pipeline(&self.compute_pipelines.cal_mass.compute_pipeline);
-            cpass.set_bind_group(0, &self.compute_pipelines.cal_gravity.bind_group, &[]);
-            cpass.dispatch_workgroups(self.edge_work_group_count, 1, 1);
+            Self::dispatch_compute_kernel(&self, &mut cpass, &self.compute_pipelines.cal_mass, self.edge_work_group_count);
 
-            GraphicsResources::calc_bounding_box(&self, &mut cpass);
+            Self::calc_bounding_box(&self, &mut cpass);
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));
@@ -1975,14 +1211,12 @@ impl GraphicsResources {
         {
             // compute pass
             let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-            cpass.set_pipeline(&self.compute_pipelines.randomize.compute_pipeline);
-            cpass.set_bind_group(0, &self.compute_pipelines.cal_gravity.bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
-            cpass.set_pipeline(&self.compute_pipelines.copy.compute_pipeline);
-            cpass.set_bind_group(0, &self.compute_pipelines.cal_gravity.bind_group, &[]);
-            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
 
-            GraphicsResources::calc_bounding_box(&self, &mut cpass);
+            Self::dispatch_compute_kernel(&self, &mut cpass, &self.compute_pipelines.randomize, self.node_work_group_count);
+
+            Self::dispatch_compute_kernel(&self, &mut cpass, &self.compute_pipelines.copy, self.node_work_group_count);
+
+            Self::calc_bounding_box(&self, &mut cpass);
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));
@@ -2061,9 +1295,9 @@ impl GraphicsResources {
                 let mut command_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
                 {
                     let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-                    cpass.set_pipeline(&self.compute_pipelines.cal_depth.compute_pipeline);
-                    cpass.set_bind_group(0, &self.compute_pipelines.cal_gravity.bind_group, &[]);
-                    cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+
+                    Self::dispatch_compute_kernel(&self, &mut cpass, &self.compute_pipelines.cal_depth, self.node_work_group_count);
+
                 }
                 command_encoder.finish()
             };
@@ -2080,9 +1314,7 @@ impl GraphicsResources {
                         let mut command_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
                         {
                             let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-                            cpass.set_pipeline(&self.compute_pipelines.sort_by_depth.compute_pipeline);
-                            cpass.set_bind_group(0, &self.compute_pipelines.cal_gravity.bind_group, &[]);
-                            cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
+                            Self::dispatch_compute_kernel(&self, &mut cpass, &self.compute_pipelines.sort_by_depth, self.node_work_group_count);
                         }
                         queue.submit(Some(command_encoder.finish()));
                         block_count = block_count >> 1;

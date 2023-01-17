@@ -27,7 +27,7 @@ impl AppView for KernelView {
                     });
                     job.append(&*format!("kernel_name({}) ", i), 0.0, egui::TextFormat {
                         font_id: egui::FontId::new(FONT_SIZE_BODY, Default::default()),
-                        color: egui::Color32::from_gray(230),
+                        color: egui::Color32::from_gray(220),
                         valign: egui::Align::Center,
                         ..Default::default()
                     });
