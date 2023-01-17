@@ -1,28 +1,25 @@
 use std::sync::Arc;
 use wgpu::{ComputePipeline, Device, ShaderModule};
 
-pub struct ComputeShader {
-    pub pipeline_layout: wgpu::PipelineLayout,
+pub struct ComputeShader<'a> {
     pub shader: ShaderModule,
     pub device: Arc<Device>,
 }
 
-impl ComputeShader {
+pub struct ComputeBuffer<'a> {
+    pub(crate) binding:        u32,
+    pub(crate) buffer_type:    ComputeBufferType,
+    pub(crate) buffer:         wgpu::BindingResource<'a>
+}
 
-    pub fn create(device: Arc<Device>, shader: wgpu::ShaderModule, bind_group_layouts: &[&wgpu::BindGroupLayout]) -> Self {
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("compute"),
-            bind_group_layouts,
-            push_constant_ranges: &[],
-        });
+pub enum ComputeBufferType {
+    Storage,
+    Uniform
+}
 
-        Self {
-            pipeline_layout,
-            shader,
-            device,
-        }
-    }
-
+fn demo<T, const N: usize>(v: Vec<T>) -> [T; N] {
+    v.try_into()
+        .unwrap_or_else(|v: Vec<T>| panic!("Expected a Vec of length {} but it was {}", N, v.len()))
 }
 
 impl ComputeShader {
@@ -36,4 +33,44 @@ impl ComputeShader {
 
         compute_pipeline
     }
+
+    pub fn create_compute_kernel(&mut self, entry_point: &str, buffers: Vec<ComputeBuffer>) -> ComputeKernel {
+
+        let bind_group_layout = self.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[
+
+            ],
+            label: None,
+        });
+
+        let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &bind_group_layout,
+            entries: &[
+            ],
+            label: None,
+        });
+
+        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("compute"),
+            bind_group_layouts: &[&bind_group_layout],
+            push_constant_ranges: &[],
+        });
+
+        let compute_pipeline = self.device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+            label: Some("Gen Node Pipeline"),
+            layout: Some(&pipeline_layout),
+            module: &self.shader,
+            entry_point,
+        });
+
+        ComputeKernel {
+            bind_group,
+            compute_pipeline
+        }
+    }
+}
+
+pub struct ComputeKernel {
+    pub bind_group: wgpu::BindGroup,
+    pub compute_pipeline: wgpu::ComputePipeline
 }

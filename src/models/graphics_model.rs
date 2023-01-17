@@ -1,7 +1,8 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
-use std::borrow::Cow;
+use std::borrow::{BorrowMut, Cow};
+use std::io::Write;
 use std::mem;
 use chrono::{Local, Utc};
 use egui::{Ui, Vec2};
@@ -13,7 +14,7 @@ use crate::models::graphics_lib::{BufferDimensions, Camera, Controls, RenderPipe
 
 use rayon::prelude::*;
 use crate::models::graphics_lib::bind_group_layout::BindGroupLayout;
-use crate::models::graphics_lib::compute_shader::ComputeShader;
+use crate::models::graphics_lib::compute_shader::{ComputeBuffer, ComputeBufferType, ComputeShader};
 use crate::models::graphics_lib::unifrom::{generate_uniforms, Uniforms};
 use crate::utils::file::create_png;
 
@@ -233,6 +234,7 @@ pub struct GraphicsResources {
     tree_child_buffer:              wgpu::Buffer,
     depth_sort_buffer:              wgpu::Buffer,
     depth_sort_param_buffer:        wgpu::Buffer,
+    kernel_status_buffer:           wgpu::Buffer,
 
     // Bind Group
     compute_bind_group:             wgpu::BindGroup,
@@ -355,30 +357,6 @@ impl GraphicsResources {
             &[&render_uniform_bind_group_layout, &bounding_box_render_bind_group_layout],
             bounding_box_shader
         ).render_pipeline;
-
-        let mut graph_compute = ComputeShader::create(device.clone(), compute_shader, &[&compute_bind_group_layout]);
-
-        let compute_pipelines = ComputePipelines {
-            gen_node:               graph_compute.create_pipeline("gen_node"),
-            cal_mass:               graph_compute.create_pipeline("cal_mass"),
-            cal_gravity:            graph_compute.create_pipeline("cal_gravity_force"),
-            attractive_force:       graph_compute.create_pipeline("attractive_force"),
-            reduction_bounding:     graph_compute.create_pipeline("reduction_bounding"),
-            reduction_bounding_2:   graph_compute.create_pipeline("reduction_bounding_2"),
-            bounding_box:           graph_compute.create_pipeline("bounding_box"),
-            clear_1:                graph_compute.create_pipeline("clear_1"),
-            tree_building:          graph_compute.create_pipeline("tree_building"),
-            clear_2:                graph_compute.create_pipeline("clear_2"),
-            summarization:          graph_compute.create_pipeline("summarization"),
-            sort:                   graph_compute.create_pipeline("sort"),
-            electron_force:         graph_compute.create_pipeline("electron_force"),
-            compute:                graph_compute.create_pipeline("main"),
-            displacement:           graph_compute.create_pipeline("displacement"),
-            randomize:              graph_compute.create_pipeline("randomize"),
-            copy:                   graph_compute.create_pipeline("copy"),
-            cal_depth:              graph_compute.create_pipeline("cal_depth"),
-            sort_by_depth:          graph_compute.create_pipeline("sort_by_depth"),
-        };
 
 
         // 计算线程组数
@@ -573,6 +551,15 @@ impl GraphicsResources {
             mapped_at_creation: false
         });
 
+        let kernel_status_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Kernel Status Buffer"),
+            size: (kernel_names.len() * 4) as wgpu::BufferAddress,
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_DST
+                | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false
+        });
+
         // Bind Group
         // 用于绑定 Buffer 与 Bind Group Layout，后连接 Pipeline Layout 和 Pipeline
         // 需与 Bind Group Layout 保持索引和容量一致
@@ -625,6 +612,10 @@ impl GraphicsResources {
                     binding: 10,
                     resource: render_uniform_buffer.as_entire_binding(),
                 },
+                // wgpu::BindGroupEntry {
+                //     binding: 11,
+                //     resource: kernel_status_buffer.as_entire_binding(),
+                // },
             ],
             label: None,
         });
@@ -696,6 +687,63 @@ impl GraphicsResources {
             buffer_size: tree_child_buffer_size as _,
         };
 
+        let mut graph_compute = ComputeShader {
+            shader: compute_shader,
+            device: device.clone(),
+        };
+
+        let kernel_names = vec![
+            "gen_node",
+            "cal_mass",
+            "cal_gravity_force",
+            "attractive_force",
+            "reduction_bounding",
+            "reduction_bounding_2",
+            "bounding_box",
+            "clear_1",
+            "tree_building",
+            "clear_2",
+            "summarization",
+            "sort",
+            "electron_force",
+            "main",
+            "displacement",
+            "randomize",
+            "copy",
+            "cal_depth",
+            "sort_by_depth",
+        ];
+
+        let gen_node = graph_compute.create_compute_kernel("gen_node", vec![
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: uniform_buffer.as_entire_binding(),
+            }
+        ]);
+
+        let compute_pipelines = ComputePipelines {
+            gen_node:               graph_compute.create_pipeline(kernel_names[0]),
+            cal_mass:               graph_compute.create_pipeline(kernel_names[1]),
+            cal_gravity:            graph_compute.create_pipeline(kernel_names[2]),
+            attractive_force:       graph_compute.create_pipeline(kernel_names[3]),
+            reduction_bounding:     graph_compute.create_pipeline(kernel_names[4]),
+            reduction_bounding_2:   graph_compute.create_pipeline(kernel_names[5]),
+            bounding_box:           graph_compute.create_pipeline(kernel_names[6]),
+            clear_1:                graph_compute.create_pipeline(kernel_names[7]),
+            tree_building:          graph_compute.create_pipeline(kernel_names[8]),
+            clear_2:                graph_compute.create_pipeline(kernel_names[9]),
+            summarization:          graph_compute.create_pipeline(kernel_names[10]),
+            sort:                   graph_compute.create_pipeline(kernel_names[11]),
+            electron_force:         graph_compute.create_pipeline(kernel_names[12]),
+            compute:                graph_compute.create_pipeline(kernel_names[13]),
+            displacement:           graph_compute.create_pipeline(kernel_names[14]),
+            randomize:              graph_compute.create_pipeline(kernel_names[15]),
+            copy:                   graph_compute.create_pipeline(kernel_names[16]),
+            cal_depth:              graph_compute.create_pipeline(kernel_names[17]),
+            sort_by_depth:          graph_compute.create_pipeline(kernel_names[18]),
+        };
+
         let mut boids_resources = GraphicsResources {
             status: model.status.clone(),
             render_state,
@@ -725,6 +773,7 @@ impl GraphicsResources {
             tree_child_buffer,
             depth_sort_buffer,
             depth_sort_param_buffer,
+            kernel_status_buffer,
             compute_bind_group,
             node_render_bind_group,
             edge_render_bind_group,
@@ -822,38 +871,38 @@ impl GraphicsResources {
             cpass.dispatch_workgroups(self.node_work_group_count, 1, 1);
 
         }
-        queue.submit(Some(command_encoder.finish()));
+        // queue.submit(Some(command_encoder.finish()));
         self.compute_frame_count += 1;
         // device.poll(wgpu::Maintain::Wait);
 
-        // let debugger = &mut self.debugger;
-        // command_encoder.copy_buffer_to_buffer(&self.tree_child_buffer, 0, &debugger.debug_buffer, 0, debugger.buffer_size as _);
-        // queue.submit(Some(command_encoder.finish()));
-        //
-        // let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
-        // let buffer_slice = debugger.debug_buffer.slice(..);
-        // buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
-        // device.poll(wgpu::Maintain::Wait);
-        //
-        // pollster::block_on(async {
-        //     if let Some(Ok(())) = receiver.receive().await {
-        //         let data = buffer_slice.get_mapped_range();
-        //         let result: Vec<i32> = bytemuck::cast_slice(&data).to_vec();
-        //
-        //         drop(data);
-        //         debugger.debug_buffer.unmap();
-        //
-        //         println!("{:?}", result);
-        //
-        //         // for item in result {
-        //         //     print!("{}, ", item._sort);
-        //         // }
-        //         std::io::stdout().flush().unwrap();
-        //         println!("\n");
-        //     } else {
-        //         panic!("failed to run compute on gpu!")
-        //     }
-        // });
+        let debugger = &mut self.debugger;
+        command_encoder.copy_buffer_to_buffer(&self.tree_child_buffer, 0, &debugger.debug_buffer, 0, debugger.buffer_size as _);
+        queue.submit(Some(command_encoder.finish()));
+
+        let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
+        let buffer_slice = debugger.debug_buffer.slice(..);
+        buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
+        device.poll(wgpu::Maintain::Wait);
+
+        pollster::block_on(async {
+            if let Some(Ok(())) = receiver.receive().await {
+                let data = buffer_slice.get_mapped_range();
+                let result: Vec<i32> = bytemuck::cast_slice(&data).to_vec();
+
+                drop(data);
+                debugger.debug_buffer.unmap();
+
+                println!("{:?}", result);
+
+                // for item in result {
+                //     print!("{}, ", item._sort);
+                // }
+                std::io::stdout().flush().unwrap();
+                println!("\n");
+            } else {
+                panic!("failed to run compute on gpu!")
+            }
+        });
 
     }
 
