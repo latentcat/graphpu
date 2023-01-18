@@ -77,10 +77,10 @@ fn inspector_grid(id: &str) -> egui::Grid {
 
 fn kernel_label(ui: &mut egui::Ui, kernel_name: &str, id: usize, kernel_code: i32) {
 
-    let size = egui::Vec2::new(175., 18.);
+    let size = egui::Vec2::new(150., 18.);
     let (rect, _response) = ui.allocate_exact_size(size, egui::Sense::hover());
     ui.allocate_ui_at_rect(rect, |ui| {
-        ui.set_min_width(175.);
+        ui.set_min_width(150.);
 
         let mut job = egui::text::LayoutJob::single_section("✱ ".parse().unwrap(), egui::TextFormat {
             font_id: egui::FontId::new(FONT_SIZE_BODY, Default::default()),

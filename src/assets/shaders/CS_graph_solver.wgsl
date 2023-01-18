@@ -93,7 +93,7 @@ fn atomic_add_f32(springIndex: u32, updateValue: f32) {
     var assumed: i32 = 0;
     var origin: i32;
 
-    var loop_limit_count = 100000;
+    var loop_limit_count = 10000;
 
     while (true) {
         loop_limit_count--;
@@ -139,9 +139,12 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 
     var vPos : vec3<f32> = nodeSrc[index].position;
 
-    vPos.x = random_xy(index, 0u + 3u * uniforms.frame_num) * 2.0 - 1.0;
-    vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
-    vPos.z = random_xy(index, 2u + 3u * uniforms.frame_num) * 2.0 - 1.0;
+//    vPos.x = random_xy(index, 0u + 3u * uniforms.frame_num) * 2.0 - 1.0;
+//    vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
+//    vPos.z = random_xy(index, 2u + 3u * uniforms.frame_num) * 2.0 - 1.0;
+    vPos.x = 0.0;
+    vPos.y = 0.0;
+    vPos.z = 0.0;
 
     // Write back
     nodeSrc[index].position = vPos;
@@ -717,7 +720,7 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
     }
     sdq[max_depth - 1u] += epssq;
 
-    var loop_limit_count = 100000;
+    var loop_limit_count = 10000;
 
     if (max_depth < 48u) {
         for (var index = global_invocation_id.x; index < node_count; index += inc) {
