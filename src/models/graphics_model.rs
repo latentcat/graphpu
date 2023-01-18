@@ -1172,10 +1172,12 @@ impl GraphicsResources {
 
                 if *result.par_iter().max().unwrap() > 0 {
                     message_error("Kernel Error", "See kernel panel for detail.");
+                    self.is_kernel_error = true;
+                } else {
+                    self.is_kernel_error = false;
                 }
 
                 if result.len() == KERNEL_STATUS_COUNT {
-                    self.is_kernel_error = true;
                     self.kernel_status_codes = result;
                 }
 
