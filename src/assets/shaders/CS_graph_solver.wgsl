@@ -13,6 +13,7 @@ struct Uniforms {
     edge_count: u32,
     tree_node_count: u32,
     bounding_count: u32,
+    kernel_status_count: u32,
 };
 
 struct Bound {
@@ -65,6 +66,7 @@ struct Transform {
 @group(0) @binding(8) var<storage, read_write> kvps: array<Kvp>;
 @group(0) @binding(9) var<uniform> kvps_param: KvpParam;
 @group(0) @binding(10) var<uniform> transform: Transform;
+@group(0) @binding(11) var<storage, read_write> kernel_status: array<i32>;
 
 fn hash(s: u32) -> u32 {
     var t : u32 = s;
@@ -90,14 +92,38 @@ fn atomic_add_f32(springIndex: u32, updateValue: f32) {
     var new_u32 = bitcast<i32>(updateValue);
     var assumed: i32 = 0;
     var origin: i32;
+
+    var loop_limit_count = 100000;
+
     while (true) {
+        loop_limit_count--;
         origin = atomicCompareExchangeWeak(atomic_ptr, assumed, new_u32);
         if (origin == assumed) {
             break;
         }
         assumed = origin;
         new_u32 = bitcast<i32>(bitcast<f32>(origin) + updateValue);
+
+        if (loop_limit_count < 0) {
+            kernel_status[0] = 101;
+            break;
+        }
     }
+}
+
+
+@compute
+@workgroup_size(256)
+fn init_kernel_status(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
+
+    let total = uniforms.kernel_status_count;
+    let index = global_invocation_id.x;
+    if (index >= total) {
+        return;
+    }
+
+    kernel_status[index] = 0;
+
 }
 
 // 0
@@ -328,14 +354,15 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     var root_r = bhTree.radius;
     var r = root_r * 0.5;
 
-    var limit = 10000;
+    var loop_limit_count = 10000;
 
     while (index < node_count) {
 
-        limit--;
-        if (limit < 0) {
-            return;
+        if (loop_limit_count < 0) {
+            kernel_status[1] = 101;
+            break;
         }
+        loop_limit_count--;
 
         if (skip != 0) {
             skip = 0;
@@ -485,8 +512,19 @@ fn summarization(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     var schild: array<u32, 8>;
     var smass: array<i32, 8>;
     let restart = index;
+
+    var loop_limit_count = 10000;
+
     for (var j = 0; j < 5; j++) {
+
         while (index <= tree_node_count) {
+
+            if (loop_limit_count < 0) {
+                kernel_status[2] = 101;
+                break;
+            }
+            loop_limit_count--;
+
             if (atomicLoad(&treeNode[index].mass) < 0) {
                 var ch = 0u;
                 var i = 0u;
@@ -531,6 +569,13 @@ fn summarization(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     var j = 0;
     var flag = false;
     while (index <= tree_node_count) {
+
+        if (loop_limit_count < 0) {
+            kernel_status[2] = 101;
+            break;
+        }
+        loop_limit_count--;
+
         var cm = 0;
         if (index < node_count) {
             index += inc;
@@ -605,16 +650,16 @@ fn sort(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     let inc = min(node_count, 16384u);
     var index = tree_node_count + 1u - inc + global_invocation_id.x;
 
-    var limit = 1000;
+    var loop_limit_count = 10000;
 
     while (index >= bottom) {
 
-        limit--;
-        if (limit < 0) {
-            treeChild[index] = 1000;
-            treeChild[0] = 1000;
-            return;
+        if (loop_limit_count < 0) {
+            kernel_status[3] = 101;
+            break;
         }
+        loop_limit_count--;
+
         workgroupBarrier();
         var start = atomicLoad(&treeNode[index].start);
 
@@ -672,6 +717,8 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
     }
     sdq[max_depth - 1u] += epssq;
 
+    var loop_limit_count = 100000;
+
     if (max_depth < 48u) {
         for (var index = global_invocation_id.x; index < node_count; index += inc) {
             let order = treeNode[index].sort;
@@ -684,9 +731,23 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
             snode[0] = tree_node_count;
 
             loop {
+
+                if (loop_limit_count < 0) {
+                    kernel_status[4] = 101;
+                    break;
+                }
+                loop_limit_count--;
+
                 var pd = spos[depth];
                 var nd = snode[depth];
                 while (pd < 8u) {
+
+                    if (loop_limit_count < 0) {
+                        kernel_status[4] = 101;
+                        break;
+                    }
+                    loop_limit_count--;
+
                     let n_i32 = atomicLoad(&treeChild[nd * 8u + pd]);
                     pd++;
 
@@ -870,9 +931,6 @@ fn sort_by_depth(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     let key_j = kvps[index_j].sort_key;
     
     var diff = key_j - key_i;
-//    if ((i & kvps_param.dim) != u32(0)) {
-//        diff = -diff;
-//    }
 
     if (diff > 0.0) {
         kvps[i].index = index_j;

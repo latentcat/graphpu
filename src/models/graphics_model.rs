@@ -19,6 +19,7 @@ use crate::utils::file::create_png;
 
 use super::data_model::DataModel;
 use bytemuck::{Pod, Zeroable};
+use crate::utils::message::{message_error};
 
 // 须同步修改 Compute WGSL 中每一个函数的 @workgroup_size
 // WGSL 中没有宏，不能使用类似 HLSL 的 #define 方法
@@ -77,28 +78,16 @@ pub struct ComputeUniforms {
     edge_count:         u32,
     tree_node_count:    u32,
     bounding_count:     u32,
+    kernel_status_count: u32,
 }
 
-pub const kernel_names: [&str; 19] = [
-    "gen_node",
-    "cal_mass",
-    "cal_gravity_force",
+pub const KERNEL_STATUS_COUNT: usize = 5;
+pub const KERNEL_NAMES: [&str; KERNEL_STATUS_COUNT] = [
     "attractive_force",
-    "reduction_bounding",
-    "reduction_bounding_2",
-    "bounding_box",
-    "clear_1",
     "tree_building",
-    "clear_2",
     "summarization",
     "sort",
     "electron_force",
-    "main",
-    "displacement",
-    "randomize",
-    "copy",
-    "cal_depth",
-    "sort_by_depth",
 ];
 
 // 计算方法的类型
@@ -158,18 +147,26 @@ impl GraphicsModel {
     // 仅对 ComputeMethodType::Continuous 生效
     pub fn switch_computing(&mut self) {
         self.is_computing = !self.is_computing;
+        if self.is_computing { self.cancel_error_state() }
     }
 
     // 设置是否持续计算
     // 仅对 ComputeMethodType::Continuous 生效
     pub fn set_computing(&mut self, state: bool) {
         self.is_computing = state;
+        if state { self.cancel_error_state() }
     }
 
     // 设置下一帧是否 Dispatch
     // 仅对 ComputeMethodType::OneStep 生效
     pub fn set_dispatching(&mut self, state: bool) {
         self.is_dispatching = state;
+    }
+
+    pub fn cancel_error_state(&mut self) {
+        if self.graphics_resources.is_some() {
+            self.graphics_resources.as_mut().unwrap().is_kernel_error = false
+        }
     }
 
     pub fn render_output(&mut self, out_folder:String) {
@@ -271,6 +268,8 @@ pub struct GraphicsResources {
 
     // 计算管线
     pub graph_compute:              ComputeShader,
+    pub kernel_status_codes:        Vec<i32>,
+    pub is_kernel_error:            bool,
 
     // 线程组数 = 线程数 / 每组线程数
     node_work_group_count:          u32,
@@ -406,6 +405,7 @@ impl GraphicsResources {
             edge_count,
             tree_node_count,
             bounding_count: node_work_group_count,
+            kernel_status_count: KERNEL_NAMES.len() as u32,
         };
 
         // 创建 Uniform Buffer
@@ -571,9 +571,10 @@ impl GraphicsResources {
             mapped_at_creation: false
         });
 
+        let kernel_status_buffer_size = KERNEL_STATUS_COUNT * 4;
         let kernel_status_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Kernel Status Buffer"),
-            size: (kernel_names.len() * 4) as wgpu::BufferAddress,
+            size: kernel_status_buffer_size as wgpu::BufferAddress,
             usage: wgpu::BufferUsages::STORAGE
                 | wgpu::BufferUsages::COPY_DST
                 | wgpu::BufferUsages::COPY_SRC,
@@ -641,14 +642,14 @@ impl GraphicsResources {
 
         let debug_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Debug Buffer"),
-            size: tree_child_buffer_size as _,
+            size: kernel_status_buffer_size as _,
             usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
 
         let debugger = GraphicsDebugger {
             debug_buffer,
-            buffer_size: tree_child_buffer_size as _,
+            buffer_size: kernel_status_buffer_size as _,
         };
 
         let mut graph_compute = ComputeShader {
@@ -657,6 +658,18 @@ impl GraphicsResources {
             kernels: Default::default()
         };
 
+        graph_compute.create_compute_kernel("init_kernel_status", vec![
+                ComputeBuffer {
+                    binding: 0,
+                    buffer_type: ComputeBufferType::Uniform,
+                    buffer: uniform_buffer.as_entire_binding(),
+                },
+                ComputeBuffer {
+                    binding: 11,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: kernel_status_buffer.as_entire_binding(),
+                },
+            ]);
         graph_compute.create_compute_kernel("gen_node", vec![
                 ComputeBuffer {
                     binding: 0,
@@ -723,6 +736,11 @@ impl GraphicsResources {
                     binding: 3,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: spring_force_buffer.as_entire_binding(),
+                },
+                ComputeBuffer {
+                    binding: 11,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: kernel_status_buffer.as_entire_binding(),
                 },
             ]);
         graph_compute.create_compute_kernel("reduction_bounding", vec![
@@ -814,6 +832,11 @@ impl GraphicsResources {
                     buffer_type: ComputeBufferType::Storage,
                     buffer: tree_child_buffer.as_entire_binding(),
                 },
+                ComputeBuffer {
+                    binding: 11,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: kernel_status_buffer.as_entire_binding(),
+                },
             ]);
         graph_compute.create_compute_kernel("clear_2", vec![
                 ComputeBuffer {
@@ -853,6 +876,11 @@ impl GraphicsResources {
                     buffer_type: ComputeBufferType::Storage,
                     buffer: tree_child_buffer.as_entire_binding(),
                 },
+                ComputeBuffer {
+                    binding: 11,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: kernel_status_buffer.as_entire_binding(),
+                },
             ]);
         graph_compute.create_compute_kernel("sort", vec![
                 ComputeBuffer {
@@ -880,6 +908,11 @@ impl GraphicsResources {
                     buffer_type: ComputeBufferType::Storage,
                     buffer: tree_child_buffer.as_entire_binding(),
                 },
+                ComputeBuffer {
+                    binding: 11,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: kernel_status_buffer.as_entire_binding(),
+                },
             ]);
         graph_compute.create_compute_kernel("electron_force", vec![
                 ComputeBuffer {
@@ -906,6 +939,11 @@ impl GraphicsResources {
                     binding: 7,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: tree_child_buffer.as_entire_binding(),
+                },
+                ComputeBuffer {
+                    binding: 11,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: kernel_status_buffer.as_entire_binding(),
                 },
             ]);
         graph_compute.create_compute_kernel("main", vec![
@@ -999,6 +1037,11 @@ impl GraphicsResources {
                     buffer_type: ComputeBufferType::Uniform,
                     buffer: depth_sort_param_buffer.as_entire_binding(),
                 },
+                ComputeBuffer {
+                    binding: 11,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: kernel_status_buffer.as_entire_binding(),
+                },
             ]);
 
         let mut boids_resources = GraphicsResources {
@@ -1040,6 +1083,8 @@ impl GraphicsResources {
             axis_render_pipeline,
             bounding_box_render_pipeline,
             graph_compute,
+            kernel_status_codes: vec![-1; KERNEL_STATUS_COUNT],
+            is_kernel_error: false,
             node_work_group_count,
             edge_work_group_count,
             tree_node_work_group_count,
@@ -1080,7 +1125,7 @@ impl GraphicsResources {
             let mut cpass =
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
 
-            // dispatch_compute_kernel(cpass, &self.compute_pipelines.cal_gravity, self.node_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "init_kernel_status", 1);
 
             Self::dispatch_compute_kernel(&self, &mut cpass, "cal_gravity_force", self.node_work_group_count);
 
@@ -1107,38 +1152,41 @@ impl GraphicsResources {
             Self::dispatch_compute_kernel(&self, &mut cpass, "displacement", self.node_work_group_count);
 
         }
-        queue.submit(Some(command_encoder.finish()));
+        // queue.submit(Some(command_encoder.finish()));
         self.compute_frame_count += 1;
         // device.poll(wgpu::Maintain::Wait);
 
-        // let debugger = &mut self.debugger;
-        // command_encoder.copy_buffer_to_buffer(&self.tree_child_buffer, 0, &debugger.debug_buffer, 0, debugger.buffer_size as _);
-        // queue.submit(Some(command_encoder.finish()));
-        //
-        // let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
-        // let buffer_slice = debugger.debug_buffer.slice(..);
-        // buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
-        // device.poll(wgpu::Maintain::Wait);
-        //
-        // pollster::block_on(async {
-        //     if let Some(Ok(())) = receiver.receive().await {
-        //         let data = buffer_slice.get_mapped_range();
-        //         let result: Vec<i32> = bytemuck::cast_slice(&data).to_vec();
-        //
-        //         drop(data);
-        //         debugger.debug_buffer.unmap();
-        //
-        //         println!("{:?}", result);
-        //
-        //         // for item in result {
-        //         //     print!("{}, ", item._sort);
-        //         // }
-        //         std::io::stdout().flush().unwrap();
-        //         println!("\n");
-        //     } else {
-        //         panic!("failed to run compute on gpu!")
-        //     }
-        // });
+        let debugger = &mut self.debugger;
+        command_encoder.copy_buffer_to_buffer(&self.kernel_status_buffer, 0, &debugger.debug_buffer, 0, debugger.buffer_size as _);
+        queue.submit(Some(command_encoder.finish()));
+
+        let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
+        let buffer_slice = debugger.debug_buffer.slice(..);
+        buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
+        device.poll(wgpu::Maintain::Wait);
+
+        pollster::block_on(async {
+            if let Some(Ok(())) = receiver.receive().await {
+                let data = buffer_slice.get_mapped_range();
+                let result: Vec<i32> = bytemuck::cast_slice(&data).to_vec();
+
+                if *result.par_iter().max().unwrap() > 0 {
+                    message_error("Kernel Error", "See kernel panel for detail.");
+                }
+
+                if result.len() == KERNEL_STATUS_COUNT {
+                    self.is_kernel_error = true;
+                    self.kernel_status_codes = result;
+                }
+
+                drop(data);
+                debugger.debug_buffer.unmap();
+
+
+            } else {
+                panic!("failed to run compute on gpu!")
+            }
+        });
 
     }
 

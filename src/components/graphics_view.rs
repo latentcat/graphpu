@@ -15,7 +15,11 @@ pub struct GraphicsView;
 impl AppView for GraphicsView {
     fn show(&mut self, models: &mut Models, ui: &mut Ui, _frame: &mut eframe::Frame) {
 
-        if ui.input().key_down(egui::Key::Space) { models.graphics_model.set_computing(false); }
+        if models.graphics_model.graphics_resources.is_some() {
+            if models.graphics_model.graphics_resources.as_ref().unwrap().is_kernel_error {
+                models.graphics_model.set_computing(false);
+            }
+        }
 
         // 获取是否持续计算、下一帧是否 Dispatch
         let is_computing = models.graphics_model.is_computing;
@@ -37,6 +41,8 @@ impl AppView for GraphicsView {
                         // 如果 Compute Model 已经初始化，即数据导入完成，可以开始渲染
                         // 则获取 Compute Resource
                         if let Some(compute_resources) = &mut models.graphics_model.graphics_resources {
+
+                            if compute_resources.is_kernel_error { }
 
                             // 如果正在持续计算，则计算一次
                             if is_computing {

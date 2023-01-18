@@ -2,7 +2,7 @@
 use egui::{Color32, Ui};
 use crate::components::AppView;
 use crate::constant::FONT_SIZE_BODY;
-use crate::models::graphics_model::kernel_names;
+use crate::models::graphics_model::KERNEL_NAMES;
 
 use crate::models::Models;
 use crate::widgets::frames::{drawer_kernel_content_frame};
@@ -20,9 +20,9 @@ impl AppView for KernelView {
 
             ui.horizontal_wrapped(|ui| {
                 if let Some(graphics_resources) = &mut _models.graphics_model.graphics_resources {
-                    let kernels = &mut graphics_resources.graph_compute.kernels;
-                    for (index, &name) in kernel_names.iter().enumerate() {
-                        kernel_label(ui, name, index, name == "main");
+                    let _kernels = &mut graphics_resources.graph_compute.kernels;
+                    for (index, &name) in KERNEL_NAMES.iter().enumerate() {
+                        kernel_label(ui, name, index, graphics_resources.kernel_status_codes[index]);
                     }
                 }
             });
@@ -75,7 +75,7 @@ fn inspector_grid(id: &str) -> egui::Grid {
         .min_row_height(10.)
 }
 
-fn kernel_label(ui: &mut egui::Ui, kernel_name: &str, id: usize, is_red: bool) {
+fn kernel_label(ui: &mut egui::Ui, kernel_name: &str, id: usize, kernel_code: i32) {
 
     let size = egui::Vec2::new(175., 18.);
     let (rect, _response) = ui.allocate_exact_size(size, egui::Sense::hover());
@@ -84,7 +84,13 @@ fn kernel_label(ui: &mut egui::Ui, kernel_name: &str, id: usize, is_red: bool) {
 
         let mut job = egui::text::LayoutJob::single_section("✱ ".parse().unwrap(), egui::TextFormat {
             font_id: egui::FontId::new(FONT_SIZE_BODY, Default::default()),
-            color: if is_red { Color32::from_rgb(255, 0, 0) } else { egui::Color32::from_rgb(0, 255, 0) },
+            color: match kernel_code {
+                x if x < 0 => Color32::from_rgb(255, 255, 0),
+                0 => Color32::from_rgb(0, 255, 0),
+                x if x > 0 => Color32::from_rgb(255, 0, 0),
+                _ => Color32::from_rgb(255, 0, 0)
+
+            },
             valign: egui::Align::Center,
             ..Default::default()
         });
