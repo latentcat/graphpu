@@ -139,12 +139,12 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 
     var vPos : vec3<f32> = nodeSrc[index].position;
 
-//    vPos.x = random_xy(index, 0u + 3u * uniforms.frame_num) * 2.0 - 1.0;
-//    vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
-//    vPos.z = random_xy(index, 2u + 3u * uniforms.frame_num) * 2.0 - 1.0;
-    vPos.x = 0.0;
-    vPos.y = 0.0;
-    vPos.z = 0.0;
+    vPos.x = random_xy(index, 0u + 3u * uniforms.frame_num) * 2.0 - 1.0;
+    vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
+    vPos.z = random_xy(index, 2u + 3u * uniforms.frame_num) * 2.0 - 1.0;
+//    vPos.x = 0.0;
+//    vPos.y = 0.0;
+//    vPos.z = 0.0;
 
     // Write back
     nodeSrc[index].position = vPos;
@@ -357,7 +357,7 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     var root_r = bhTree.radius;
     var r = root_r * 0.5;
 
-    var loop_limit_count = 10000;
+    var loop_limit_count = 1000;
 
     while (index < node_count) {
 
@@ -423,6 +423,7 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
                         nodeSrc[index].position += vec3<f32>(0.1, -0.05, 0.1);
                         skip = 0;
                         atomicStore(&treeChild[locked], ch);
+                        kernel_status[0] = -3;
                         break;
                     }
 
@@ -653,12 +654,12 @@ fn sort(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     let inc = min(node_count, 16384u);
     var index = tree_node_count + 1u - inc + global_invocation_id.x;
 
-    var loop_limit_count = 10000;
+    var loop_limit_count = 1000;
 
-    while (index >= bottom) {
+    while (index >= bottom && false) {
 
         if (loop_limit_count < 0) {
-            kernel_status[3] = 101;
+            kernel_status[3] = -101;
             break;
         }
         loop_limit_count--;
@@ -691,6 +692,10 @@ fn sort(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
             }
             index -= inc;
         }
+//            if (index < inc) {
+//                break;
+//            }
+//            index -= inc;
     }
 }
 
