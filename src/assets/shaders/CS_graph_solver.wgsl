@@ -318,7 +318,7 @@ fn bounding_box() {
     atomicStore(&treeNode[tree_node_count].start, 0);
     treeNode[tree_node_count].position = (bound_min_min + bound_max_max) * 0.5;
     treeNode[tree_node_count].count = -1;
-    treeNode[tree_node_count].sort = 0;
+    treeNode[tree_node_count].sort = -1;
 }
 
 // 7
@@ -362,7 +362,7 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     while (index < node_count) {
 
         if (loop_limit_count < 0) {
-            kernel_status[1] = 101;
+            kernel_status[1] = -101;
             break;
         }
         loop_limit_count--;
@@ -494,7 +494,7 @@ fn clear_2(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     }
     treeNode[index].position = vec3<f32>(0.0);
     treeNode[index].count = -1;
-    treeNode[index].sort = 0;
+    treeNode[index].sort = -1;
     atomicStore(&treeNode[index].start, -1);
     atomicStore(&treeNode[index].mass, -1);
 }
@@ -656,7 +656,7 @@ fn sort(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 
     var loop_limit_count = 1000;
 
-    while (index >= bottom && false) {
+    while (index >= bottom) {
 
         if (loop_limit_count < 0) {
             kernel_status[3] = -101;
@@ -729,8 +729,9 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
 
     if (max_depth < 48u) {
         for (var index = global_invocation_id.x; index < node_count; index += inc) {
-            let order = treeNode[index].sort;
-//            if (order == 0) { continue; }
+            var order = treeNode[index].sort;
+            if (order < 0) { continue; }
+
             let pos = nodeSrc[order].position;
             var af = vec3<f32>(0.0);
 
