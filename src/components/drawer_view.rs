@@ -40,7 +40,7 @@ impl AppView for DrawerView {
                                         DockStage::None => "None",
                                         DockStage::Messages => "Messages",
                                         DockStage::Timeline => "Timeline",
-                                        DockStage::Kernel => "Kernel",
+                                        DockStage::Kernel => "Kernels",
                                     };
 
                                     ui.style_mut().text_styles.get_mut(&egui::TextStyle::Body).unwrap().size = FONT_SIZE_TITLE;
