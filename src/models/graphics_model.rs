@@ -1176,6 +1176,7 @@ impl GraphicsResources {
                 } else {
                     self.is_kernel_error = false;
                 }
+                println!("{:?}", &result);
 
                 if result.len() == KERNEL_STATUS_COUNT {
                     self.kernel_status_codes = result;

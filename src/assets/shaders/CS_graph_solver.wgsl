@@ -93,7 +93,7 @@ fn atomic_add_f32(springIndex: u32, updateValue: f32) {
     var assumed: i32 = 0;
     var origin: i32;
 
-    var loop_limit_count = 10000;
+    var loop_limit_count = 100000;
 
     while (true) {
         loop_limit_count--;
@@ -139,12 +139,12 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
 
     var vPos : vec3<f32> = nodeSrc[index].position;
 
-//    vPos.x = random_xy(index, 0u + 3u * uniforms.frame_num) * 2.0 - 1.0;
-//    vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
-//    vPos.z = random_xy(index, 2u + 3u * uniforms.frame_num) * 2.0 - 1.0;
-    vPos.x = 0.0;
-    vPos.y = 0.0;
-    vPos.z = 0.0;
+    vPos.x = random_xy(index, 0u + 3u * uniforms.frame_num) * 2.0 - 1.0;
+    vPos.y = random_xy(index, 1u + 3u * uniforms.frame_num) * 2.0 - 1.0;
+    vPos.z = random_xy(index, 2u + 3u * uniforms.frame_num) * 2.0 - 1.0;
+//    vPos.x = 0.0;
+//    vPos.y = 0.0;
+//    vPos.z = 0.0;
 
     // Write back
     nodeSrc[index].position = vPos;
@@ -357,15 +357,15 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     var root_r = bhTree.radius;
     var r = root_r * 0.5;
 
-    var loop_limit_count = 10000;
+    var loop_limit_count = 100000;
+
+    var ch = 0;
 
     while (index < node_count) {
 
-        if (loop_limit_count < 0) {
-            kernel_status[1] = 101;
-            break;
-        }
-        loop_limit_count--;
+//        if (kernel_status[0] == -1) {
+//            break;
+//        }
 
         if (skip != 0) {
             skip = 0;
@@ -381,11 +381,27 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
             rdp = root_pos + dp; // 所在象限的原点
         }
 
-        // atomicAdd(&treeChild[n * 8u + j], 0); // ...
-        var ch = atomicLoad(&treeChild[n * 8u + j]);
+        ch = atomicAdd(&treeChild[n * 8u + j], 0); // ...
+        ch = atomicLoad(&treeChild[n * 8u + j]);
+
+        if (loop_limit_count < 0) {
+//            kernel_status[1] = 101;
+            if (ch != -2) {
+                kernel_status[1] = 201;
+            }
+            break;
+        }
+        loop_limit_count--;
 
         // 迭代至叶节点
         while (ch >= i32(node_count)) {
+
+            if (loop_limit_count < 0) {
+                kernel_status[1] = 102;
+                break;
+            }
+            loop_limit_count--;
+
             n = u32(ch);
             depth++;
             r *= 0.5;
@@ -420,15 +436,22 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
                 if (ch == origin) {
                     // lock 成功，如果两个点的位置相同，做一点微小偏移就行了
                     if (all(nodeSrc[ch].position == pos)) {
-                        nodeSrc[index].position += vec3<f32>(0.1, -0.05, 0.1);
+                        nodeSrc[index].position += vec3<f32>(random_xy(index, 0u), random_xy(index, 1u), random_xy(index, 2u)) * 0.2 - 0.1;
                         skip = 0;
                         atomicStore(&treeChild[locked], ch);
-                        break;
+                        kernel_status[0] = -1;
+//                        break;
                     }
 
                     // 两个点位置不同，则开始分裂
                     locked_ch = -1;
                     loop {
+
+                        if (loop_limit_count < 0) {
+                            kernel_status[1] = 103;
+                            break;
+                        }
+                        loop_limit_count--;
 
                         // 1. create new cell
                         let cell = atomicSub(&bhTree.bottom, 1u) - 1u;
@@ -474,7 +497,7 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
                 }
             }
         }
-        workgroupBarrier();
+//        workgroupBarrier();
         if (skip == 2) {
             atomicStore(&treeChild[locked], locked_ch);
         }
@@ -516,7 +539,7 @@ fn summarization(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
     var smass: array<i32, 8>;
     let restart = index;
 
-    var loop_limit_count = 10000;
+    var loop_limit_count = 100000;
 
     for (var j = 0; j < 5; j++) {
 
@@ -653,23 +676,29 @@ fn sort(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     let inc = min(node_count, 16384u);
     var index = tree_node_count + 1u - inc + global_invocation_id.x;
 
-    var loop_limit_count = 10000;
+    var loop_limit_count = 100000;
+
+    var j = 0u;
+
+    var ch = 0;
+    var start = 0;
 
     while (index >= bottom) {
 
         if (loop_limit_count < 0) {
-            kernel_status[3] = 101;
+            kernel_status[3] = 301;
+            kernel_status[4] = i32(bottom);
             break;
         }
         loop_limit_count--;
 
-        workgroupBarrier();
-        var start = atomicLoad(&treeNode[index].start);
+//        workgroupBarrier();
+        start = atomicLoad(&treeNode[index].start);
 
         if (start >= 0) {
-            var j = 0u;
+            j = 0u;
             for (var i = 0u; i < 8u; i++) {
-                let ch = atomicLoad(&treeChild[index * 8u + i]);
+                ch = atomicLoad(&treeChild[index * 8u + i]);
                 if (ch >= 0) {
                     // 把子节点集中到开头
                     if (i != j) {
@@ -686,11 +715,12 @@ fn sort(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
                     }
                 }
             }
-            if (index < inc) {
-                break;
-            }
-            index -= inc;
         }
+
+        if (index < inc) {
+            break;
+        }
+        index -= inc;
     }
 }
 
@@ -720,7 +750,7 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
     }
     sdq[max_depth - 1u] += epssq;
 
-    var loop_limit_count = 10000;
+    var loop_limit_count = 100000;
 
     if (max_depth < 48u) {
         for (var index = global_invocation_id.x; index < node_count; index += inc) {

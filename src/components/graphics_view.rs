@@ -17,7 +17,6 @@ impl AppView for GraphicsView {
 
         if models.graphics_model.graphics_resources.is_some() {
             if models.graphics_model.graphics_resources.as_ref().unwrap().is_kernel_error {
-                println!("234234");
                 models.graphics_model.set_computing(false);
             }
         }
