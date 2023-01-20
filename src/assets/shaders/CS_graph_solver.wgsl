@@ -420,7 +420,7 @@ fn tree_building(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
                 if (ch == origin) {
                     // lock 成功，如果两个点的位置相同，做一点微小偏移就行了
                     if (all(nodeSrc[ch].position == pos)) {
-                        nodeSrc[index].position += vec3<f32>(0.1, -0.05, 0.1);
+                        nodeSrc[index].position += vec3<f32>(random_xy(index, 0u + 3u * uniforms.frame_num), random_xy(index, 1u + 3u * uniforms.frame_num), random_xy(index, 2u + 3u * uniforms.frame_num)) * 0.2 - 0.1;
                         skip = 0;
                         atomicStore(&treeChild[locked], ch);
                         kernel_status[0] = -3;

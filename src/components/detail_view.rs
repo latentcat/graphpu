@@ -34,7 +34,7 @@ impl AppView for DetailView {
                         ui.available_size(),
                         egui::Layout::left_to_right(egui::Align::Center),
                         |ui| {
-                            show_message(models, ui, _frame, 12);
+                            show_message(models, ui, _frame, -1);
                         },
                     );
 
@@ -49,7 +49,7 @@ pub fn show_message(models: &mut Models, ui: &mut Ui, _frame: &mut eframe::Frame
     let messages = messenger();
     if messages.len() > 0 {
         let message = &messages[messages.len() - 1];
-        if Utc::now().timestamp() - message.time > max_time.into() { return; };
+        if max_time > 0 && Utc::now().timestamp() - message.time > max_time.into() { return; };
         let message = message.to_string();
         let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::click());
         ui.allocate_ui_at_rect(rect, |ui| {
