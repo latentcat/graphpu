@@ -19,7 +19,7 @@ use crate::utils::file::create_png;
 
 use super::data_model::DataModel;
 use bytemuck::{Pod, Zeroable};
-use crate::utils::message::{message_error};
+use crate::utils::message::{message_error, message_warning};
 
 // 须同步修改 Compute WGSL 中每一个函数的 @workgroup_size
 // WGSL 中没有宏，不能使用类似 HLSL 的 #define 方法
@@ -1178,7 +1178,8 @@ impl GraphicsResources {
                 }
 
                 if *result.par_iter().min().unwrap() < 0 {
-                    println!("{:?}", &result);
+                    let content = format!("{:?}", &result);
+                    message_warning("Kernel warning", content.as_str());
                 }
 
                 if result.len() == KERNEL_STATUS_COUNT {

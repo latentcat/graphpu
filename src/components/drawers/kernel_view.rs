@@ -94,7 +94,7 @@ fn kernel_label(ui: &mut egui::Ui, kernel_name: &str, id: usize, kernel_code: i3
             valign: egui::Align::Center,
             ..Default::default()
         });
-        job.append(&*format!("{}({}) ", kernel_name, id), 0.0, egui::TextFormat {
+        job.append(&*format!("[{}]{} ", id, kernel_name), 0.0, egui::TextFormat {
             font_id: egui::FontId::new(FONT_SIZE_BODY, Default::default()),
             color: egui::Color32::from_gray(220),
             valign: egui::Align::Center,

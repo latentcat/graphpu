@@ -93,7 +93,7 @@ fn atomic_add_f32(springIndex: u32, updateValue: f32) {
     var assumed: i32 = 0;
     var origin: i32;
 
-    var loop_limit_count = 10000;
+    var loop_limit_count = 100000;
 
     while (true) {
         loop_limit_count--;
@@ -725,7 +725,7 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
     }
     sdq[max_depth - 1u] += epssq;
 
-    var loop_limit_count = 10000;
+    var loop_limit_count = 100000;
 
     if (max_depth < 48u) {
         for (var index = global_invocation_id.x; index < node_count; index += inc) {
