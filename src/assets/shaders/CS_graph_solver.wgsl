@@ -524,7 +524,7 @@ fn summarization(@builtin(global_invocation_id) global_invocation_id: vec3<u32>)
         while (index <= tree_node_count) {
 
             if (loop_limit_count < 0) {
-                kernel_status[2] = 101;
+                kernel_status[2] = 500 + j;
                 break;
             }
             loop_limit_count--;

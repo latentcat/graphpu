@@ -17,7 +17,7 @@ if [ $# -ne 0 ]; then
     fi
 fi
 
-MACOS_DMG_NAME=graphpu-0.4.1-macos-${ARCH_NAME}
+MACOS_DMG_NAME=graphpu-0.4.2-macos-${ARCH_NAME}
 
 APP_NAME=graphpu
 MACOS_BIN_NAME=GraphPU
@@ -34,7 +34,7 @@ cd macos_build
 echo "Creating app directory structure"
 rm -rf $MACOS_APP_NAME
 rm -rf $MACOS_APP_DIR
-mkdir -p $MACOS_APP_DIR/Contents/MacOS/bin
+mkdir -p $MACOS_APP_DIR/Contents/MacOS
 
 cargo rustc \
     --release \
@@ -43,16 +43,16 @@ cargo rustc \
 #    --verbose \
 
 echo "Copying binary"
-MACOS_APP_BIN=$MACOS_APP_DIR/Contents/MacOS/bin/$MACOS_BIN_NAME
+MACOS_APP_BIN=$MACOS_APP_DIR/Contents/MacOS/$MACOS_BIN_NAME
 cp ../target/$ARCH/release/$APP_NAME $MACOS_APP_BIN
-chmod 755 $MACOS_APP_BIN
+chmod 777 $MACOS_APP_BIN
 
 echo "Copying resources directory"
-cp -r ../resources $MACOS_APP_DIR/Contents/MacOS/bin
+cp -r ../resources $MACOS_APP_DIR/Contents/MacOS
 
 echo "Copying launcher"
-cp ../scripts/macos_launch.sh $MACOS_APP_DIR/Contents/MacOS/$MACOS_APP_NAME
-chmod 755 $MACOS_APP_DIR/Contents/MacOS/$MACOS_APP_NAME
+cp ../scripts/macos_launch.sh $MACOS_APP_DIR/Contents/MacOS/${MACOS_APP_NAME}_Launcher
+chmod 777 $MACOS_APP_DIR/Contents/MacOS/${MACOS_APP_NAME}_Launcher
 
 echo "Copying Icon"
 mkdir -p $MACOS_APP_DIR/Contents/Resources

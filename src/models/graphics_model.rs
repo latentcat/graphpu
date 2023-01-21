@@ -1170,16 +1170,16 @@ impl GraphicsResources {
                 let data = buffer_slice.get_mapped_range();
                 let result: Vec<i32> = bytemuck::cast_slice(&data).to_vec();
 
+                let content = format!("{:?}", &result);
+
                 if *result.par_iter().max().unwrap() > 0 {
-                    message_error("Kernel Error", "See kernels panel for details.");
+                    message_error("Kernel Error", content.as_str());
                     self.is_kernel_error = true;
                 } else {
                     self.is_kernel_error = false;
-                }
-
-                if *result.par_iter().min().unwrap() < 0 {
-                    let content = format!("{:?}", &result);
-                    message_warning("Kernel Warning", content.as_str());
+                    if *result.par_iter().min().unwrap() < 0 {
+                        message_warning("Kernel Warning", content.as_str());
+                    }
                 }
 
                 if result.len() == KERNEL_STATUS_COUNT {
