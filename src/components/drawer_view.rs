@@ -9,7 +9,9 @@ use crate::widgets::frames::{drawer_frame, drawer_title_frame};
 use super::AppView;
 
 #[derive(Default)]
-pub struct DrawerView;
+pub struct DrawerView {
+    kernel_view: KernelView,
+}
 
 impl AppView for DrawerView {
     fn show(&mut self, models: &mut Models, ui: &mut Ui, frame: &mut eframe::Frame) {
@@ -63,7 +65,7 @@ impl AppView for DrawerView {
                         MessageView::default().show(models, ui, frame);
                     },
                     DockStage::Kernel => {
-                        KernelView::default().show(models, ui, frame);
+                        self.kernel_view.show(models, ui, frame);
                     },
                     _ => {
                         ui.centered_and_justified(|ui| {

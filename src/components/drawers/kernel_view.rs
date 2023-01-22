@@ -9,7 +9,17 @@ use crate::widgets::frames::{drawer_kernel_content_frame};
 
 
 #[derive(Default)]
-pub struct KernelView;
+pub struct KernelView {
+    pub selected_kernel: usize,
+}
+
+fn get_kernel_status_desc(code: i32) -> &'static str {
+    match code {
+        -1  => "Uninitialized",
+        0   => "Running",
+        _   => ""
+    }
+}
 
 impl AppView for KernelView {
     fn show(&mut self, _models: &mut Models, ui: &mut Ui, _frame: &mut eframe::Frame) {
@@ -22,7 +32,7 @@ impl AppView for KernelView {
                 if let Some(graphics_resources) = &mut _models.graphics_model.graphics_resources {
                     let _kernels = &mut graphics_resources.graph_compute.kernels;
                     for (index, &name) in KERNEL_NAMES.iter().enumerate() {
-                        kernel_label(ui, name, index, graphics_resources.kernel_status_codes[index]);
+                        kernel_label(ui, &mut self.selected_kernel ,index, name, graphics_resources.kernel_status_codes[index]);
                     }
                 }
             });
@@ -35,25 +45,31 @@ impl AppView for KernelView {
                 .id_source("kernel")
                 .show(ui, |ui| {
 
+                    let mut code = 0;
+
+                    if let Some(graphics_resources) = &mut _models.graphics_model.graphics_resources {
+                        code = graphics_resources.kernel_status_codes[self.selected_kernel];
+                    }
+
                     inspector_grid("kernel_grid")
                         .show(ui, |ui| {
                             grid_label(ui, "Kernel ID");
-                            grid_content(ui, "0");
+                            grid_content(ui, format!("{}", self.selected_kernel).as_str());
 
                             ui.end_row();
 
                             grid_label(ui, "Kernel name");
-                            grid_content(ui, "compute");
+                            grid_content(ui, KERNEL_NAMES[self.selected_kernel]);
 
                             ui.end_row();
 
                             grid_label(ui, "Kernel status code");
-                            grid_content(ui, "503");
+                            grid_content(ui, format!("{}", code).as_str());
 
                             ui.end_row();
 
                             grid_label(ui, "Status code description");
-                            grid_content(ui, "Error(Loop out of limit)");
+                            grid_content(ui, get_kernel_status_desc(code));
                         });
 
                 });
@@ -75,7 +91,7 @@ fn inspector_grid(id: &str) -> egui::Grid {
         .min_row_height(10.)
 }
 
-fn kernel_label(ui: &mut egui::Ui, kernel_name: &str, id: usize, kernel_code: i32) {
+fn kernel_label(ui: &mut egui::Ui, selected_kernel: &mut usize, kernel_index: usize, kernel_name: &str, kernel_code: i32) {
 
     let size = egui::Vec2::new(150., 18.);
     let (rect, _response) = ui.allocate_exact_size(size, egui::Sense::hover());
@@ -94,13 +110,13 @@ fn kernel_label(ui: &mut egui::Ui, kernel_name: &str, id: usize, kernel_code: i3
             valign: egui::Align::Center,
             ..Default::default()
         });
-        job.append(&*format!("[{}] {} ", id, kernel_name), 0.0, egui::TextFormat {
+        job.append(&*format!("[{}] {} ", kernel_index, kernel_name), 0.0, egui::TextFormat {
             font_id: egui::FontId::new(FONT_SIZE_BODY, Default::default()),
             color: egui::Color32::from_gray(220),
             valign: egui::Align::Center,
             ..Default::default()
         });
-        ui.selectable_value(&mut "gen_node", kernel_name, job);
+        ui.selectable_value(selected_kernel, kernel_index, job);
 
     });
     // ui.painter()

@@ -16,6 +16,7 @@ use crate::constant::{FONT_SIZE_BODY, FONT_SIZE_HEADING};
 pub struct MainApp {
     pub models: Models,
     inspector_view: InspectorView,
+    drawer_view: DrawerView,
     import_modal: ImportModal,
 }
 
@@ -77,7 +78,8 @@ impl MainApp {
                 data_model: DataModel::default(),
                 app_model: AppModel::default(),
             },
-            inspector_view: InspectorView::default(),
+            inspector_view: Default::default(),
+            drawer_view: Default::default(),
             import_modal: ImportModal::default(),
         };
 
@@ -109,7 +111,7 @@ impl eframe::App for MainApp {
                     self.inspector_view.show(&mut self.models, ui, frame);
                     DockView::default().show(&mut self.models, ui, frame);
                     if self.models.app_model.dock_stage != DockStage::None {
-                        DrawerView::default().show(&mut self.models, ui, frame);
+                        self.drawer_view.show(&mut self.models, ui, frame);
                     }
                     match self.models.app_model.main_stage {
                         MainStage::Graphics => GraphicsView::default().show(&mut self.models, ui, frame),

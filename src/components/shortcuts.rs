@@ -31,5 +31,15 @@ impl Shortcut {
         if ui.input_mut().consume_shortcut(&organize_shortcut) {
             models.render_output();
         }
+
+        let organize_shortcut =
+            egui::KeyboardShortcut::new(Modifiers::NONE, egui::Key::Escape);
+
+        if ui.input_mut().consume_shortcut(&organize_shortcut) {
+            models.app_model.is_fullscreen_graphics = false;
+            if !models.app_model.is_fullscreen {
+                _frame.set_fullscreen(false);
+            }
+        }
     }
 }
