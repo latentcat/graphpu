@@ -6,7 +6,7 @@ use std::mem;
 use chrono::{Local, Utc};
 use egui::{Ui, Vec2};
 use glam::Vec3;
-use wgpu::{ Queue, ShaderModule, ComputePass };
+use wgpu::{Queue, ShaderModule, ComputePass};
 use wgpu::util::DeviceExt;
 use crate::models::data_model::GraphicsStatus;
 use crate::models::graphics_lib::{BufferDimensions, Camera, Controls, RenderPipeline, Texture};
@@ -76,6 +76,7 @@ pub struct ComputeUniforms {
     frame_num:          u32,
     node_count:         u32,
     edge_count:         u32,
+    edge_sort_count:    u32,
     tree_node_count:    u32,
     bounding_count:     u32,
     kernel_status_count: u32,
@@ -244,7 +245,9 @@ pub struct GraphicsResources {
     bounding_box_vertex_buffer:     wgpu::Buffer,
     bounding_box_index_buffer:      wgpu::Buffer,
     node_buffer:                    wgpu::Buffer,
+    node_edge_sort_range_buffer:    wgpu::Buffer,
     edge_buffer:                    wgpu::Buffer,
+    edge_sort_buffer:               wgpu::Buffer,
     render_uniform_buffer:          wgpu::Buffer,
     bounding_buffer:                wgpu::Buffer,
     tree_buffer:                    wgpu::Buffer,
@@ -274,6 +277,7 @@ pub struct GraphicsResources {
     // 线程组数 = 线程数 / 每组线程数
     node_work_group_count:          u32,
     edge_work_group_count:          u32,
+    edge_sort_work_group_count:     u32,
     tree_node_work_group_count:     u32,
     step_work_group_count:          u32,
     bb_work_group_count:            u32,
@@ -303,6 +307,7 @@ impl GraphicsResources {
         // 从 Graphics Model 中获取 Node 和 Edge 的数量
         let node_count = model.status.node_count as u32;
         let edge_count = model.status.edge_count as u32;
+        let edge_sort_count = (model.status.edge_count * 2) as u32;
         let tree_node_count = get_tree_node_count(&node_count);
 
         // Node 和 Edge 结构体的占内存大小，用于计算 Buffer 长度
@@ -387,6 +392,9 @@ impl GraphicsResources {
         let edge_work_group_count =
             ((edge_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
 
+        let edge_sort_work_group_count =
+            ((edge_sort_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
+
         let tree_node_work_group_count = 
             (tree_node_count as f32 / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
 
@@ -403,6 +411,7 @@ impl GraphicsResources {
             frame_num: 0,
             node_count,
             edge_count,
+            edge_sort_count,
             tree_node_count,
             bounding_count: node_work_group_count,
             kernel_status_count: KERNEL_NAMES.len() as u32,
@@ -478,7 +487,19 @@ impl GraphicsResources {
             mapped_at_creation: false
         });
 
-        let spring_force_buffer_size = node_count * 3 * 4;
+        let node_edge_sort_range_buffer_size = node_count * 2 * 4;
+
+        let node_edge_sort_range_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Node Edge Sort Range Buffer"),
+            size: node_edge_sort_range_buffer_size as _,
+            usage: wgpu::BufferUsages::VERTEX
+                | wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_DST
+                | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false
+        });
+
+        let spring_force_buffer_size = node_count * 4 * 4;
 
         let spring_force_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Node Buffer"),
@@ -527,6 +548,18 @@ impl GraphicsResources {
             usage: wgpu::BufferUsages::VERTEX
                 | wgpu::BufferUsages::STORAGE
                 | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let edge_sort_buffer_size = edge_sort_count * 8 * 4;
+
+        let edge_sort_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Edge Sort Buffer"),
+            size: edge_sort_buffer_size as _,
+            usage: wgpu::BufferUsages::VERTEX
+                | wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_DST
+                | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false
         });
 
         // Tree Buffer
@@ -714,6 +747,139 @@ impl GraphicsResources {
                     binding: 1,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: node_buffer.as_entire_binding(),
+                },
+            ]);
+
+        graph_compute.create_compute_kernel("prepare_edge_sort", vec![
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 12,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: edge_sort_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 2,
+                buffer_type: ComputeBufferType::StorageReadOnly,
+                buffer: edge_buffer.as_entire_binding(),
+            },
+        ]);
+        graph_compute.create_compute_kernel("sort_edge", vec![
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 12,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: edge_sort_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 9,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: depth_sort_param_buffer.as_entire_binding(),
+            },
+        ]);
+        graph_compute.create_compute_kernel("compute_node_edge_sort_range", vec![
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 12,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: edge_sort_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 13,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_edge_sort_range_buffer.as_entire_binding(),
+            },
+        ]);
+        graph_compute.create_compute_kernel("compute_node_edge_sort_range_2", vec![
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 12,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: edge_sort_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 13,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_edge_sort_range_buffer.as_entire_binding(),
+            },
+        ]);
+        graph_compute.create_compute_kernel("spring_force_reduction", vec![
+                ComputeBuffer {
+                    binding: 0,
+                    buffer_type: ComputeBufferType::Uniform,
+                    buffer: uniform_buffer.as_entire_binding(),
+                },
+                ComputeBuffer {
+                    binding: 1,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: node_buffer.as_entire_binding(),
+                },
+                ComputeBuffer {
+                    binding: 3,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: spring_force_buffer.as_entire_binding(),
+                },
+                ComputeBuffer {
+                    binding: 12,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: edge_sort_buffer.as_entire_binding(),
+                },
+                ComputeBuffer {
+                    binding: 13,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: node_edge_sort_range_buffer.as_entire_binding(),
+                },
+                ComputeBuffer {
+                    binding: 11,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: kernel_status_buffer.as_entire_binding(),
+                },
+            ]);
+        graph_compute.create_compute_kernel("spring_force", vec![
+                ComputeBuffer {
+                    binding: 0,
+                    buffer_type: ComputeBufferType::Uniform,
+                    buffer: uniform_buffer.as_entire_binding(),
+                },
+                ComputeBuffer {
+                    binding: 1,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: node_buffer.as_entire_binding(),
+                },
+                ComputeBuffer {
+                    binding: 3,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: spring_force_buffer.as_entire_binding(),
+                },
+                ComputeBuffer {
+                    binding: 12,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: edge_sort_buffer.as_entire_binding(),
+                },
+                ComputeBuffer {
+                    binding: 13,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: node_edge_sort_range_buffer.as_entire_binding(),
+                },
+                ComputeBuffer {
+                    binding: 11,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: kernel_status_buffer.as_entire_binding(),
                 },
             ]);
         graph_compute.create_compute_kernel("attractive_force", vec![
@@ -1065,7 +1231,9 @@ impl GraphicsResources {
             bounding_box_vertex_buffer,
             bounding_box_index_buffer,
             node_buffer,
+            node_edge_sort_range_buffer,
             edge_buffer,
+            edge_sort_buffer,
             render_uniform_buffer,
             bounding_buffer,
             tree_buffer,
@@ -1087,6 +1255,7 @@ impl GraphicsResources {
             is_kernel_error: false,
             node_work_group_count,
             edge_work_group_count,
+            edge_sort_work_group_count,
             tree_node_work_group_count,
             step_work_group_count,
             bb_work_group_count,
@@ -1129,7 +1298,10 @@ impl GraphicsResources {
 
             Self::dispatch_compute_kernel(&self, &mut cpass, "cal_gravity_force", self.node_work_group_count);
 
-            Self::dispatch_compute_kernel(&self, &mut cpass, "attractive_force", self.edge_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "spring_force_reduction", self.edge_sort_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "spring_force", self.node_work_group_count);
+
+            // Self::dispatch_compute_kernel(&self, &mut cpass, "attractive_force", self.edge_work_group_count);
 
             Self::calc_bounding_box(&self, &mut cpass);
 
@@ -1197,14 +1369,45 @@ impl GraphicsResources {
 
     }
 
-    pub fn debug(&mut self) {
+    pub fn debug<'a>(&'a mut self) {
+
 
         let device = &self.render_state.device;
         let queue = &self.render_state.queue;
 
+
+        let debug_buffer_size = self.status.node_count * 2 * 4;
+        println!("{}", debug_buffer_size);
+        let debug_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Debug Buffer"),
+            size: debug_buffer_size as _,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         let mut command_encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        command_encoder.push_debug_group("compute render movement");
+        command_encoder.copy_buffer_to_buffer(&self.node_edge_sort_range_buffer, 0, &debug_buffer, 0, debug_buffer_size as _);
+        queue.submit(Some(command_encoder.finish()));
+
+
+        let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
+        let buffer_slice = debug_buffer.slice(..);
+        buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
+        device.poll(wgpu::Maintain::Wait);
+
+        pollster::block_on(async {
+            if let Some(Ok(())) = receiver.receive().await {
+                let data = buffer_slice.get_mapped_range();
+                let result: Vec<i32> = bytemuck::cast_slice(&data).to_vec();
+
+                let content = format!("{:?}", &result);
+                println!("{}", content);
+
+            } else {
+                panic!("failed to run compute on gpu!")
+            }
+        });
 
     }
 
@@ -1248,6 +1451,56 @@ impl GraphicsResources {
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));
+
+
+        // calc depth
+        let command_buffer = {
+            let mut command_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+            {
+                let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+
+                Self::dispatch_compute_kernel(&self, &mut cpass, "prepare_edge_sort", self.edge_work_group_count);
+
+            }
+            command_encoder.finish()
+        };
+        queue.submit(Some(command_buffer));
+
+        // sort
+        {
+            let mut dim = 2;
+            while dim < (self.status.edge_count * 2) * 2 {
+                let mut block_count = dim >> 1;
+                queue.write_buffer(&self.depth_sort_param_buffer, 0, bytemuck::cast_slice(&[dim as u32]));
+                while block_count > 0 {
+                    queue.write_buffer(&self.depth_sort_param_buffer, 4, bytemuck::cast_slice(&[block_count as u32]));
+                    let mut command_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+                    {
+                        let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+                        Self::dispatch_compute_kernel(&self, &mut cpass, "sort_edge", self.edge_sort_work_group_count);
+                    }
+                    queue.submit(Some(command_encoder.finish()));
+                    block_count = block_count >> 1;
+                }
+                dim = dim << 1;
+            }
+        };
+
+        let mut command_encoder =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        command_encoder.push_debug_group("compute_node_edge_sort_range");
+        {
+            // compute pass
+            let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+
+            Self::dispatch_compute_kernel(&self, &mut cpass, "compute_node_edge_sort_range", self.edge_sort_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "compute_node_edge_sort_range_2", self.edge_sort_work_group_count);
+        }
+        command_encoder.pop_debug_group();
+        queue.submit(Some(command_encoder.finish()));
+
+        Self::debug(self);
+
         self.compute_frame_count += 1;
     }
 

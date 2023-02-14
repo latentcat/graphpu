@@ -66,13 +66,13 @@ impl ComputeShader {
         });
 
         let pipeline_layout = self.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("compute"),
+            label: Some(&*(entry_point.to_owned() + " pipeline layout")),
             bind_group_layouts: &[&bind_group_layout],
             push_constant_ranges: &[],
         });
 
         let compute_pipeline = self.device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-            label: Some("Gen Node Pipeline"),
+            label: Some(&*(entry_point.to_owned() + " pipeline")),
             layout: Some(&pipeline_layout),
             module: &self.shader,
             entry_point,
