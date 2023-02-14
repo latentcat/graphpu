@@ -3,7 +3,7 @@
 cd ../
 
 BUILD_DIR=windows_build
-APP_BUNDLE_NAME=graphpu-0.4.2-windows-x86_64
+APP_BUNDLE_NAME=graphpu-0.4.3-windows-x86_64
 APP_BUNDLE_DIR=${BUILD_DIR}/${APP_BUNDLE_NAME}
 
 rm -rf ${APP_BUNDLE_DIR}
