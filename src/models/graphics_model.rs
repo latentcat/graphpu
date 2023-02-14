@@ -82,6 +82,13 @@ pub struct ComputeUniforms {
     kernel_status_count: u32,
 }
 
+#[repr(C)]
+#[derive(Copy, Clone, Debug, PartialEq, Pod, Zeroable)]
+pub struct EdgeSort {
+    _node:      [u32; 4],
+    _force:     [f32; 4],
+}
+
 pub const KERNEL_STATUS_COUNT: usize = 5;
 pub const KERNEL_NAMES: [&str; KERNEL_STATUS_COUNT] = [
     "attractive_force",
@@ -247,7 +254,8 @@ pub struct GraphicsResources {
     node_buffer:                    wgpu::Buffer,
     node_edge_sort_range_buffer:    wgpu::Buffer,
     edge_buffer:                    wgpu::Buffer,
-    edge_sort_buffer:               wgpu::Buffer,
+    edge_sort_node_buffer:          wgpu::Buffer,
+    edge_sort_dir_buffer:           wgpu::Buffer,
     render_uniform_buffer:          wgpu::Buffer,
     bounding_buffer:                wgpu::Buffer,
     tree_buffer:                    wgpu::Buffer,
@@ -550,11 +558,23 @@ impl GraphicsResources {
                 | wgpu::BufferUsages::COPY_DST,
         });
 
-        let edge_sort_buffer_size = edge_sort_count * 8 * 4;
+        let edge_sort_node_buffer_size = edge_sort_count * 2 * 4;
 
-        let edge_sort_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Edge Sort Buffer"),
-            size: edge_sort_buffer_size as _,
+        let edge_sort_node_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Edge Sort Node Buffer"),
+            size: edge_sort_node_buffer_size as _,
+            usage: wgpu::BufferUsages::VERTEX
+                | wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_DST
+                | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false
+        });
+
+        let edge_sort_dir_buffer_size = edge_sort_count * 4 * 4;
+
+        let edge_sort_dir_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Edge Sort Dir Buffer"),
+            size: edge_sort_dir_buffer_size as _,
             usage: wgpu::BufferUsages::VERTEX
                 | wgpu::BufferUsages::STORAGE
                 | wgpu::BufferUsages::COPY_DST
@@ -719,6 +739,16 @@ impl GraphicsResources {
                     buffer_type: ComputeBufferType::Storage,
                     buffer: spring_force_buffer.as_entire_binding(),
                 },
+                ComputeBuffer {
+                    binding: 13,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: node_edge_sort_range_buffer.as_entire_binding(),
+                },
+                ComputeBuffer {
+                    binding: 14,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: node_edge_sort_range_buffer.as_entire_binding(),
+                },
             ]);
         graph_compute.create_compute_kernel("cal_mass", vec![
                 ComputeBuffer {
@@ -759,7 +789,12 @@ impl GraphicsResources {
             ComputeBuffer {
                 binding: 12,
                 buffer_type: ComputeBufferType::Storage,
-                buffer: edge_sort_buffer.as_entire_binding(),
+                buffer: edge_sort_node_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 13,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: edge_sort_dir_buffer.as_entire_binding(),
             },
             ComputeBuffer {
                 binding: 2,
@@ -776,7 +811,12 @@ impl GraphicsResources {
             ComputeBuffer {
                 binding: 12,
                 buffer_type: ComputeBufferType::Storage,
-                buffer: edge_sort_buffer.as_entire_binding(),
+                buffer: edge_sort_node_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 13,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: edge_sort_dir_buffer.as_entire_binding(),
             },
             ComputeBuffer {
                 binding: 9,
@@ -793,10 +833,15 @@ impl GraphicsResources {
             ComputeBuffer {
                 binding: 12,
                 buffer_type: ComputeBufferType::Storage,
-                buffer: edge_sort_buffer.as_entire_binding(),
+                buffer: edge_sort_node_buffer.as_entire_binding(),
             },
             ComputeBuffer {
                 binding: 13,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: edge_sort_dir_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 14,
                 buffer_type: ComputeBufferType::Storage,
                 buffer: node_edge_sort_range_buffer.as_entire_binding(),
             },
@@ -810,10 +855,15 @@ impl GraphicsResources {
             ComputeBuffer {
                 binding: 12,
                 buffer_type: ComputeBufferType::Storage,
-                buffer: edge_sort_buffer.as_entire_binding(),
+                buffer: edge_sort_node_buffer.as_entire_binding(),
             },
             ComputeBuffer {
                 binding: 13,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: edge_sort_dir_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 14,
                 buffer_type: ComputeBufferType::Storage,
                 buffer: node_edge_sort_range_buffer.as_entire_binding(),
             },
@@ -837,10 +887,15 @@ impl GraphicsResources {
                 ComputeBuffer {
                     binding: 12,
                     buffer_type: ComputeBufferType::Storage,
-                    buffer: edge_sort_buffer.as_entire_binding(),
+                    buffer: edge_sort_node_buffer.as_entire_binding(),
                 },
                 ComputeBuffer {
                     binding: 13,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: edge_sort_dir_buffer.as_entire_binding(),
+                },
+                ComputeBuffer {
+                    binding: 14,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: node_edge_sort_range_buffer.as_entire_binding(),
                 },
@@ -857,56 +912,19 @@ impl GraphicsResources {
                     buffer: uniform_buffer.as_entire_binding(),
                 },
                 ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
                     binding: 3,
                     buffer_type: ComputeBufferType::Storage,
                     buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 12,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: edge_sort_buffer.as_entire_binding(),
                 },
                 ComputeBuffer {
                     binding: 13,
                     buffer_type: ComputeBufferType::Storage,
+                    buffer: edge_sort_dir_buffer.as_entire_binding(),
+                },
+                ComputeBuffer {
+                    binding: 14,
+                    buffer_type: ComputeBufferType::Storage,
                     buffer: node_edge_sort_range_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 11,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: kernel_status_buffer.as_entire_binding(),
-                },
-            ]);
-        graph_compute.create_compute_kernel("attractive_force", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 11,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: kernel_status_buffer.as_entire_binding(),
                 },
             ]);
         graph_compute.create_compute_kernel("reduction_bounding", vec![
@@ -1233,7 +1251,8 @@ impl GraphicsResources {
             node_buffer,
             node_edge_sort_range_buffer,
             edge_buffer,
-            edge_sort_buffer,
+            edge_sort_node_buffer,
+            edge_sort_dir_buffer,
             render_uniform_buffer,
             bounding_buffer,
             tree_buffer,
@@ -1283,8 +1302,8 @@ impl GraphicsResources {
 
     pub fn compute(&mut self) {
 
-        let device = &self.render_state.device;
-        let queue = &self.render_state.queue;
+        let device = self.render_state.device.clone();
+        let queue = self.render_state.queue.clone();
 
         let mut command_encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
@@ -1299,9 +1318,8 @@ impl GraphicsResources {
             Self::dispatch_compute_kernel(&self, &mut cpass, "cal_gravity_force", self.node_work_group_count);
 
             Self::dispatch_compute_kernel(&self, &mut cpass, "spring_force_reduction", self.edge_sort_work_group_count);
-            Self::dispatch_compute_kernel(&self, &mut cpass, "spring_force", self.node_work_group_count);
 
-            // Self::dispatch_compute_kernel(&self, &mut cpass, "attractive_force", self.edge_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "spring_force", self.node_work_group_count);
 
             Self::calc_bounding_box(&self, &mut cpass);
 
@@ -1324,6 +1342,7 @@ impl GraphicsResources {
             Self::dispatch_compute_kernel(&self, &mut cpass, "displacement", self.node_work_group_count);
 
         }
+
         // queue.submit(Some(command_encoder.finish()));
         self.compute_frame_count += 1;
         // device.poll(wgpu::Maintain::Wait);
@@ -1376,8 +1395,7 @@ impl GraphicsResources {
         let queue = &self.render_state.queue;
 
 
-        let debug_buffer_size = self.status.node_count * 2 * 4;
-        println!("{}", debug_buffer_size);
+        let debug_buffer_size = self.status.edge_count * 8 * 2 * 4;
         let debug_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Debug Buffer"),
             size: debug_buffer_size as _,
@@ -1387,7 +1405,7 @@ impl GraphicsResources {
 
         let mut command_encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        command_encoder.copy_buffer_to_buffer(&self.node_edge_sort_range_buffer, 0, &debug_buffer, 0, debug_buffer_size as _);
+        command_encoder.copy_buffer_to_buffer(&self.edge_sort_node_buffer, 0, &debug_buffer, 0, debug_buffer_size as _);
         queue.submit(Some(command_encoder.finish()));
 
 
@@ -1399,10 +1417,11 @@ impl GraphicsResources {
         pollster::block_on(async {
             if let Some(Ok(())) = receiver.receive().await {
                 let data = buffer_slice.get_mapped_range();
-                let result: Vec<i32> = bytemuck::cast_slice(&data).to_vec();
+                let result: Vec<u32> = bytemuck::cast_slice(&data).to_vec();
 
                 let content = format!("{:?}", &result);
                 println!("{}", content);
+                println!("{}", result.len());
 
             } else {
                 panic!("failed to run compute on gpu!")
@@ -1499,7 +1518,7 @@ impl GraphicsResources {
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));
 
-        Self::debug(self);
+        // Self::debug(self);
 
         self.compute_frame_count += 1;
     }

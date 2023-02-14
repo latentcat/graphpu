@@ -61,12 +61,6 @@ struct NodeEdgeSortRange {
     max: atomic<u32>,
 }
 
-struct EdgeSort {
-    node: vec2<u32>,
-    _empty: vec2<u32>,
-    dir: vec3<f32>,
-}
-
 @group(0) @binding(0)  var<uniform>             uniforms:       Uniforms;
 @group(0) @binding(1)  var<storage, read_write> nodeSrc:        array<Node>;
 @group(0) @binding(2)  var<storage, read>       edgeSrc:        array<vec2<u32>>;
@@ -79,8 +73,9 @@ struct EdgeSort {
 @group(0) @binding(9)  var<uniform>             kvps_param:     KvpParam;
 @group(0) @binding(10) var<uniform>             transform:      Transform;
 @group(0) @binding(11) var<storage, read_write> kernel_status:  array<i32>;
-@group(0) @binding(12) var<storage, read_write> edge_sort_src:  array<EdgeSort>;
-@group(0) @binding(13) var<storage, read_write> node_edge_sort_range:  array<NodeEdgeSortRange>;
+@group(0) @binding(12) var<storage, read_write> edge_sort_node: array<vec2<u32>>;
+@group(0) @binding(13) var<storage, read_write> edge_sort_dir:  array<vec3<f32>>;
+@group(0) @binding(14) var<storage, read_write> node_edge_sort_range:  array<NodeEdgeSortRange>;
 
 fn hash(s: u32) -> u32 {
     var t : u32 = s;
@@ -143,6 +138,9 @@ fn gen_node(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     nodeSrc[index].mass = 1u;
     springForceSrc[index] = vec3<f32>(0.0);
 
+    atomicStore(&node_edge_sort_range[index].min, 0u);
+    atomicStore(&node_edge_sort_range[index].max, 0u);
+
 }
 
 
@@ -192,6 +190,7 @@ fn cal_gravity_force(@builtin(global_invocation_id) global_invocation_id: vec3<u
     }
 //    nodeSrc[index].force +=  -pos * gravity_force;
 //    nodeSrc[index].force +=  -pos * min(gravity_force, 1.0);
+
     nodeSrc[index].force +=  -pos * 0.5;
 }
 
@@ -206,8 +205,8 @@ fn prepare_edge_sort(@builtin(global_invocation_id) global_invocation_id: vec3<u
 
     var edge = edgeSrc[index];
 
-    edge_sort_src[index * 2u].node = edge;
-    edge_sort_src[index * 2u + 1u].node = vec2<u32>(edge[1], edge[0]);
+    edge_sort_node[index * 2u] = edge;
+    edge_sort_node[index * 2u + 1u] = vec2<u32>(edge[1], edge[0]);
 }
 
 @compute
@@ -225,12 +224,12 @@ fn sort_edge(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
         return;
     }
 
-    let edge_i = edge_sort_src[i];
-    let edge_j = edge_sort_src[j];
+    let edge_i = edge_sort_node[i];
+    let edge_j = edge_sort_node[j];
 
-    if (edge_j.node[0] < edge_i.node[0]) {
-        edge_sort_src[i] = edge_j;
-        edge_sort_src[j] = edge_i;
+    if (edge_j[0] < edge_i[0]) {
+        edge_sort_node[i] = edge_j;
+        edge_sort_node[j] = edge_i;
     }
 }
 
@@ -244,7 +243,7 @@ fn compute_node_edge_sort_range(@builtin(global_invocation_id) global_invocation
         return;
     }
 
-    let node_index = edge_sort_src[i].node[0];
+    let node_index = edge_sort_node[i][0];
 
     atomicStore(&node_edge_sort_range[node_index].min, i);
     atomicStore(&node_edge_sort_range[node_index].max, i + 1u);
@@ -260,7 +259,7 @@ fn compute_node_edge_sort_range_2(@builtin(global_invocation_id) global_invocati
         return;
     }
 
-    let node_index = edge_sort_src[i].node[0];
+    let node_index = edge_sort_node[i][0];
 
     atomicMin(&node_edge_sort_range[node_index].min, i);
     atomicMax(&node_edge_sort_range[node_index].max, i + 1u);
@@ -286,14 +285,15 @@ fn spring_force_reduction(
         index = total - 1u;
     }
 
-    var edge = edge_sort_src[index];
-    let source_node: u32 = edge.node[0];
-    let target_node: u32 = edge.node[1];
+    var edge = edge_sort_node[index];
+    let source_node: u32 = edge[0];
+    let target_node: u32 = edge[1];
     var dir = nodeSrc[target_node].position - nodeSrc[source_node].position;
     local_sum[local_index] = dir;
 
     if (index >= total) {
         skip = true;
+        local_sum[local_index] = vec3<f32>(0.0);
     }
 
     let range_min = atomicLoad(&node_edge_sort_range[source_node].min);
@@ -310,12 +310,13 @@ fn spring_force_reduction(
     workgroupBarrier();
 
     var start = u32(max(min_relative_index, 0));
+    var end = u32(min(max_relative_index, 256));
 
     for (var s = 256u / 2u; s > 0u; s >>= 1u) {
 
         if (!skip && local_index < start + s) {
             let k = local_index + s;
-            if (k < 256u && i32(k) < max_relative_index) {
+            if (k < end) {
                 local_sum[local_index] += local_sum[k];
             }
         }
@@ -326,10 +327,13 @@ fn spring_force_reduction(
         return;
     }
 
-    if (local_index == start || local_index == 0u) {
-        let dir_sum = local_sum[local_index];
-        edge_sort_src[index].dir = dir_sum;
+    if (local_index == start) {
+//        nodeSrc[source_node].position += vec3<f32>(0.005, 0.0, 0.0);
+//        let dir_sum = local_sum[local_index];
+//        edge_sort_src[index].dir = dir_sum;
     }
+        let dir_sum = local_sum[local_index];
+        edge_sort_dir[index] = dir_sum;
 }
 
 @compute
@@ -348,35 +352,11 @@ fn spring_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) 
         return;
     }
 
-    springForceSrc[index] += edge_sort_src[range_min].dir;
-    for (var i = u32(range_min) - (u32(range_min) & 256u) + 256u; i < u32(range_max); i += 256u) {
-        springForceSrc[index] += edge_sort_src[i].dir;
+    springForceSrc[index] += edge_sort_dir[range_min];
+    for (var i = u32(range_min) - (u32(range_min) % 256u) + 256u; i < u32(range_max); i += 256u) {
+        springForceSrc[index] += edge_sort_dir[i];
     }
 
-}
-
-
-@compute
-@workgroup_size(256)
-fn attractive_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
-    let total = uniforms.edge_count;
-    let index = global_invocation_id.x;
-    if (index >= total) {
-        return;
-    }
-
-    var edge = edgeSrc[index];
-    let source_node: u32 = edge[0];
-    let target_node: u32 = edge[1];
-
-    var dir = nodeSrc[target_node].position - nodeSrc[source_node].position;
-
-//    atomic_add_f32(source_node * 3u + 0u, dir.x);
-//    atomic_add_f32(source_node * 3u + 1u, dir.y);
-//    atomic_add_f32(source_node * 3u + 2u, dir.z);
-//    atomic_add_f32(target_node * 3u + 0u, -dir.x);
-//    atomic_add_f32(target_node * 3u + 1u, -dir.y);
-//    atomic_add_f32(target_node * 3u + 2u, -dir.z);
 }
 
 var<workgroup> smin: array<vec3<f32>, 256>;
