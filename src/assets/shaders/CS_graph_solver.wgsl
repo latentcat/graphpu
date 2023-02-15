@@ -76,6 +76,7 @@ struct NodeEdgeSortRange {
 @group(0) @binding(12) var<storage, read_write> edge_sort_node: array<vec2<u32>>;
 @group(0) @binding(13) var<storage, read_write> edge_sort_dir:  array<vec3<f32>>;
 @group(0) @binding(14) var<storage, read_write> node_edge_sort_range:  array<NodeEdgeSortRange>;
+@group(0) @binding(15) var<storage, read_write> nodeCopySrc:    array<f32>;
 
 fn hash(s: u32) -> u32 {
     var t : u32 = s;
@@ -1013,10 +1014,10 @@ fn copy(@builtin(global_invocation_id) global_invocation_id: vec3<u32>) {
     }
 
     var vPos : vec3<f32> = nodeSrc[index].position;
-    // var vVel : vec3<f32> = nodeSrc[index].velocity;
 
-  // Write back
-    //  nodeSrc[index] = Node(vPos, vVel);
+    nodeCopySrc[3u * index     ] = vPos.x;
+    nodeCopySrc[3u * index + 1u] = vPos.y;
+    nodeCopySrc[3u * index + 2u] = vPos.z;
 }
 
 // 17

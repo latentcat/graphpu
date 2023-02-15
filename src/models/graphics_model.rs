@@ -252,6 +252,7 @@ pub struct GraphicsResources {
     bounding_box_vertex_buffer:     wgpu::Buffer,
     bounding_box_index_buffer:      wgpu::Buffer,
     node_buffer:                    wgpu::Buffer,
+    node_copy_buffer:               wgpu::Buffer,
     node_edge_sort_range_buffer:    wgpu::Buffer,
     edge_buffer:                    wgpu::Buffer,
     edge_sort_node_buffer:          wgpu::Buffer,
@@ -492,6 +493,19 @@ impl GraphicsResources {
             usage: wgpu::BufferUsages::VERTEX
                 | wgpu::BufferUsages::STORAGE
                 | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false
+        });
+
+        // 计算对齐后的 Node Buffer 大小
+        let node_copy_buffer_size = node_count * 3 * 4;
+
+        // 指定大小，创建 Node Buffer，不初始化数据
+        let node_copy_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Node Copy Buffer"),
+            size: node_copy_buffer_size as _,
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_DST
+                | wgpu::BufferUsages::COPY_SRC,
             mapped_at_creation: false
         });
 
@@ -1182,6 +1196,11 @@ impl GraphicsResources {
                     buffer_type: ComputeBufferType::Storage,
                     buffer: node_buffer.as_entire_binding(),
                 },
+                ComputeBuffer {
+                    binding: 15,
+                    buffer_type: ComputeBufferType::Storage,
+                    buffer: node_copy_buffer.as_entire_binding(),
+                },
             ]);
         graph_compute.create_compute_kernel("cal_depth", vec![
                 ComputeBuffer {
@@ -1249,6 +1268,7 @@ impl GraphicsResources {
             bounding_box_vertex_buffer,
             bounding_box_index_buffer,
             node_buffer,
+            node_copy_buffer,
             node_edge_sort_range_buffer,
             edge_buffer,
             edge_sort_node_buffer,
@@ -1343,6 +1363,8 @@ impl GraphicsResources {
 
         }
 
+        // Self::debug(self);
+
         // queue.submit(Some(command_encoder.finish()));
         self.compute_frame_count += 1;
         // device.poll(wgpu::Maintain::Wait);
@@ -1395,7 +1417,7 @@ impl GraphicsResources {
         let queue = &self.render_state.queue;
 
 
-        let debug_buffer_size = self.status.edge_count * 8 * 2 * 4;
+        let debug_buffer_size = self.status.node_count * 3 * 4;
         let debug_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Debug Buffer"),
             size: debug_buffer_size as _,
@@ -1405,9 +1427,19 @@ impl GraphicsResources {
 
         let mut command_encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        command_encoder.copy_buffer_to_buffer(&self.edge_sort_node_buffer, 0, &debug_buffer, 0, debug_buffer_size as _);
+
+        {
+            let mut cpass =
+                command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+            Self::dispatch_compute_kernel(&self, &mut cpass, "copy", self.node_work_group_count);
+        }
         queue.submit(Some(command_encoder.finish()));
 
+        let mut command_encoder_2 =
+            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+        command_encoder_2.copy_buffer_to_buffer(&self.node_copy_buffer, 0, &debug_buffer, 0, debug_buffer_size as _);
+        queue.submit(Some(command_encoder_2.finish()));
 
         let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
         let buffer_slice = debug_buffer.slice(..);
@@ -1417,7 +1449,7 @@ impl GraphicsResources {
         pollster::block_on(async {
             if let Some(Ok(())) = receiver.receive().await {
                 let data = buffer_slice.get_mapped_range();
-                let result: Vec<u32> = bytemuck::cast_slice(&data).to_vec();
+                let result: Vec<f32> = bytemuck::cast_slice(&data).to_vec();
 
                 let content = format!("{:?}", &result);
                 println!("{}", content);
@@ -1517,8 +1549,6 @@ impl GraphicsResources {
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));
-
-        // Self::debug(self);
 
         self.compute_frame_count += 1;
     }
