@@ -299,13 +299,13 @@ pub struct GraphicsResources {
     pub render_options:             RenderOptions,
     pub need_update:                bool,
 
-    debugger:                       GraphicsDebugger,
+    pub debugger:                   GraphicsDebugger,
 }
 
-struct GraphicsDebugger {
-    debug_buffer:                   wgpu::Buffer,
-    buffer_size:         u32,
-
+pub struct GraphicsDebugger {
+    debug_buffer:    wgpu::Buffer,
+    buffer_size:     u32,
+    pub buffer_bytes:    Option<Vec<u8>>,
 }
 
 impl GraphicsResources {
@@ -717,6 +717,7 @@ impl GraphicsResources {
         let debugger = GraphicsDebugger {
             debug_buffer,
             buffer_size: kernel_status_buffer_size as _,
+            buffer_bytes: None,
         };
 
         let mut graph_compute = ComputeShader {
@@ -1449,11 +1450,12 @@ impl GraphicsResources {
         pollster::block_on(async {
             if let Some(Ok(())) = receiver.receive().await {
                 let data = buffer_slice.get_mapped_range();
-                let result: Vec<f32> = bytemuck::cast_slice(&data).to_vec();
+                let result: Vec<u8> = bytemuck::cast_slice(&data).to_vec();
 
                 let content = format!("{:?}", &result);
                 println!("{}", content);
                 println!("{}", result.len());
+                self.debugger.buffer_bytes = Some(result);
 
             } else {
                 panic!("failed to run compute on gpu!")

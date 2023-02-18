@@ -1,23 +1,30 @@
-use crate::{
-    components::{
-        detail_view::DetailView, graphics_view::GraphicsView, inspector_view::InspectorView,
-        menubar_view::MenuBarView, AppView, import_modal_view::ImportModal, table_view::TableView,
-    },
-    models::{app_model::{AppModel, MainStage}, graphics_model::GraphicsModel, data_model::DataModel, Models},
-};
-use egui::{Color32, TextStyle};
 use crate::components::detail_view::show_message;
 use crate::components::dock_view::DockView;
 use crate::components::drawer_view::DrawerView;
 use crate::components::shortcuts::Shortcut;
-use crate::models::app_model::DockStage;
 use crate::constant::{FONT_SIZE_BODY, FONT_SIZE_HEADING};
+use crate::models::app_model::DockStage;
+use crate::{
+    components::{
+        detail_view::DetailView, export_modal_view::ExportModal, graphics_view::GraphicsView,
+        import_modal_view::ImportModal, inspector_view::InspectorView, menubar_view::MenuBarView,
+        table_view::TableView, AppView,
+    },
+    models::{
+        app_model::{AppModel, MainStage},
+        data_model::DataModel,
+        graphics_model::GraphicsModel,
+        Models,
+    },
+};
+use egui::{Color32, TextStyle};
 
 pub struct MainApp {
     pub models: Models,
     inspector_view: InspectorView,
     drawer_view: DrawerView,
     import_modal: ImportModal,
+    export_modal: ExportModal,
 }
 
 impl MainApp {
@@ -55,25 +62,35 @@ impl MainApp {
 
         let mut fonts = egui::FontDefinitions::default();
 
-        fonts.font_data.insert("prop_font".to_owned(),
-                               egui::FontData::from_static(include_bytes!("./assets/fonts/droidsans.ttf")));
+        fonts.font_data.insert(
+            "prop_font".to_owned(),
+            egui::FontData::from_static(include_bytes!("./assets/fonts/droidsans.ttf")),
+        );
 
-        fonts.font_data.insert("mono_font".to_owned(),
-                               egui::FontData::from_static(include_bytes!("./assets/fonts/bmonofont-i18n.ttf"))); // .ttf and .otf supported
+        fonts.font_data.insert(
+            "mono_font".to_owned(),
+            egui::FontData::from_static(include_bytes!("./assets/fonts/bmonofont-i18n.ttf")),
+        ); // .ttf and .otf supported
 
-        fonts.families.get_mut(&egui::FontFamily::Proportional).unwrap()
+        fonts
+            .families
+            .get_mut(&egui::FontFamily::Proportional)
+            .unwrap()
             .insert(0, "prop_font".to_owned());
 
-        fonts.families.get_mut(&egui::FontFamily::Monospace).unwrap()
+        fonts
+            .families
+            .get_mut(&egui::FontFamily::Monospace)
+            .unwrap()
             .insert(0, "mono_font".to_owned());
-            // .push("mono_font".to_owned());
+        // .push("mono_font".to_owned());
 
         cc.egui_ctx.set_fonts(fonts);
 
         // cc.egui_ctx.set_debug_on_hover(true);
 
         let mut main_app = MainApp {
-            models: Models { 
+            models: Models {
                 graphics_model: GraphicsModel::init(cc),
                 data_model: DataModel::default(),
                 app_model: AppModel::default(),
@@ -81,6 +98,7 @@ impl MainApp {
             inspector_view: Default::default(),
             drawer_view: Default::default(),
             import_modal: ImportModal::default(),
+            export_modal: ExportModal::default(),
         };
 
         if let Some(pixels_per_point) = cc.integration_info.native_pixels_per_point {
@@ -93,7 +111,6 @@ impl MainApp {
 
 impl eframe::App for MainApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
-
         self.models.app_model.ui_frame_count += 1u32;
 
         egui::CentralPanel::default()
@@ -105,7 +122,6 @@ impl eframe::App for MainApp {
                 Shortcut::default().apply(&mut self.models, ui, frame);
 
                 if !self.models.app_model.is_fullscreen_graphics {
-
                     MenuBarView::default().show(&mut self.models, ui, frame);
                     DetailView::default().show(&mut self.models, ui, frame);
                     self.inspector_view.show(&mut self.models, ui, frame);
@@ -114,7 +130,9 @@ impl eframe::App for MainApp {
                         self.drawer_view.show(&mut self.models, ui, frame);
                     }
                     match self.models.app_model.main_stage {
-                        MainStage::Graphics => GraphicsView::default().show(&mut self.models, ui, frame),
+                        MainStage::Graphics => {
+                            GraphicsView::default().show(&mut self.models, ui, frame)
+                        }
                         MainStage::Table => TableView::default().show(&mut self.models, ui, frame),
                     };
                 } else {
@@ -125,6 +143,10 @@ impl eframe::App for MainApp {
 
         if self.models.app_model.is_import_visible {
             self.import_modal.show(ctx, &mut self.models);
+        }
+
+        if self.models.app_model.is_export_visible {
+            self.export_modal.show(ctx, &mut self.models);
         }
     }
 }

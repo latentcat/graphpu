@@ -1,8 +1,8 @@
+use crate::utils::file::desktop_dir_or_empty;
+use egui::style::{Selection, Spacing, WidgetVisuals, Widgets};
+use egui::{Color32, Rounding, Stroke, Style, Vec2, Visuals};
 use std::path::PathBuf;
 use std::sync::Arc;
-use egui::{Color32, Rounding, Stroke, Style, Vec2, Visuals};
-use egui::style::{Selection, Spacing, Widgets, WidgetVisuals};
-use crate::utils::file::{desktop_dir_or_empty};
 
 #[derive(Debug, Default, PartialEq)]
 pub enum ImportState {
@@ -55,6 +55,7 @@ pub enum Tool {
 
 pub struct AppModel {
     pub is_import_visible: bool,
+    pub is_export_visible: bool,
     pub is_timeline_expand: bool,
     pub is_fullscreen: bool,
     pub is_fullscreen_graphics: bool,
@@ -117,6 +118,7 @@ impl Default for AppModel {
 
         Self {
             is_import_visible: false,
+            is_export_visible: false,
             is_timeline_expand: false,
             is_fullscreen: false,
             is_fullscreen_graphics: false,
@@ -138,11 +140,16 @@ impl Default for AppModel {
 
 impl AppModel {
     pub fn node_file_name(&self) -> Option<&str> {
-        self.node_file_path.as_ref()?.file_name().and_then(|s| s.to_str())
+        self.node_file_path
+            .as_ref()?
+            .file_name()
+            .and_then(|s| s.to_str())
     }
 
     pub fn edge_file_name(&self) -> Option<&str> {
-        self.edge_file_path.as_ref()?.file_name().and_then(|s| s.to_str())
+        self.edge_file_path
+            .as_ref()?
+            .file_name()
+            .and_then(|s| s.to_str())
     }
-
 }
