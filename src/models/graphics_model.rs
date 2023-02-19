@@ -220,7 +220,7 @@ pub struct ComputePipelines {
 pub struct GraphicsResources {
 
     // 包含 Node / Edge Count
-    status:                         GraphicsStatus,
+    pub status:                     GraphicsStatus,
 
     // 包含 Device、Queue、target_format 和 egui_rpass
     render_state:                   egui_wgpu::RenderState,
@@ -244,7 +244,7 @@ pub struct GraphicsResources {
 
     // 相机
     camera:                         Camera,
-    pub control:                        Controls,
+    pub control:                    Controls,
 
     // Buffers
     uniform_buffer:                 wgpu::Buffer,
@@ -300,12 +300,12 @@ pub struct GraphicsResources {
     pub need_update:                bool,
 
     pub debugger:                   GraphicsDebugger,
+    pub buffer_bytes:               Option<Vec<u8>>,
 }
 
 pub struct GraphicsDebugger {
     debug_buffer:    wgpu::Buffer,
     buffer_size:     u32,
-    pub buffer_bytes:    Option<Vec<u8>>,
 }
 
 impl GraphicsResources {
@@ -717,7 +717,6 @@ impl GraphicsResources {
         let debugger = GraphicsDebugger {
             debug_buffer,
             buffer_size: kernel_status_buffer_size as _,
-            buffer_bytes: None,
         };
 
         let mut graph_compute = ComputeShader {
@@ -1313,6 +1312,7 @@ impl GraphicsResources {
             },
             need_update: true,
             debugger,
+            buffer_bytes: None
         };
 
         boids_resources.gen_node();
@@ -1452,10 +1452,10 @@ impl GraphicsResources {
                 let data = buffer_slice.get_mapped_range();
                 let result: Vec<u8> = bytemuck::cast_slice(&data).to_vec();
 
-                let content = format!("{:?}", &result);
-                println!("{}", content);
-                println!("{}", result.len());
-                self.debugger.buffer_bytes = Some(result);
+                // let content = format!("{:?}", &result);
+                // println!("{}", content);
+                // println!("{}", result.len());
+                self.buffer_bytes = Some(result);
 
             } else {
                 panic!("failed to run compute on gpu!")

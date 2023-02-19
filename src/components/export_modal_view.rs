@@ -10,6 +10,7 @@ use crate::{
         modal::Modal,
     },
 };
+use crate::utils::message::message_info;
 
 #[derive(Default)]
 pub struct ExportModal {
@@ -64,7 +65,8 @@ impl ExportModal {
                     ui.spacing_mut().item_spacing = egui::vec2(8.0, 8.0);
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         if ui.button("   Done   ").clicked() {
-                            self.on_click_done(models);
+                            self.on_click_done(models).expect("TODO: panic message");
+                            models.app_model.is_export_visible = false;
                         }
                         if ui.button("   Cancel   ").clicked() {
                             models.app_model.is_export_visible = false;
@@ -74,21 +76,27 @@ impl ExportModal {
         });
     }
 
-    fn on_click_done(&mut self, models: &Models) -> std::io::Result<()> {
-        if let Some(graphics_resource) = &models.graphics_model.graphics_resources {
-            if let Some(data) = &graphics_resource.debugger.buffer_bytes {
-                let mut file = File::create(self.directory_path.clone() + "/node.pcache")?;
+    fn on_click_done(&mut self, models: &mut Models) -> std::io::Result<()> {
+        let path = self.directory_path.clone() + "/node.pcache";
+        if let Some(graphics_resource) = &mut models.graphics_model.graphics_resources {
+            graphics_resource.debug();
+            if let Some(data) = &graphics_resource.buffer_bytes {
+
+                let mut file = File::create(&path)?;
                 file.write_all(b"pcache\n")?;
-                file.write_all(b"comment PCACHE file Exported from Houdini\n")?;
+                file.write_all(b"comment PCACHE file Exported from GraphPU\n")?;
                 file.write_all(b"format binary 1.0\n")?;
-                file.write_fmt(format_args!("elements {}\n", 1))?;
-                for _ in 0..1 {
-                    file.write_fmt(format_args!("property {} {}\n", "float", "size"))?;
-                }
+                file.write_fmt(format_args!("elements {}\n", graphics_resource.status.node_count))?;
+
+                file.write_fmt(format_args!("property {} {}\n", "float", "position.x"))?;
+                file.write_fmt(format_args!("property {} {}\n", "float", "position.y"))?;
+                file.write_fmt(format_args!("property {} {}\n", "float", "position.z"))?;
+
                 file.write_all(b"end_header\n")?;
                 file.write_all(bytemuck::cast_slice(&data))?;
             }
         }
+        message_info("Export data succeeded", path.as_str());
         Ok(())
     }
 }
