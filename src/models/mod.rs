@@ -62,7 +62,7 @@ impl Models {
             self.app_model.node_file_name().unwrap_or(""),
             self.app_model.edge_file_name().unwrap_or("")
         );
-        message_info("Import Data Succeeded", text.as_str());
+        message_info("Import CSV Data Succeeded", text.as_str());
     }
 
     pub fn clear_data(&mut self) {

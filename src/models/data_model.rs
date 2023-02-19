@@ -122,6 +122,6 @@ impl DataModel {
     }
 
     pub fn clear_source_target_list(&mut self) {
-        self.source_target_list = None;
+        // self.source_target_list = None;
     }
 }
