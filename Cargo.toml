@@ -1,6 +1,6 @@
 [package]
 name = "graphpu"
-version = "0.4.3"
+version = "0.4.4"
 authors = ["Troy Ni <1272777550@qq.com>", "CPunisher <1343316114@qq.com>"]
 edition = "2021"
 description = "Next-Gen 3D GPU Graph-Vis App"

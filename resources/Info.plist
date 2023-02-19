@@ -9,7 +9,7 @@
 	<key>CFBundleDisplayName</key>
 	<string>GraphPU</string>
 	<key>CFBundleGetInfoString</key>
-	<string>0.4.3 2022-12-20, Wlab</string>
+	<string>0.4.4 2023-02-20, Wlab</string>
 	<key>CFBundleIconFile</key>
 	<string>app.icns</string>
 	<key>CFBundleIdentifier</key>
@@ -21,11 +21,11 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.4.3</string>
+	<string>0.4.4</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>0.4.3 2022-12-20</string>
+	<string>0.4.4 2023-02-20</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSHighResolutionCapable</key>
