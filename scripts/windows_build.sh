@@ -5,7 +5,7 @@ cd ../
 BUILD_DIR=windows_build
 APP_BUNDLE_NAME=graphpu-0.4.4-windows-x86_64
 APP_BUNDLE_DIR=${BUILD_DIR}/${APP_BUNDLE_NAME}
-ARCH=x86_64-pc-windows-gnu
+ARCH=x86_64-pc-windows-msvc
 
 rm -rf ${APP_BUNDLE_DIR}
 rustup target add ${ARCH}
