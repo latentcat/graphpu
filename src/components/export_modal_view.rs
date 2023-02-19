@@ -170,8 +170,9 @@ impl ExportModal {
             file.write_all(b"format binary 1.0\n")?;
             file.write_fmt(format_args!("elements {}\n", models.data_model.status.edge_count))?;
 
-            file.write_fmt(format_args!("property {} {}\n", "float", "source"))?;
-            file.write_fmt(format_args!("property {} {}\n", "float", "target"))?;
+            let type_string = if self.is_cast_to_float { "float" } else { "uint" };
+            file.write_fmt(format_args!("property {} {}\n", type_string, "source"))?;
+            file.write_fmt(format_args!("property {} {}\n", type_string, "target"))?;
 
             file.write_all(b"end_header\n")?;
             file.write_all(bytemuck::cast_slice(&result))?;
