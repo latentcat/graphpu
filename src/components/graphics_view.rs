@@ -5,7 +5,6 @@ use crate::models::app_model::Tool;
 use crate::models::graphics_model::GraphicsResources;
 
 use crate::models::Models;
-use crate::utils::message::message_info;
 use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_PADDING, graphics_frame, TOOL_BUTTON_PADDING, tool_item_group_style, toolbar_inner_frame, toolbar_inner_frame_bottom, toolbar_inner_frame_top};
 
 use super::AppView;
@@ -92,8 +91,6 @@ impl AppView for GraphicsView {
 
                             // 通过材质 ID 绘制 Image
                             // ui.image(texture_id, max_rect.size());
-
-                            let response = ui.allocate_rect(max_rect, egui::Sense::click_and_drag());
 
                             ui.allocate_ui_at_rect(max_rect, |ui| {
                                 let response = egui::Image::new(texture_id, max_rect.size())

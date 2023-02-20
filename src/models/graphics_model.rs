@@ -36,17 +36,6 @@ pub struct Node {
 }
 
 #[repr(C)]
-struct _Transform {
-    _view: glam::Mat4,
-    _projection: glam::Mat4,
-}
-
-#[repr(C)]
-pub struct RenderUniform {
-    project_matrix: glam::Mat4,
-}
-
-#[repr(C)]
 pub struct Bound {
     _bound_min: [f32; 3],
     _bound_max: [f32; 3],
@@ -1643,7 +1632,19 @@ impl GraphicsResources {
             }),
         };
 
-        update_render_uniforms(queue, &mut self.camera, &self.render_uniform_buffer, glam::Vec2::new(self.viewport_size.x, self.viewport_size.y));
+        let pointer_pos = if let Some(pos) = self.control.pointer_pos {
+            glam::Vec2::new(pos.x, pos.y)
+        } else {
+            glam::Vec2::ZERO
+        };
+
+        update_render_uniforms(
+            queue,
+            &mut self.camera,
+            &self.render_uniform_buffer,
+            glam::Vec2::new(self.viewport_size.x, self.viewport_size.y),
+            pointer_pos
+        );
 
         if self.render_options.is_rendering_node {
 
@@ -1859,13 +1860,19 @@ impl GraphicsResources {
 
 }
 
-fn update_render_uniforms(queue: &Queue, camera: &mut Camera, render_uniform_buffer: &wgpu::Buffer, viewport_size: glam::Vec2) {
+fn update_render_uniforms(
+    queue: &Queue,
+    camera: &mut Camera,
+    render_uniform_buffer: &wgpu::Buffer,
+    viewport_size: glam::Vec2,
+    pointer_pos: glam::Vec2,
+) {
 
     if camera.is_updated {
 
         camera.update_projection_matrix();
 
-        let uniform = generate_uniforms(camera, viewport_size);
+        let uniform = generate_uniforms(camera, viewport_size, pointer_pos);
 
         queue.write_buffer(&render_uniform_buffer, 0, bytemuck::cast_slice(&[uniform]));
         camera.is_updated = false;
