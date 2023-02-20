@@ -27,7 +27,7 @@ impl Default for ExportModal {
         Self {
             directory_path: "".to_string(),
             file_name: "".to_string(),
-            is_cast_to_float: true
+            is_cast_to_float: false,
         }
     }
 }
