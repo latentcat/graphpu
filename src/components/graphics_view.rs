@@ -5,6 +5,7 @@ use crate::models::app_model::Tool;
 use crate::models::graphics_model::GraphicsResources;
 
 use crate::models::Models;
+use crate::utils::message::message_info;
 use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_PADDING, graphics_frame, TOOL_BUTTON_PADDING, tool_item_group_style, toolbar_inner_frame, toolbar_inner_frame_bottom, toolbar_inner_frame_top};
 
 use super::AppView;
@@ -64,7 +65,7 @@ impl AppView for GraphicsView {
                                 max_rect.size().mul(Vec2::from([models.app_model.pixels_per_point; 2]))
                             );
 
-                            compute_resources.update_control(ui, models.graphics_model.is_hover_toolbar);
+                            compute_resources.update_control(ui, models.graphics_model.is_hover_graphics_view);
                             if compute_resources.control.pointer_pos.is_some() {
                                 if ui.input().pointer.button_double_clicked(PointerButton::Primary) {
                                     if !models.app_model.is_fullscreen_graphics {
@@ -92,10 +93,13 @@ impl AppView for GraphicsView {
                             // 通过材质 ID 绘制 Image
                             // ui.image(texture_id, max_rect.size());
 
-                            // let response = ui.allocate_rect(max_rect, egui::Sense::hover());
+                            let response = ui.allocate_rect(max_rect, egui::Sense::click_and_drag());
 
                             ui.allocate_ui_at_rect(max_rect, |ui| {
-                                egui::Image::new(texture_id, max_rect.size()).ui(ui)
+                                let response = egui::Image::new(texture_id, max_rect.size())
+                                    .sense(egui::Sense::click_and_drag()).ui(ui);
+
+                                models.graphics_model.is_hover_graphics_view = response.hovered();
                             });
 
                         }
@@ -103,13 +107,9 @@ impl AppView for GraphicsView {
 
                     });
 
-                models.graphics_model.is_hover_toolbar = false;
-
                 if models.app_model.is_fullscreen_graphics { return; }
 
                 ui.allocate_ui_at_rect(max_rect, |ui| {
-
-                    let mut is_hover_toolbar = false;
 
                     egui::SidePanel::left("toolbar-left-11")
                         .frame(toolbar_inner_frame(ui.style()))
@@ -156,7 +156,7 @@ impl AppView for GraphicsView {
                                         }
                                     });
 
-                                }).response.hovered().then(||{is_hover_toolbar = true});
+                                });
                             });
 
 
@@ -206,7 +206,7 @@ impl AppView for GraphicsView {
                                         toggle_button(ui, &mut false, "➖");
                                         toggle_button(ui, &mut false, "⚫");
                                     }
-                                }).response.hovered().then(||{is_hover_toolbar = true});
+                                });
                             });
 
                         });
@@ -253,8 +253,6 @@ impl AppView for GraphicsView {
 
 
                     }
-
-                    models.graphics_model.is_hover_toolbar = is_hover_toolbar;
 
                 });
 

@@ -121,7 +121,7 @@ impl ComputeMethod {
 pub struct GraphicsModel {
     pub is_computing: bool,
     pub is_dispatching: bool,
-    pub is_hover_toolbar: bool,
+    pub is_hover_graphics_view: bool,
     pub compute_render_state: egui_wgpu::RenderState,
     pub graphics_resources: Option<GraphicsResources>,
 }
@@ -134,7 +134,7 @@ impl GraphicsModel {
         Self {
             is_computing: false,
             is_dispatching: false,
-            is_hover_toolbar: false,
+            is_hover_graphics_view: false,
             compute_render_state: cc.wgpu_render_state.as_ref().unwrap().clone(),
             graphics_resources: None,
         }
@@ -1832,9 +1832,9 @@ impl GraphicsResources {
         pollster::block_on(create_png(output_path, device, output_buffer, &buffer_dimensions, index));
     }
 
-    pub fn update_control(&mut self, ui: &mut Ui, is_hover_toolbar: bool) {
+    pub fn update_control(&mut self, ui: &mut Ui, is_hover: bool) {
 
-        self.control.update_interaction(ui, is_hover_toolbar);
+        self.control.update_interaction(ui, is_hover);
         self.control.update_camera(ui, &mut self.camera);
 
         if self.control.is_update {
