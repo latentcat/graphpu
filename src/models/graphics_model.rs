@@ -205,6 +205,11 @@ pub struct ComputePipelines {
     sort_by_depth:         ComputeKernel,
 }
 
+pub enum CastType {
+    Node,
+    Edge
+}
+
 // 绘图资源 Model，存放和计算和绘图相关的一切资源
 pub struct GraphicsResources {
 
@@ -296,6 +301,9 @@ pub struct GraphicsResources {
 
     pub debugger:                   GraphicsDebugger,
     pub buffer_bytes:               Option<Vec<u8>>,
+
+    pub cast_type:                  Option<CastType>,
+    pub cast_value:                 u32,
 }
 
 pub struct GraphicsDebugger {
@@ -1327,7 +1335,9 @@ impl GraphicsResources {
             need_update: true,
             debugger,
             buffer_bytes: None,
-            cast_depth_texture: None
+            cast_depth_texture: None,
+            cast_type: None,
+            cast_value: 0,
         };
 
         graphics_resources.gen_node();
@@ -1916,9 +1926,24 @@ impl GraphicsResources {
                 let data = buffer_slice.get_mapped_range();
                 let result: Vec<u32> = bytemuck::cast_slice(&data).to_vec();
 
+                match result[0] {
+                    1 => {
+                        self.cast_type = Some(CastType::Node);
+                        self.cast_value = result[1];
+                    }
+                    2 => {
+                        self.cast_type = Some(CastType::Edge);
+                        self.cast_value = result[1];
+                    }
+                    _ => {
+                        self.cast_type = None;
+                        self.cast_value = 0;
+                    }
+                }
+
                 let content = format!("{:?}", &result);
-                println!("{}", content);
-                println!("{}", result.len());
+                // println!("{}", content);
+                // println!("{}", result.len());
 
             } else {
                 panic!("failed to run compute on gpu!")
@@ -2010,7 +2035,7 @@ impl GraphicsResources {
             self.need_update = true;
         }
 
-        if self.control.is_update || self.control.is_pointer_update {
+        if self.need_update || self.control.is_pointer_update {
 
             let pointer_pos = if let Some(pos) = self.control.pointer_pos {
                 Some(glam::Vec2::new(pos.x * 2.0, pos.y * 2.0) )

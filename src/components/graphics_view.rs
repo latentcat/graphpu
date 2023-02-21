@@ -2,10 +2,10 @@ use std::borrow::BorrowMut;
 use std::ops::Mul;
 use egui::{InnerResponse, PointerButton, Response, Ui, Vec2, Widget, WidgetText};
 use crate::models::app_model::Tool;
-use crate::models::graphics_model::GraphicsResources;
+use crate::models::graphics_model::{CastType, GraphicsResources};
 
 use crate::models::Models;
-use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_PADDING, graphics_frame, TOOL_BUTTON_PADDING, tool_item_group_style, toolbar_inner_frame, toolbar_inner_frame_bottom, toolbar_inner_frame_top};
+use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_PADDING, graphics_frame, graphics_hover_frame, graphics_outer_frame, TOOL_BUTTON_PADDING, tool_item_group_style, toolbar_inner_frame, toolbar_inner_frame_bottom, toolbar_inner_frame_top};
 
 use super::AppView;
 
@@ -29,7 +29,7 @@ impl AppView for GraphicsView {
         models.graphics_model.set_dispatching(false);
     
         egui::CentralPanel::default()
-            .frame(graphics_frame(ui.style(), models.app_model.is_fullscreen_graphics))
+            .frame(graphics_outer_frame(ui.style()))
             .show_inside(ui, |ui| {
 
                 let max_rect = ui.max_rect();
@@ -98,11 +98,37 @@ impl AppView for GraphicsView {
                             // ui.image(texture_id, max_rect.size());
 
                             ui.allocate_ui_at_rect(max_rect, |ui| {
-                                let response = egui::Image::new(texture_id, max_rect.size())
-                                    .sense(egui::Sense::click_and_drag()).ui(ui);
+                                graphics_frame(ui.style(), models.app_model.is_fullscreen_graphics)
+                                    .show(ui, |ui| {
 
-                                models.graphics_model.is_hover_graphics_view = response.hovered();
+                                        let response = egui::Image::new(texture_id, max_rect.size())
+                                            .sense(egui::Sense::click_and_drag()).ui(ui);
+
+                                        models.graphics_model.is_hover_graphics_view = response.hovered();
+                                    });
                             });
+
+                            if models.graphics_model.is_hover_graphics_view {
+                                if let Some(cast_type) = &compute_resources.cast_type {
+
+                                    let pos = if let Some(pos) = ui.input().pointer.interact_pos() { pos + egui::Vec2::new(0.0, 30.0) } else { egui::Pos2::ZERO };
+                                    ui.allocate_ui_at_rect(egui::Rect::from_min_size(pos, egui::Vec2::new(200.0, 200.0)), |ui| {
+                                        graphics_hover_frame(ui.style())
+                                            .show(ui, |ui| {
+                                                ui.horizontal(|ui| {
+                                                    ui.label(
+                                                        match cast_type {
+                                                            CastType::Node => "Node ",
+                                                            CastType::Edge => "Edge "
+                                                        }
+                                                    );
+                                                    ui.label(egui::RichText::new(format!("{}", compute_resources.cast_value)).weak());
+                                                });
+                                            });
+                                    });
+                                }
+                            }
+
 
                         }
 

@@ -117,7 +117,7 @@ fn cast_fs(v: CastVaring) -> @location(0) vec4<u32> {
     let sdf = dot(v.tex_coords, v.tex_coords);
     let clip = step(sdf, 1.0);
 
-    var out_color = vec4<u32>(v.id, 0u, 0u, 0u);
+    var out_color = vec4<u32>(1u, v.id, 0u, 0u);
 
     if clip < 0.5 {
         discard;
