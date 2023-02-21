@@ -854,7 +854,7 @@ fn electron_force(@builtin(global_invocation_id) global_invocation_id: vec3<u32>
     }
     sdq[max_depth - 1u] += epssq;
 
-    var loop_limit_count = 100000;
+    var loop_limit_count = 5000 * i32(node_count / inc);
 
     if (max_depth < 48u) {
         for (var index = global_invocation_id.x; index < node_count; index += inc) {
