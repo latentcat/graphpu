@@ -106,7 +106,7 @@ fn cast_vs(
         quad_pos
     );
 
-    v.position /= v.position.w;
+    v.position /= abs(v.position.w);
     v.position.x = (v.position.x + 1.0) / 2.0 * transform.screen.x - transform.screen.z;
     v.position.y = (-v.position.y + 1.0) / 2.0 * transform.screen.y - transform.screen.w;
 
