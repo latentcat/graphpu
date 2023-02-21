@@ -11,7 +11,11 @@ pub struct Uniforms {
     camera:     [f32; 4],
 }
 
-pub fn generate_uniforms(camera: &Camera, viewport_size: glam::Vec2) -> Uniforms {
+pub fn generate_uniforms(
+    camera: &Camera,
+    viewport_size: glam::Vec2,
+    pointer_pos: glam::Vec2
+) -> Uniforms {
     Uniforms {
         view:       *camera.view_matrix.as_ref(),
         projection: *camera.projection_matrix.as_ref(),
@@ -20,8 +24,8 @@ pub fn generate_uniforms(camera: &Camera, viewport_size: glam::Vec2) -> Uniforms
         [
             viewport_size.x as f32,
             viewport_size.y as f32,
-            0.0,
-            0.0
+            pointer_pos.x,
+            pointer_pos.y,
         ],
         camera:
         [

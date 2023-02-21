@@ -36,17 +36,6 @@ pub struct Node {
 }
 
 #[repr(C)]
-struct _Transform {
-    _view: glam::Mat4,
-    _projection: glam::Mat4,
-}
-
-#[repr(C)]
-pub struct RenderUniform {
-    project_matrix: glam::Mat4,
-}
-
-#[repr(C)]
 pub struct Bound {
     _bound_min: [f32; 3],
     _bound_max: [f32; 3],
@@ -121,7 +110,7 @@ impl ComputeMethod {
 pub struct GraphicsModel {
     pub is_computing: bool,
     pub is_dispatching: bool,
-    pub is_hover_toolbar: bool,
+    pub is_hover_graphics_view: bool,
     pub compute_render_state: egui_wgpu::RenderState,
     pub graphics_resources: Option<GraphicsResources>,
 }
@@ -134,7 +123,7 @@ impl GraphicsModel {
         Self {
             is_computing: false,
             is_dispatching: false,
-            is_hover_toolbar: false,
+            is_hover_graphics_view: false,
             compute_render_state: cc.wgpu_render_state.as_ref().unwrap().clone(),
             graphics_resources: None,
         }
@@ -1643,7 +1632,19 @@ impl GraphicsResources {
             }),
         };
 
-        update_render_uniforms(queue, &mut self.camera, &self.render_uniform_buffer, glam::Vec2::new(self.viewport_size.x, self.viewport_size.y));
+        let pointer_pos = if let Some(pos) = self.control.pointer_pos {
+            glam::Vec2::new(pos.x, pos.y)
+        } else {
+            glam::Vec2::ZERO
+        };
+
+        update_render_uniforms(
+            queue,
+            &mut self.camera,
+            &self.render_uniform_buffer,
+            glam::Vec2::new(self.viewport_size.x, self.viewport_size.y),
+            pointer_pos
+        );
 
         if self.render_options.is_rendering_node {
 
@@ -1832,9 +1833,9 @@ impl GraphicsResources {
         pollster::block_on(create_png(output_path, device, output_buffer, &buffer_dimensions, index));
     }
 
-    pub fn update_control(&mut self, ui: &mut Ui, is_hover_toolbar: bool) {
+    pub fn update_control(&mut self, ui: &mut Ui, is_hover: bool) {
 
-        self.control.update_interaction(ui, is_hover_toolbar);
+        self.control.update_interaction(ui, is_hover);
         self.control.update_camera(ui, &mut self.camera);
 
         if self.control.is_update {
@@ -1859,13 +1860,19 @@ impl GraphicsResources {
 
 }
 
-fn update_render_uniforms(queue: &Queue, camera: &mut Camera, render_uniform_buffer: &wgpu::Buffer, viewport_size: glam::Vec2) {
+fn update_render_uniforms(
+    queue: &Queue,
+    camera: &mut Camera,
+    render_uniform_buffer: &wgpu::Buffer,
+    viewport_size: glam::Vec2,
+    pointer_pos: glam::Vec2,
+) {
 
     if camera.is_updated {
 
         camera.update_projection_matrix();
 
-        let uniform = generate_uniforms(camera, viewport_size);
+        let uniform = generate_uniforms(camera, viewport_size, pointer_pos);
 
         queue.write_buffer(&render_uniform_buffer, 0, bytemuck::cast_slice(&[uniform]));
         camera.is_updated = false;

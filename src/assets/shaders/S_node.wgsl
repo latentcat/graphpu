@@ -31,31 +31,41 @@ struct Kvp {
 
 @group(0) @binding(0) var<uniform> transform: Transform;
 
-@group(1) @binding(0) var<storage, read> nodeSrc : array<Node>;
+@group(1) @binding(0) var<storage, read> node_src : array<Node>;
 @group(1) @binding(1) var<storage, read> kvps: array<Kvp>;
+
+fn vs_transform(
+    position: ptr<function,vec4<f32>>,
+    node_position: vec3<f32>,
+    quad_pos: vec2<f32>
+) {
+    *position = vec4<f32>(node_position, 1.0);
+
+    *position = transform.view * *position;
+    *position += vec4<f32>(quad_pos * 0.0025, 0.0, 0.0);
+
+    *position = transform.projection * *position;
+    var quad_pos_ratio = quad_pos;
+    quad_pos_ratio.x /= transform.camera.x;
+    *position += vec4<f32>(quad_pos_ratio * (1.5 / transform.screen.y) * (*position).w, 0.0, 0.0);
+}
 
 @vertex
 fn main_vs(
     @location(0) quad_pos: vec2<f32>,
     i: Input
 ) -> Varing {
-    var node = nodeSrc[kvps[i.instance_index].index];
+    var node = node_src[kvps[i.instance_index].index];
     var kvp = kvps[i.instance_index];
 
     var v: Varing;
-    v.position = vec4<f32>(node.position.xyz, 1.0);
-    v.position = transform.view * v.position;
-    v.position += vec4<f32>(quad_pos * 0.0025, 0.0, 0.0);
-    v.position = transform.projection * v.position;
-    var quad_pos_ratio = quad_pos;
-    quad_pos_ratio.x /= transform.camera.x;
-    v.position += vec4<f32>(quad_pos_ratio * (1.5 / transform.screen.y) * v.position.w, 0.0, 0.0);
+
+    vs_transform(&v.position, node.position, quad_pos);
+
     v.tex_coords = quad_pos;
-//    v.color = mix(vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), kvp.sort_key * 0.1 );
-    v.color = mix(vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), f32(i.instance_index) / f32(arrayLength(&nodeSrc)));
-    if (kvp.index == 0u) {
-        v.color = vec3<f32>(1.0);
-    }
+
+    v.color = mix(vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), f32(i.instance_index) / f32(arrayLength(&node_src)));
+    if (kvp.index == 0u) { v.color = vec3<f32>(1.0); }
 
     return v;
 }
@@ -67,12 +77,6 @@ fn main_fs(v: Varing) -> @location(0) vec4<f32> {
     let clip = step(sdf, 1.0);
 
     var out_color = vec4<f32>(v.color, 1.0);
-
-//    let alpha = 1.0;
-//
-//    out_color.r *= alpha;
-//    out_color.g *= alpha;
-//    out_color.b *= alpha;
 
     if clip < 0.5 {
         discard;
