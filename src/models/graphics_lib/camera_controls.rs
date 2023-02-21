@@ -24,7 +24,8 @@ pub struct Controls {
     viewport_size: Vec2,
 
     pub is_update: bool,
-    
+    pub is_pointer_update: bool,
+
 }
 
 impl Controls {
@@ -40,6 +41,7 @@ impl Controls {
             pointer_delta: Vec2::ZERO,
             viewport_size: Vec2::ZERO,
             is_update: true,
+            is_pointer_update: false,
         }
     }
 
@@ -76,7 +78,11 @@ impl Controls {
 
                 // 记录鼠标指针在绘图区域的相对位置
                 // 范围是 0, 0 至 width, height
-                self.pointer_pos = Some(pos - viewport_rect.min.to_vec2());
+                let new_pos = pos - viewport_rect.min.to_vec2();
+                if self.pointer_pos != Some(new_pos) {
+                    self.pointer_pos = Some(new_pos);
+                    self.is_pointer_update = true;
+                }
 
                 is_pointer_press_inside = true;
 

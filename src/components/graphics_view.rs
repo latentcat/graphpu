@@ -61,7 +61,7 @@ impl AppView for GraphicsView {
                             // 其中，pixels_per_point 代表当前每点像素密度
 
                             compute_resources.update_viewport(
-                                max_rect.size().mul(Vec2::from([models.app_model.pixels_per_point; 2]))
+                                max_rect.size().mul(Vec2::from([2.0; 2]))
                             );
 
                             compute_resources.update_control(ui, models.graphics_model.is_hover_graphics_view);
@@ -84,6 +84,11 @@ impl AppView for GraphicsView {
                                 compute_resources.render();
                                 compute_resources.need_update = false;
                                 ui.ctx().request_repaint();
+                            }
+
+                            if compute_resources.control.is_pointer_update {
+                                compute_resources.render_cast();
+                                compute_resources.control.is_pointer_update = false;
                             }
 
                             // 获取已经注册的 wgpu 材质的 egui 材质 ID

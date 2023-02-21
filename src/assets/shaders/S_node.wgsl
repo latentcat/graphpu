@@ -59,11 +59,8 @@ fn main_vs(
     var kvp = kvps[i.instance_index];
 
     var v: Varing;
-
     v.position = vs_transform(node.position, quad_pos);
-
     v.tex_coords = quad_pos;
-
     v.color = mix(vec3<f32>(0.0, 1.0, 0.0), vec3<f32>(1.0, 0.0, 0.0), f32(i.instance_index) / f32(arrayLength(&node_src)));
     if (kvp.index == 0u) { v.color = vec3<f32>(1.0); }
 
@@ -84,3 +81,48 @@ fn main_fs(v: Varing) -> @location(0) vec4<f32> {
 
     return out_color;
 }
+
+
+
+
+struct CastVaring {
+    @location(0) tex_coords: vec2<f32>,
+    @builtin(position) position: vec4<f32>,
+    @location(1) id: u32,
+};
+
+@vertex
+fn cast_vs(
+    @location(0) quad_pos: vec2<f32>,
+    i: Input
+) -> CastVaring {
+    var node = node_src[kvps[i.instance_index].index];
+    var kvp = kvps[i.instance_index];
+
+    var v: CastVaring;
+    v.position = vs_transform(node.position, quad_pos);
+    v.position /= v.position.w;
+    v.position.x = (v.position.x + 1.0) / 2.0 * transform.screen.x - transform.screen.z;
+    v.position.y = (-v.position.y + 1.0) / 2.0 * transform.screen.y - transform.screen.w;
+
+    v.tex_coords = quad_pos;
+    v.id = kvp.index;
+
+    return v;
+}
+
+@fragment
+fn cast_fs(v: CastVaring) -> @location(0) vec4<u32> {
+
+    let sdf = dot(v.tex_coords, v.tex_coords);
+    let clip = step(sdf, 1.0);
+
+    var out_color = vec4<u32>(v.id, 0u, 0u, 0u);
+
+    if clip < 0.5 {
+        discard;
+    }
+
+    return out_color;
+}
+

@@ -1,4 +1,4 @@
-use crate::constant::TEXTURE_FORMAT;
+use crate::constant::{CAST_TEXTURE_FORMAT, DEPTH_FORMAT, TEXTURE_FORMAT};
 
 pub struct Texture {
     pub texture: wgpu::Texture,
@@ -8,9 +8,7 @@ pub struct Texture {
 
 impl Texture {
 
-    pub const DEPTH_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float; // 1.
-
-    pub fn create_depth_texture(device: &wgpu::Device, size: &wgpu::Extent3d, label: &str) -> Self {
+    pub fn create_depth_texture(device: &wgpu::Device, size: &wgpu::Extent3d, label: &str, is_multisample: bool) -> Self {
         let size = wgpu::Extent3d { // 2.
             width: size.width,
             height: size.height,
@@ -20,9 +18,9 @@ impl Texture {
             label: Some(label),
             size,
             mip_level_count: 1,
-            sample_count: 4,
+            sample_count: if is_multisample { 4 } else { 1 },
             dimension: wgpu::TextureDimension::D2,
-            format: Self::DEPTH_FORMAT,
+            format: DEPTH_FORMAT,
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT // 3.
                 | wgpu::TextureUsages::TEXTURE_BINDING,
         };
@@ -47,7 +45,7 @@ impl Texture {
         Self { texture, view, sampler: Some(sampler) }
     }
 
-    pub fn create_texture(device: &wgpu::Device, size: &wgpu::Extent3d, sample_count: u32) -> Self {
+    pub fn create_texture(device: &wgpu::Device, size: &wgpu::Extent3d, sample_count: u32, is_cast: bool) -> Self {
         let size = wgpu::Extent3d { // 2.
             width: size.width,
             height: size.height,
@@ -58,7 +56,7 @@ impl Texture {
             mip_level_count: 1,
             sample_count,
             dimension: wgpu::TextureDimension::D2,
-            format: TEXTURE_FORMAT,
+            format: if !is_cast { TEXTURE_FORMAT} else { CAST_TEXTURE_FORMAT },
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT
                 | wgpu::TextureUsages::COPY_SRC
                 | wgpu::TextureUsages::TEXTURE_BINDING,

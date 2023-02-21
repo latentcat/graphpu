@@ -231,6 +231,10 @@ pub struct GraphicsResources {
     output_msaa_texture:            Option<Texture>,
     output_depth_texture:           Option<Texture>,
 
+    cast_texture_extent:          wgpu::Extent3d,
+    cast_texture:                 Option<Texture>,
+    cast_depth_texture:           Option<Texture>,
+
     // 相机
     camera:                         Camera,
     pub control:                    Controls,
@@ -263,7 +267,9 @@ pub struct GraphicsResources {
 
     // 渲染管线
     node_render_pipeline:           wgpu::RenderPipeline,
+    node_cast_render_pipeline:      wgpu::RenderPipeline,
     edge_render_pipeline:           wgpu::RenderPipeline,
+    edge_cast_render_pipeline:      wgpu::RenderPipeline,
     axis_render_pipeline:           wgpu::RenderPipeline,
     bounding_box_render_pipeline:   wgpu::RenderPipeline,
 
@@ -358,13 +364,29 @@ impl GraphicsResources {
         let node_render_pipeline = RenderPipeline::create_node_render_pipeline(
             device,
             &[&render_uniform_bind_group_layout, &node_render_bind_group_layout],
-            node_shader
+            node_shader,
+            false,
+        ).render_pipeline;
+
+        let node_cast_render_pipeline = RenderPipeline::create_node_render_pipeline(
+            device,
+            &[&render_uniform_bind_group_layout, &node_render_bind_group_layout],
+            node_shader,
+            true,
         ).render_pipeline;
 
         let edge_render_pipeline = RenderPipeline::create_edge_render_pipeline(
             device,
             &[&render_uniform_bind_group_layout, &edge_render_bind_group_layout],
-            edge_shader
+            edge_shader,
+            false,
+        ).render_pipeline;
+
+        let edge_cast_render_pipeline = RenderPipeline::create_edge_render_pipeline(
+            device,
+            &[&render_uniform_bind_group_layout, &edge_render_bind_group_layout],
+            edge_shader,
+            true,
         ).render_pipeline;
 
         let axis_render_pipeline = RenderPipeline::create_axis_render_pipeline(
@@ -1235,11 +1257,13 @@ impl GraphicsResources {
                 },
             ]);
 
-        let mut boids_resources = GraphicsResources {
+        let mut graphics_resources = GraphicsResources {
             status: model.status.clone(),
             render_state,
             viewport_depth_texture: None,
             output_depth_texture: None,
+            cast_texture_extent: Default::default(),
+            cast_texture: None,
             viewport_texture: None,
             viewport_msaa_texture: None,
             output_texture: None,
@@ -1274,7 +1298,9 @@ impl GraphicsResources {
             bounding_box_render_bind_group,
             render_uniform_bind_group,
             node_render_pipeline,
+            node_cast_render_pipeline,
             edge_render_pipeline,
+            edge_cast_render_pipeline,
             axis_render_pipeline,
             bounding_box_render_pipeline,
             graph_compute,
@@ -1300,12 +1326,14 @@ impl GraphicsResources {
             },
             need_update: true,
             debugger,
-            buffer_bytes: None
+            buffer_bytes: None,
+            cast_depth_texture: None
         };
 
-        boids_resources.gen_node();
+        graphics_resources.gen_node();
+        graphics_resources.prepare_cast();
 
-        boids_resources
+        graphics_resources
 
     }
 
@@ -1631,20 +1659,6 @@ impl GraphicsResources {
             }),
         };
 
-        let pointer_pos = if let Some(pos) = self.control.pointer_pos {
-            glam::Vec2::new(pos.x, pos.y)
-        } else {
-            glam::Vec2::ZERO
-        };
-
-        update_render_uniforms(
-            queue,
-            &mut self.camera,
-            &self.render_uniform_buffer,
-            glam::Vec2::new(self.viewport_size.x, self.viewport_size.y),
-            pointer_pos
-        );
-
         if self.render_options.is_rendering_node {
 
             // calc depth
@@ -1725,6 +1739,7 @@ impl GraphicsResources {
             command_encoder.finish()
         };
         queue.submit(Some(command_buffer));
+
     }
 
     pub fn update_viewport(&mut self, new_size: Vec2) {
@@ -1743,9 +1758,9 @@ impl GraphicsResources {
                 depth_or_array_layers: 1,
             };
 
-            let texture = Texture::create_texture(device, &texture_extent, 1);
-            let msaa_texture = Texture::create_texture(device, &texture_extent, 4);
-            let depth_texture = Texture::create_depth_texture(&device, &texture_extent, "depth_texture");
+            let texture = Texture::create_texture(device, &texture_extent, 1, false);
+            let msaa_texture = Texture::create_texture(device, &texture_extent, 4, false);
+            let depth_texture = Texture::create_depth_texture(&device, &texture_extent, "depth_texture", true);
 
             if self.viewport_texture.is_some() {
                 self.render_state.renderer.write().free_texture(&self.viewport_texture_id);
@@ -1762,6 +1777,156 @@ impl GraphicsResources {
         }
     }
 
+
+    pub fn prepare_cast(&mut self) {
+
+        let device = &self.render_state.device;
+        let _queue = &self.render_state.queue;
+
+        let cast_texture_extent = wgpu::Extent3d {
+            width: 1 as _,
+            height: 1 as _,
+            depth_or_array_layers: 1,
+        };
+
+        let cast_texture = Texture::create_texture(device, &cast_texture_extent, 1, true);
+        let cast_depth_texture = Texture::create_depth_texture(&device, &cast_texture_extent, "cast_depth_texture", false);
+
+        self.cast_texture_extent = cast_texture_extent;
+        self.cast_texture = Some(cast_texture);
+        self.cast_depth_texture = Some(cast_depth_texture);
+
+    }
+
+
+    pub fn render_cast(&mut self) {
+
+        if self.control.pointer_pos.is_none() { return; }
+
+        let device = &self.render_state.device;
+        let queue = &self.render_state.queue;
+
+        let view = &self.cast_texture.as_ref().unwrap().view;
+        let depth_view = &self.cast_depth_texture.as_ref().unwrap().view;
+
+        let color_attachment = Some(wgpu::RenderPassColorAttachment {
+            view,
+            resolve_target: None,
+            ops: wgpu::Operations {
+                load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                store: true,
+            },
+        });
+
+        let render_pass_descriptor = wgpu::RenderPassDescriptor {
+            label: None,
+            color_attachments: &[color_attachment],
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                view: &depth_view,
+                depth_ops: Some(wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(1.0),
+                    store: true,
+                }),
+                stencil_ops: None,
+            }),
+        };
+
+        // render
+        let command_buffer = {
+            let mut command_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+            {
+                let mut rpass = command_encoder.begin_render_pass(&render_pass_descriptor);
+
+                if self.render_options.is_rendering_node {
+                    rpass.set_pipeline(&self.node_cast_render_pipeline);
+                    rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
+                    rpass.set_bind_group(1, &self.node_render_bind_group, &[]);
+                    rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
+                    rpass.draw(0..4, 0..self.status.node_count as u32);
+                }
+
+                if self.render_options.is_rendering_edge {
+                    rpass.set_pipeline(&self.edge_cast_render_pipeline);
+                    rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
+                    rpass.set_bind_group(1, &self.edge_render_bind_group, &[]);
+                    rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
+                    rpass.draw(0..4, 0..self.status.edge_count as u32);
+                }
+            }
+            command_encoder.finish()
+        };
+        queue.submit(Some(command_buffer));
+
+
+        self.copy_cast_data();
+    }
+
+
+    pub fn copy_cast_data(&mut self) {
+
+        let device = &self.render_state.device;
+        let queue = &self.render_state.queue;
+
+        let buffer_dimensions = BufferDimensions::new(
+            self.cast_texture_extent.width as usize,
+            self.cast_texture_extent.height as usize,
+            16
+        );
+
+        let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: None,
+            size: (buffer_dimensions.padded_bytes_per_row * buffer_dimensions.height) as _,
+            usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
+        let command_buffer = {
+            let mut encoder =
+                device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+
+            encoder.copy_texture_to_buffer(
+                self.cast_texture.as_ref().unwrap().texture.as_image_copy(),
+                wgpu::ImageCopyBuffer {
+                    buffer: &output_buffer,
+                    layout: wgpu::ImageDataLayout {
+                        offset: 0,
+                        bytes_per_row: Some(
+                            std::num::NonZeroU32::new(buffer_dimensions.padded_bytes_per_row as u32)
+                                .unwrap(),
+                        ),
+                        rows_per_image: None,
+                    },
+                },
+                self.cast_texture_extent,
+            );
+
+            encoder.finish()
+        };
+
+        let submission_index = queue.submit(Some(command_buffer));
+
+        let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
+        let buffer_slice = output_buffer.slice(..16);
+        buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
+
+        device.poll(wgpu::Maintain::WaitForSubmissionIndex(submission_index));
+
+        pollster::block_on(async {
+            if let Some(Ok(())) = receiver.receive().await {
+                let data = buffer_slice.get_mapped_range();
+                let result: Vec<u32> = bytemuck::cast_slice(&data).to_vec();
+
+                let content = format!("{:?}", &result);
+                println!("{}", content);
+                println!("{}", result.len());
+
+            } else {
+                panic!("failed to run compute on gpu!")
+            }
+        });
+
+    }
+
     pub fn prepare_output(&mut self) {
 
         self.is_render_output = true;
@@ -1775,9 +1940,9 @@ impl GraphicsResources {
             depth_or_array_layers: 1,
         };
 
-        let output_texture = Texture::create_texture(device, &output_texture_extent, 1);
-        let msaa_output_texture = Texture::create_texture(device, &output_texture_extent, 4);
-        let output_depth_texture = Texture::create_depth_texture(&device, &output_texture_extent, "depth_texture");
+        let output_texture = Texture::create_texture(device, &output_texture_extent, 1, false);
+        let msaa_output_texture = Texture::create_texture(device, &output_texture_extent, 4, false);
+        let output_depth_texture = Texture::create_depth_texture(&device, &output_texture_extent, "depth_texture", true);
 
         self.output_texture_extent = output_texture_extent;
         self.output_texture = Some(output_texture);
@@ -1791,7 +1956,11 @@ impl GraphicsResources {
         let device = &self.render_state.device;
         let queue = &self.render_state.queue;
 
-        let buffer_dimensions = BufferDimensions::new(self.output_texture_extent.width as usize, self.output_texture_extent.height as usize);
+        let buffer_dimensions = BufferDimensions::new(
+            self.output_texture_extent.width as usize,
+            self.output_texture_extent.height as usize,
+            4
+        );
 
         let output_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: None,
@@ -1841,6 +2010,23 @@ impl GraphicsResources {
             self.need_update = true;
         }
 
+        if self.control.is_update || self.control.is_pointer_update {
+
+            let pointer_pos = if let Some(pos) = self.control.pointer_pos {
+                Some(glam::Vec2::new(pos.x * 2.0, pos.y * 2.0) )
+            } else {
+                None
+            };
+            update_render_uniforms(
+                &self.render_state.queue,
+                &mut self.camera,
+                &self.render_uniform_buffer,
+                glam::Vec2::new(self.viewport_size.x, self.viewport_size.y),
+                pointer_pos,
+                self.control.is_pointer_update
+            );
+        }
+
         self.control.is_update = false;
 
     }
@@ -1864,17 +2050,29 @@ fn update_render_uniforms(
     camera: &mut Camera,
     render_uniform_buffer: &wgpu::Buffer,
     viewport_size: glam::Vec2,
-    pointer_pos: glam::Vec2,
+    pointer_pos: Option<glam::Vec2>,
+    is_pointer_update: bool,
 ) {
+
+    let pos = if let Some(pos) = pointer_pos {
+        pos
+    } else {
+        glam::Vec2::ZERO
+    };
 
     if camera.is_updated {
 
         camera.update_projection_matrix();
 
-        let uniform = generate_uniforms(camera, viewport_size, pointer_pos);
+        let uniform = generate_uniforms(camera, viewport_size, pos);
 
         queue.write_buffer(&render_uniform_buffer, 0, bytemuck::cast_slice(&[uniform]));
         camera.is_updated = false;
+
+    } else if pointer_pos.is_some() && is_pointer_update {
+
+        let uniform = generate_uniforms(camera, viewport_size, pos);
+        queue.write_buffer(&render_uniform_buffer, 0, bytemuck::cast_slice(&[uniform]));
 
     }
 

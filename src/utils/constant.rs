@@ -10,4 +10,6 @@ pub const MULTISAMPLE_STATE: wgpu::MultisampleState = wgpu::MultisampleState {
     alpha_to_coverage_enabled: false
 };
 
-pub const TEXTURE_FORMAT: wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
+pub const TEXTURE_FORMAT:       wgpu::TextureFormat = wgpu::TextureFormat::Rgba8UnormSrgb;
+pub const CAST_TEXTURE_FORMAT:  wgpu::TextureFormat = wgpu::TextureFormat::Rgba32Uint;
+pub const DEPTH_FORMAT:         wgpu::TextureFormat = wgpu::TextureFormat::Depth32Float;

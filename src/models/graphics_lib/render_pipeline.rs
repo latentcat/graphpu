@@ -1,5 +1,4 @@
-use crate::constant::{MULTISAMPLE_STATE, TEXTURE_FORMAT};
-use crate::models::graphics_lib::Texture;
+use crate::constant::{CAST_TEXTURE_FORMAT, DEPTH_FORMAT, MULTISAMPLE_STATE, TEXTURE_FORMAT};
 
 pub struct RenderPipeline {
     pub render_pipeline: wgpu::RenderPipeline,
@@ -7,7 +6,7 @@ pub struct RenderPipeline {
 
 impl RenderPipeline {
 
-    pub fn create_node_render_pipeline( device: &wgpu::Device, layouts: &[&wgpu::BindGroupLayout], node_shader: &wgpu::ShaderModule ) -> Self {
+    pub fn create_node_render_pipeline( device: &wgpu::Device, layouts: &[&wgpu::BindGroupLayout], node_shader: &wgpu::ShaderModule, is_cast: bool ) -> Self {
 
         let node_render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("node render"),
@@ -20,7 +19,7 @@ impl RenderPipeline {
             layout: Some(&node_render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &node_shader,
-                entry_point: "main_vs",
+                entry_point: if !is_cast { "main_vs" } else { "cast_vs" },
                 buffers: &[
                     wgpu::VertexBufferLayout {
                         array_stride: 2 * 4,
@@ -31,10 +30,10 @@ impl RenderPipeline {
             },
             fragment: Some(wgpu::FragmentState {
                 module: &node_shader,
-                entry_point: "main_fs",
+                entry_point: if !is_cast { "main_fs" } else { "cast_fs" },
                 targets: &[Some(wgpu::ColorTargetState {
-                    format: TEXTURE_FORMAT,
-                    blend: Some(wgpu::BlendState {
+                    format: if !is_cast { TEXTURE_FORMAT } else { CAST_TEXTURE_FORMAT },
+                    blend: if !is_cast { Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::SrcAlpha,
                             dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
@@ -45,8 +44,7 @@ impl RenderPipeline {
                             dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
                             operation: wgpu::BlendOperation::Add,
                         },
-                        // alpha: wgpu::BlendComponent::OVER,
-                    }),
+                    }) } else { None },
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
@@ -56,7 +54,7 @@ impl RenderPipeline {
                 ..Default::default()
             },
             depth_stencil: Some(wgpu::DepthStencilState {
-                format: Texture::DEPTH_FORMAT,
+                format: DEPTH_FORMAT,
                 // depth_write_enabled: false,
                 // depth_compare: wgpu::CompareFunction::Always, // 1.
                 depth_write_enabled: true,
@@ -64,8 +62,7 @@ impl RenderPipeline {
                 stencil: wgpu::StencilState::default(), // 2.
                 bias: wgpu::DepthBiasState::default(),
             }),
-            // depth_stencil: None,
-            multisample: MULTISAMPLE_STATE,
+            multisample: if !is_cast { MULTISAMPLE_STATE } else { wgpu::MultisampleState::default() },
             multiview: None,
         });
 
@@ -75,7 +72,7 @@ impl RenderPipeline {
 
     }
 
-    pub fn create_edge_render_pipeline( device: &wgpu::Device, layouts: &[&wgpu::BindGroupLayout],  edge_shader: &wgpu::ShaderModule ) -> Self {
+    pub fn create_edge_render_pipeline( device: &wgpu::Device, layouts: &[&wgpu::BindGroupLayout],  edge_shader: &wgpu::ShaderModule, is_cast: bool ) -> Self {
 
         let edge_render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("edge render"),
@@ -88,7 +85,7 @@ impl RenderPipeline {
             layout: Some(&edge_render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &edge_shader,
-                entry_point: "main_vs",
+                entry_point: if !is_cast { "main_vs" } else { "cast_vs" },
                 buffers: &[
                     wgpu::VertexBufferLayout {
                         array_stride: 2 * 4,
@@ -99,10 +96,10 @@ impl RenderPipeline {
             },
             fragment: Some(wgpu::FragmentState {
                 module: &edge_shader,
-                entry_point: "main_fs",
+                entry_point: if !is_cast { "main_fs" } else { "cast_fs" },
                 targets: &[Some(wgpu::ColorTargetState {
-                    format: TEXTURE_FORMAT,
-                    blend: Some(wgpu::BlendState {
+                    format: if !is_cast { TEXTURE_FORMAT } else { CAST_TEXTURE_FORMAT },
+                    blend: if !is_cast { Some(wgpu::BlendState {
                         color: wgpu::BlendComponent {
                             src_factor: wgpu::BlendFactor::SrcAlpha,
                             dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
@@ -113,7 +110,7 @@ impl RenderPipeline {
                             dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
                             operation: wgpu::BlendOperation::Add,
                         },
-                    }),
+                    }) } else { None },
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
@@ -123,14 +120,13 @@ impl RenderPipeline {
                 ..Default::default()
             },
             depth_stencil: Some(wgpu::DepthStencilState {
-                format: Texture::DEPTH_FORMAT,
+                format: DEPTH_FORMAT,
                 depth_write_enabled: false,
                 depth_compare: wgpu::CompareFunction::Less, // 1.
                 stencil: wgpu::StencilState::default(), // 2.
                 bias: wgpu::DepthBiasState::default(),
             }),
-            // depth_stencil: None,
-            multisample: MULTISAMPLE_STATE,
+            multisample: if !is_cast { MULTISAMPLE_STATE } else { wgpu::MultisampleState::default() },
             multiview: None,
         });
 
@@ -189,7 +185,7 @@ impl RenderPipeline {
                 ..Default::default()
             },
             depth_stencil: Some(wgpu::DepthStencilState {
-                format: Texture::DEPTH_FORMAT,
+                format: DEPTH_FORMAT,
                 depth_write_enabled: true,
                 depth_compare: wgpu::CompareFunction::Less, // 1.
                 stencil: wgpu::StencilState::default(), // 2.
@@ -255,7 +251,7 @@ impl RenderPipeline {
                 ..Default::default()
             },
             depth_stencil: Some(wgpu::DepthStencilState {
-                format: Texture::DEPTH_FORMAT,
+                format: DEPTH_FORMAT,
                 depth_write_enabled: true,
                 depth_compare: wgpu::CompareFunction::Less, // 1.
                 stencil: wgpu::StencilState::default(), // 2.

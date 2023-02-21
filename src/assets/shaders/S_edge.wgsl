@@ -81,3 +81,43 @@ fn main_fs(v: Varing) -> @location(0) vec4<f32> {
 
     return out_color;
 }
+
+
+
+struct CastVaring {
+    @location(0) id: u32,
+    @builtin(position) position: vec4<f32>,
+};
+
+@vertex
+fn cast_vs(
+    @location(0) quad_pos: vec2<f32>,
+    i: Input
+) -> CastVaring {
+    let edge = edge_src[i.instance_index];
+
+    var v: CastVaring;
+
+    v.position = vs_transform(
+        node_src[edge[0]].position,
+        node_src[edge[1]].position,
+        node_src[edge[i.vertex_index % 2u]].position,
+        quad_pos
+    );
+
+    v.position /= v.position.w;
+    v.position.x = (v.position.x + 1.0) / 2.0 * transform.screen.x - transform.screen.z;
+    v.position.y = (-v.position.y + 1.0) / 2.0 * transform.screen.y - transform.screen.w;
+
+    v.id = i.instance_index;
+
+    return v;
+}
+
+@fragment
+fn cast_fs(v: CastVaring) -> @location(0) vec4<u32> {
+
+    var out_color = vec4<u32>(0u, v.id, 0u, 0u);
+
+    return out_color;
+}
