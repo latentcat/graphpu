@@ -29,111 +29,114 @@ impl AppView for GraphicsView {
         models.graphics_model.set_dispatching(false);
     
         egui::CentralPanel::default()
-            .frame(graphics_outer_frame(ui.style()))
+            .frame(graphics_frame(ui.style(), models.graphics_model.graphics_resources.is_some()))
             .show_inside(ui, |ui| {
 
                 let max_rect = ui.max_rect();
 
                 // 新建一个空 Frame，用于存放 Image
-                egui::Frame::none()
-                    .show(ui, |ui| {
 
-                        // 如果 Compute Model 已经初始化，即数据导入完成，可以开始渲染
-                        // 则获取 Compute Resource
-                        if let Some(compute_resources) = &mut models.graphics_model.graphics_resources {
+                ui.allocate_ui_at_rect(max_rect, |ui| {
 
-                            if compute_resources.is_kernel_error { }
+                    graphics_frame(ui.style(), models.app_model.is_fullscreen_graphics)
+                        .show(ui, |ui| {
 
-                            // 如果正在持续计算，则计算一次
-                            if is_computing {
-                                compute_resources.compute();
-                            }
+                            // 如果 Compute Model 已经初始化，即数据导入完成，可以开始渲染
+                            // 则获取 Compute Resource
+                            if let Some(compute_resources) = &mut models.graphics_model.graphics_resources {
 
-                            // 如果当前帧需要 Dispatch，则 Dispatch 一次
-                            if is_dispatching {
-                                compute_resources.randomize();
-                            }
+                                if compute_resources.is_kernel_error { }
 
-                            // 更新 Viewport，用于处理窗口 resize
-                            // update_viewport 方法会判断传入的 Viewport 大小和之前的是否一致
-                            // 若发生变化，则更新材质视图，注册 egui 材质 ID，并返回 true
-                            // 若无变化，不更新材质视图，返回 false
-                            // 其中，pixels_per_point 代表当前每点像素密度
+                                // 如果正在持续计算，则计算一次
+                                if is_computing {
+                                    compute_resources.compute();
+                                }
 
-                            compute_resources.update_viewport(
-                                max_rect.size().mul(Vec2::from([2.0; 2]))
-                            );
+                                // 如果当前帧需要 Dispatch，则 Dispatch 一次
+                                if is_dispatching {
+                                    compute_resources.randomize();
+                                }
 
-                            compute_resources.update_control(ui, models.graphics_model.is_hover_graphics_view);
-                            if compute_resources.control.pointer_pos.is_some() {
-                                if ui.input().pointer.button_double_clicked(PointerButton::Primary) {
-                                    if !models.app_model.is_fullscreen_graphics {
-                                        models.app_model.is_fullscreen_graphics = true;
-                                        _frame.set_fullscreen(true);
-                                    } else {
-                                        models.app_model.is_fullscreen_graphics = false;
-                                        if !models.app_model.is_fullscreen {
-                                            _frame.set_fullscreen(false);
+                                // 更新 Viewport，用于处理窗口 resize
+                                // update_viewport 方法会判断传入的 Viewport 大小和之前的是否一致
+                                // 若发生变化，则更新材质视图，注册 egui 材质 ID，并返回 true
+                                // 若无变化，不更新材质视图，返回 false
+                                // 其中，pixels_per_point 代表当前每点像素密度
+
+                                compute_resources.update_viewport(
+                                    max_rect.size().mul(Vec2::from([2.0; 2]))
+                                );
+
+                                compute_resources.update_control(ui, models.graphics_model.is_hover_graphics_view);
+                                if compute_resources.control.pointer_pos.is_some() {
+                                    if ui.input().pointer.button_double_clicked(PointerButton::Primary) {
+                                        if !models.app_model.is_fullscreen_graphics {
+                                            models.app_model.is_fullscreen_graphics = true;
+                                            _frame.set_fullscreen(true);
+                                        } else {
+                                            models.app_model.is_fullscreen_graphics = false;
+                                            if !models.app_model.is_fullscreen {
+                                                _frame.set_fullscreen(false);
+                                            }
                                         }
                                     }
                                 }
+
+                                // 若有任何变化，渲染并请求 egui UI 更新
+                                if is_computing || is_dispatching || compute_resources.need_update {
+                                    compute_resources.render();
+                                    compute_resources.need_update = false;
+                                    ui.ctx().request_repaint();
+                                }
+
+                                if models.app_model.current_tool == Tool::Select && compute_resources.control.is_pointer_update {
+                                    compute_resources.render_cast();
+                                    compute_resources.control.is_pointer_update = false;
+                                }
+
+                                // 获取已经注册的 wgpu 材质的 egui 材质 ID
+                                let texture_id = compute_resources.viewport_texture_id;
+
+                                // 通过材质 ID 绘制 Image
+                                // ui.image(texture_id, max_rect.size());
+
+                                ui.allocate_ui_at_rect(max_rect, |ui| {
+                                    let response = egui::Image::new(texture_id, max_rect.size())
+                                        .sense(egui::Sense::click_and_drag()).ui(ui);
+
+                                    models.graphics_model.is_hover_graphics_view = response.hovered();
+                                });
+
                             }
 
-                            // 若有任何变化，渲染并请求 egui UI 更新
-                            if is_computing || is_dispatching || compute_resources.need_update {
-                                compute_resources.render();
-                                compute_resources.need_update = false;
-                                ui.ctx().request_repaint();
-                            }
 
-                            if models.app_model.current_tool == Tool::Select && compute_resources.control.is_pointer_update {
-                                compute_resources.render_cast();
-                                compute_resources.control.is_pointer_update = false;
-                            }
+                        });
+                });
 
-                            // 获取已经注册的 wgpu 材质的 egui 材质 ID
-                            let texture_id = compute_resources.viewport_texture_id;
+                if let Some(compute_resources) = &mut models.graphics_model.graphics_resources {
 
-                            // 通过材质 ID 绘制 Image
-                            // ui.image(texture_id, max_rect.size());
+                    if models.graphics_model.is_hover_graphics_view {
+                        if let Some(cast_type) = &compute_resources.cast_type {
 
-                            ui.allocate_ui_at_rect(max_rect, |ui| {
-                                graphics_frame(ui.style(), models.app_model.is_fullscreen_graphics)
+                            let pos = if let Some(pos) = ui.input().pointer.interact_pos() { pos + egui::Vec2::new(0.0, 30.0) } else { egui::Pos2::ZERO };
+                            ui.allocate_ui_at_rect(egui::Rect::from_min_size(pos, egui::Vec2::new(200.0, 200.0)), |ui| {
+                                graphics_hover_frame(ui.style())
                                     .show(ui, |ui| {
-
-                                        let response = egui::Image::new(texture_id, max_rect.size())
-                                            .sense(egui::Sense::click_and_drag()).ui(ui);
-
-                                        models.graphics_model.is_hover_graphics_view = response.hovered();
+                                        ui.horizontal(|ui| {
+                                            ui.label(
+                                                match cast_type {
+                                                    CastType::Node => "Node ",
+                                                    CastType::Edge => "Edge "
+                                                }
+                                            );
+                                            ui.label(egui::RichText::new(format!("{}", compute_resources.cast_value)).weak());
+                                        });
                                     });
                             });
-
-                            if models.graphics_model.is_hover_graphics_view {
-                                if let Some(cast_type) = &compute_resources.cast_type {
-
-                                    let pos = if let Some(pos) = ui.input().pointer.interact_pos() { pos + egui::Vec2::new(0.0, 30.0) } else { egui::Pos2::ZERO };
-                                    ui.allocate_ui_at_rect(egui::Rect::from_min_size(pos, egui::Vec2::new(200.0, 200.0)), |ui| {
-                                        graphics_hover_frame(ui.style())
-                                            .show(ui, |ui| {
-                                                ui.horizontal(|ui| {
-                                                    ui.label(
-                                                        match cast_type {
-                                                            CastType::Node => "Node ",
-                                                            CastType::Edge => "Edge "
-                                                        }
-                                                    );
-                                                    ui.label(egui::RichText::new(format!("{}", compute_resources.cast_value)).weak());
-                                                });
-                                            });
-                                    });
-                                }
-                            }
-
-
                         }
+                    }
 
-
-                    });
+                }
 
                 if models.app_model.is_fullscreen_graphics { return; }
 

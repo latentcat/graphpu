@@ -103,9 +103,9 @@ pub fn graphics_outer_frame(_style: &egui::Style) -> egui::Frame {
 
 pub fn graphics_frame(_style: &egui::Style, is_fullscreen: bool) -> egui::Frame {
     egui::Frame {
-        // inner_margin: egui::style::Margin::symmetric(0.5, 0.5),
+        inner_margin: egui::style::Margin::symmetric(0.5, 0.5),
         rounding: egui::Rounding::none(),
-        fill: Color32::from_gray(if is_fullscreen { 0 } else { 20 }),
+        fill: if is_fullscreen { Color32::TRANSPARENT } else { Color32::from_gray(20) },
         ..Default::default()
     }
 }
