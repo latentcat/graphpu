@@ -86,7 +86,7 @@ impl AppView for GraphicsView {
                                 ui.ctx().request_repaint();
                             }
 
-                            if compute_resources.control.is_pointer_update {
+                            if models.app_model.current_tool == Tool::Select && compute_resources.control.is_pointer_update {
                                 compute_resources.render_cast();
                                 compute_resources.control.is_pointer_update = false;
                             }
