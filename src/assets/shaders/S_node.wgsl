@@ -35,19 +35,19 @@ struct Kvp {
 @group(1) @binding(1) var<storage, read> kvps: array<Kvp>;
 
 fn vs_transform(
-    position: ptr<function,vec4<f32>>,
     node_position: vec3<f32>,
     quad_pos: vec2<f32>
-) {
-    *position = vec4<f32>(node_position, 1.0);
+) -> vec4<f32> {
+    var position = vec4<f32>(node_position, 1.0);
 
-    *position = transform.view * *position;
-    *position += vec4<f32>(quad_pos * 0.0025, 0.0, 0.0);
+    position = transform.view * position;
+    position += vec4<f32>(quad_pos * 0.0025, 0.0, 0.0);
 
-    *position = transform.projection * *position;
+    position = transform.projection * position;
     var quad_pos_ratio = quad_pos;
     quad_pos_ratio.x /= transform.camera.x;
-    *position += vec4<f32>(quad_pos_ratio * (1.5 / transform.screen.y) * (*position).w, 0.0, 0.0);
+    position += vec4<f32>(quad_pos_ratio * (1.5 / transform.screen.y) * position.w, 0.0, 0.0);
+    return position;
 }
 
 @vertex
@@ -60,7 +60,7 @@ fn main_vs(
 
     var v: Varing;
 
-    vs_transform(&v.position, node.position, quad_pos);
+    v.position = vs_transform(node.position, quad_pos);
 
     v.tex_coords = quad_pos;
 

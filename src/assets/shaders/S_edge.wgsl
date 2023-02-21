@@ -31,26 +31,26 @@ struct Transform {
 @group(1) @binding(1) var<storage, read> edge_src : array<vec2<u32>>;
 
 fn vs_transform(
-    position: ptr<function,vec4<f32>>,
     node_pos_a: vec3<f32>,
     node_pos_b: vec3<f32>,
     node_pos: vec3<f32>,
     quad_pos: vec2<f32>
-) {
+) -> vec4<f32> {
     let node_a = transform.projection * transform.view * vec4<f32>(node_pos_a, 1.0);
     let node_b = transform.projection * transform.view * vec4<f32>(node_pos_b, 1.0);
     var dir = node_a / node_a.w - node_b / node_b.w;
     dir.y = dir.y / transform.camera.x;
     let quad_dir = normalize(vec2<f32>(dir.y, -dir.x));
 
-    *position = vec4<f32>(node_pos, 1.0);
-    *position = transform.view * *position;
-    *position += vec4<f32>(quad_pos.y * quad_dir * 0.01 * 0.03, 0.0, 0.0);
-    *position = transform.projection * *position;
+    var position = vec4<f32>(node_pos, 1.0);
+    position = transform.view * position;
+    position += vec4<f32>(quad_pos.y * quad_dir * 0.01 * 0.03, 0.0, 0.0);
+    position = transform.projection * position;
 
     var quad_pos_ratio = quad_pos.y * quad_dir;
     quad_pos_ratio.x /= transform.camera.x;
-    *position += vec4<f32>(quad_pos_ratio * (0.5 / transform.screen.y) * (*position).w, 0.0, 0.0);
+    position += vec4<f32>(quad_pos_ratio * (0.5 / transform.screen.y) * position.w, 0.0, 0.0);
+    return position;
 }
 
 @vertex
@@ -62,8 +62,7 @@ fn main_vs(
 
     var v: Varing;
 
-    vs_transform(
-        &v.position,
+    v.position = vs_transform(
         node_src[edge[0]].position,
         node_src[edge[1]].position,
         node_src[edge[i.vertex_index % 2u]].position,
