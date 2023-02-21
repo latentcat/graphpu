@@ -5,7 +5,7 @@ use crate::models::app_model::Tool;
 use crate::models::graphics_model::{CastType, GraphicsResources};
 
 use crate::models::Models;
-use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_PADDING, graphics_frame, graphics_hover_frame, graphics_outer_frame, TOOL_BUTTON_PADDING, tool_item_group_style, toolbar_inner_frame, toolbar_inner_frame_bottom, toolbar_inner_frame_top};
+use crate::widgets::frames::{button_group_style, DEFAULT_BUTTON_PADDING, graphics_frame, graphics_hover_frame, TOOL_BUTTON_PADDING, tool_item_group_style, toolbar_inner_frame, toolbar_inner_frame_bottom, toolbar_inner_frame_top};
 
 use super::AppView;
 

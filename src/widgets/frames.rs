@@ -93,14 +93,6 @@ pub fn inspector_inner_frame(_style: &egui::Style) -> egui::Frame {
     }
 }
 
-pub fn graphics_outer_frame(_style: &egui::Style) -> egui::Frame {
-    egui::Frame {
-        inner_margin: egui::style::Margin::symmetric(0.5, 0.5),
-        rounding: egui::Rounding::none(),
-        ..Default::default()
-    }
-}
-
 pub fn graphics_frame(_style: &egui::Style, is_fullscreen: bool) -> egui::Frame {
     egui::Frame {
         inner_margin: egui::style::Margin::symmetric(0.5, 0.5),
