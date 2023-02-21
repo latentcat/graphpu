@@ -2026,7 +2026,7 @@ impl GraphicsResources {
         pollster::block_on(create_png(output_path, device, output_buffer, &buffer_dimensions, index));
     }
 
-    pub fn update_control(&mut self, ui: &mut Ui, is_hover: bool) {
+    pub fn update_control(&mut self, ui: &mut Ui, is_hover: bool, scale: f32) {
 
         self.control.update_interaction(ui, is_hover);
         self.control.update_camera(ui, &mut self.camera);
@@ -2038,7 +2038,7 @@ impl GraphicsResources {
         if self.need_update || self.control.is_pointer_update {
 
             let pointer_pos = if let Some(pos) = self.control.pointer_pos {
-                Some(glam::Vec2::new(pos.x * 2.0, pos.y * 2.0) )
+                Some(glam::Vec2::new(pos.x * scale, pos.y * scale) )
             } else {
                 None
             };

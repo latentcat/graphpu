@@ -64,10 +64,10 @@ impl AppView for GraphicsView {
                                 // 其中，pixels_per_point 代表当前每点像素密度
 
                                 compute_resources.update_viewport(
-                                    max_rect.size().mul(Vec2::from([2.0; 2]))
+                                    max_rect.size().mul(Vec2::from([models.app_model.pixels_per_point; 2]))
                                 );
 
-                                compute_resources.update_control(ui, models.graphics_model.is_hover_graphics_view);
+                                compute_resources.update_control(ui, models.graphics_model.is_hover_graphics_view, models.app_model.pixels_per_point);
                                 if compute_resources.control.pointer_pos.is_some() {
                                     if ui.input().pointer.button_double_clicked(PointerButton::Primary) {
                                         if !models.app_model.is_fullscreen_graphics {
@@ -115,7 +115,7 @@ impl AppView for GraphicsView {
 
                 if let Some(compute_resources) = &mut models.graphics_model.graphics_resources {
 
-                    if models.graphics_model.is_hover_graphics_view {
+                    if models.app_model.current_tool == Tool::Select && models.graphics_model.is_hover_graphics_view {
                         if let Some(cast_type) = &compute_resources.cast_type {
 
                             let pos = if let Some(pos) = ui.input().pointer.interact_pos() { pos + egui::Vec2::new(0.0, 30.0) } else { egui::Pos2::ZERO };
