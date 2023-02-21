@@ -25,11 +25,8 @@ test = false
 
 [dependencies]
 egui = "0.20.1"
-#egui_extras = { version = "0.18.0", path = "./lib/egui/egui_extras" }
 egui_extras = { version = "0.20.0" }
-#eframe = { path = "./lib/egui/eframe", features = ["wgpu"] }
 eframe = { version = "0.20.1", features = ["wgpu"] }
-#egui-wgpu = { path= "./lib/egui/egui-wgpu" }
 egui-wgpu = "0.20.0"
 
 bytemuck = { version = "1.9.1" }

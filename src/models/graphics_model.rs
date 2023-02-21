@@ -346,7 +346,6 @@ impl GraphicsResources {
         // Bind Group Layout
         // Bind Group 的布局，允许在布局不变的情况下更换 Bind Group 绑定的 Buffer
 
-        let compute_bind_group_layout =             BindGroupLayout::create_compute_bind_group_layout(device).bing_group_layout;
         let node_render_bind_group_layout =         BindGroupLayout::create_node_render_bind_group_layout(device).bing_group_layout;
         let edge_render_bind_group_layout =         BindGroupLayout::create_edge_render_bind_group_layout(device).bing_group_layout;
         let bounding_box_render_bind_group_layout = BindGroupLayout::create_bounding_box_render_bind_group_layout(device).bing_group_layout;
