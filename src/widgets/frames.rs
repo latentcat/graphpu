@@ -14,7 +14,7 @@ pub fn window_frame(style: &egui::Style) -> egui::Frame {
   }
 }
 
-pub fn menu_panel_style(_style: &egui::Style, is_fullscreen: bool) -> egui::Frame {
+pub fn menu_panel_style(_style: &egui::Style, _is_fullscreen: bool) -> egui::Frame {
     egui::Frame {
         inner_margin: egui::style::Margin {
             left: 8.0,
