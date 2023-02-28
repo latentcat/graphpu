@@ -30,7 +30,7 @@ impl AppView for GraphicsView {
         models.graphics_model.set_dispatching(false);
     
         egui::CentralPanel::default()
-            .frame(graphics_frame(ui.style(), models.graphics_model.graphics_resources.graph_resources.is_some()))
+            .frame(graphics_frame(ui.style(), true))
             .show_inside(ui, |ui| {
 
                 let max_rect = ui.max_rect();
@@ -116,30 +116,29 @@ impl AppView for GraphicsView {
                         });
                 });
 
-                if let compute_resources = &mut models.graphics_model.graphics_resources {
+                let compute_resources = &mut models.graphics_model.graphics_resources;
 
-                    if models.app_model.current_tool == Tool::Select && models.graphics_model.is_hover_graphics_view {
-                        if let Some(cast_type) = &compute_resources.cast_type {
+                if models.app_model.current_tool == Tool::Select && models.graphics_model.is_hover_graphics_view {
+                    if let Some(cast_type) = &compute_resources.cast_type {
 
-                            let pos = if let Some(pos) = ui.input().pointer.interact_pos() { pos + egui::Vec2::new(0.0, 20.0) } else { egui::Pos2::ZERO };
-                            ui.allocate_ui_at_rect(egui::Rect::from_min_size(pos, egui::Vec2::new(200.0, 200.0)), |ui| {
-                                graphics_hover_frame(ui.style())
-                                    .show(ui, |ui| {
-                                        ui.horizontal(|ui| {
-                                            ui.label(
-                                                match cast_type {
-                                                    CastType::Node => "Node ",
-                                                    CastType::Edge => "Edge "
-                                                }
-                                            );
-                                            ui.label(egui::RichText::new(format!("{}", compute_resources.cast_value)).weak());
-                                        });
+                        let pos = if let Some(pos) = ui.input().pointer.interact_pos() { pos + egui::Vec2::new(0.0, 20.0) } else { egui::Pos2::ZERO };
+                        ui.allocate_ui_at_rect(egui::Rect::from_min_size(pos, egui::Vec2::new(200.0, 200.0)), |ui| {
+                            graphics_hover_frame(ui.style())
+                                .show(ui, |ui| {
+                                    ui.horizontal(|ui| {
+                                        ui.label(
+                                            match cast_type {
+                                                CastType::Node => "Node ",
+                                                CastType::Edge => "Edge "
+                                            }
+                                        );
+                                        ui.label(egui::RichText::new(format!("{}", compute_resources.cast_value)).weak());
                                     });
-                            });
-                        }
+                                });
+                        });
                     }
+                };
 
-                }
 
                 if models.app_model.is_fullscreen_graphics { return; }
 
@@ -206,81 +205,81 @@ impl AppView for GraphicsView {
 
                             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                                 ui.horizontal(|ui| {
-                                    if let graphics_resources = &mut models.graphics_model.graphics_resources {
+                                    let graphics_resources = &mut models.graphics_model.graphics_resources;
 
-                                        let fullscreen_btn = ui.button("🗖");
-                                        // let fullscreen = _frame.info().window_info.fullscreen;
+                                    let fullscreen_btn = ui.button("🗖");
+                                    // let fullscreen = _frame.info().window_info.fullscreen;
 
-                                        fullscreen_btn.clicked().then(|| {
-                                            models.app_model.is_fullscreen_graphics = true;
-                                            _frame.set_fullscreen(true);
-                                        });
+                                    fullscreen_btn.clicked().then(|| {
+                                        models.app_model.is_fullscreen_graphics = true;
+                                        _frame.set_fullscreen(true);
+                                    });
 
 
-                                        toggle_button(ui, &mut graphics_resources.render_options.is_rendering_bounding_box, "⛶")
-                                            .on_hover_text("Toggle Bounding Box")
-                                            .clicked().then(|| { need_update(ui, graphics_resources) });
+                                    toggle_button(ui, &mut graphics_resources.render_options.is_rendering_bounding_box, "⛶")
+                                        .on_hover_text("Toggle Bounding Box")
+                                        .clicked().then(|| { need_update(ui, graphics_resources) });
 
-                                        toggle_button(ui, &mut graphics_resources.render_options.is_rendering_axis, "×")
-                                            .on_hover_text("Toggle Axes")
-                                            .clicked().then(|| { need_update(ui, graphics_resources) });
+                                    toggle_button(ui, &mut graphics_resources.render_options.is_rendering_axis, "×")
+                                        .on_hover_text("Toggle Axes")
+                                        .clicked().then(|| { need_update(ui, graphics_resources) });
 
-                                        toggle_button(ui, &mut graphics_resources.render_options.is_rendering_edge, "➖")
-                                            .on_hover_text("Toggle Edges")
-                                            .clicked().then(|| { need_update(ui, graphics_resources) });
+                                    toggle_button(ui, &mut graphics_resources.render_options.is_rendering_edge, "➖")
+                                        .on_hover_text("Toggle Edges")
+                                        .clicked().then(|| { need_update(ui, graphics_resources) });
 
-                                        toggle_button(ui, &mut graphics_resources.render_options.is_rendering_node, "⚫")
-                                            .on_hover_text("Toggle Nodes")
-                                            .clicked().then(|| { need_update(ui, graphics_resources) });
+                                    toggle_button(ui, &mut graphics_resources.render_options.is_rendering_node, "⚫")
+                                        .on_hover_text("Toggle Nodes")
+                                        .clicked().then(|| { need_update(ui, graphics_resources) });
 
-                                    }
+
                                 });
                             });
 
                         });
 
-                    if let graphics_resources = &mut models.graphics_model.graphics_resources {
-                        if !graphics_resources.render_options.is_showing_debug {
-                            ui.set_visible(false);
-                        }
+                    let graphics_resources = &mut models.graphics_model.graphics_resources;
+                    if !graphics_resources.render_options.is_showing_debug {
+                        ui.set_visible(false);
+                    }
 
-                        egui::TopBottomPanel::bottom("toolbar-top-2")
-                            .frame(toolbar_inner_frame_bottom(ui.style()))
-                            .show_separator_line(false)
-                            .show_inside(ui, |ui| {
-                                ui.set_style(ui.ctx().style());
-                                ui.spacing_mut().item_spacing = egui::vec2(4.0, 0.0);
-                                ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
-                                ui.spacing_mut().interact_size = Vec2::new(4.0, 4.0);
+                    egui::TopBottomPanel::bottom("toolbar-top-2")
+                        .frame(toolbar_inner_frame_bottom(ui.style()))
+                        .show_separator_line(false)
+                        .show_inside(ui, |ui| {
+                            ui.set_style(ui.ctx().style());
+                            ui.spacing_mut().item_spacing = egui::vec2(4.0, 0.0);
+                            ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
+                            ui.spacing_mut().interact_size = Vec2::new(4.0, 4.0);
 
-                                ui.with_layout(egui::Layout::from_main_dir_and_cross_align(egui::Direction::TopDown, egui::Align::Max), |ui| {
+                            ui.with_layout(egui::Layout::from_main_dir_and_cross_align(egui::Direction::TopDown, egui::Align::Max), |ui| {
 
-                                    ui.horizontal(|ui| {
-                                        ui.label(format!("{:.1}", graphics_resources.frames_per_second));
-                                        ui.label(egui::RichText::new("FPS: ").weak());
-                                    });
+                                ui.horizontal(|ui| {
+                                    ui.label(format!("{:.1}", graphics_resources.frames_per_second));
+                                    ui.label(egui::RichText::new("FPS: ").weak());
+                                });
 
-                                    ui.horizontal(|ui| {
-                                        ui.label(format!("{:06}", graphics_resources.compute_frame_count));
-                                        ui.label(egui::RichText::new("Compute frames: ").weak());
-                                    });
+                                ui.horizontal(|ui| {
+                                    ui.label(format!("{:06}", graphics_resources.compute_frame_count));
+                                    ui.label(egui::RichText::new("Compute frames: ").weak());
+                                });
 
-                                    ui.horizontal(|ui| {
-                                        ui.label(format!("{:06}", graphics_resources.render_frame_count));
-                                        ui.label(egui::RichText::new("Render frames: ").weak());
-                                    });
+                                ui.horizontal(|ui| {
+                                    ui.label(format!("{:06}", graphics_resources.render_frame_count));
+                                    ui.label(egui::RichText::new("Render frames: ").weak());
+                                });
 
-                                    ui.horizontal(|ui| {
-                                        ui.label(format!("{:06}", models.app_model.ui_frame_count));
-                                        ui.label(egui::RichText::new("UI frames: ").weak());
-                                    });
-
+                                ui.horizontal(|ui| {
+                                    ui.label(format!("{:06}", models.app_model.ui_frame_count));
+                                    ui.label(egui::RichText::new("UI frames: ").weak());
                                 });
 
                             });
 
+                        });
 
-                    }
+
+
 
                 });
 

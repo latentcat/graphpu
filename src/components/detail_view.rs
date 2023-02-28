@@ -51,7 +51,17 @@ pub fn show_message(models: &mut Models, ui: &mut Ui, _frame: &mut eframe::Frame
         let message = &messages[messages.len() - 1];
         if max_time > 0 && Utc::now().timestamp() - message.time > max_time.into() { return; };
         let message = message.to_string();
-        let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::click());
+
+        let (rect, response) = if max_time > 0 {
+
+            let rect = ui.available_rect_before_wrap();
+            (rect, None)
+        } else {
+
+            let (rect, response) = ui.allocate_exact_size(ui.available_size(), Sense::click());
+            (rect, Some(response))
+        };
+
         ui.allocate_ui_at_rect(rect, |ui| {
             ui.vertical(|ui| {
                 ui.add_space(3.0);
@@ -71,6 +81,10 @@ pub fn show_message(models: &mut Models, ui: &mut Ui, _frame: &mut eframe::Frame
             });
             // ui.label(egui::RichText::new(format!("{}", messages[0])).weak())
         });
-        response.clicked().then(||{ models.app_model.dock_stage = DockStage::Messages });
+
+        if let Some(response) = response {
+            response.clicked().then(||{ models.app_model.dock_stage = DockStage::Messages });
+        }
+
     }
 }

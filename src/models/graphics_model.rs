@@ -164,11 +164,12 @@ impl GraphicsModel {
     }
 
     pub fn render_output(&mut self, out_folder:String) {
-        if let graphics_resources = &mut self.graphics_resources {
-            graphics_resources.prepare_output();
-            graphics_resources.render();
-            graphics_resources.output_png_after_render(out_folder.to_owned());
-        }
+        let graphics_resources = &mut self.graphics_resources;
+
+        graphics_resources.prepare_output();
+        graphics_resources.render();
+        graphics_resources.output_png_after_render(out_folder.to_owned());
+
     }
 }
 
@@ -437,14 +438,14 @@ impl GraphicsResources {
             label: None,
         });
 
-        let mut compute_shader = ComputeShader {
+        let compute_shader = ComputeShader {
             shader: compute_shader,
             device: device.clone(),
             kernels: Default::default()
         };
 
 
-        let mut graphics_resources = GraphicsResources {
+        let graphics_resources = GraphicsResources {
             render_state,
             viewport_depth_texture: None,
             output_depth_texture: None,
@@ -1346,7 +1347,7 @@ impl GraphicsResources {
             },
         ]);
 
-        let mut graph_resources = GraphResources {
+        let graph_resources = GraphResources {
             status,
             uniform_buffer,
             node_buffer,

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use crate::utils::file::{path_to_string, pick_folder};
 use crate::utils::message::message_info;
 
-use self::{app_model::ImportState, data_model::ExternalData, graphics_model::GraphicsResources};
+use self::{app_model::ImportState, data_model::ExternalData};
 
 pub mod app_model;
 pub mod data_model;
