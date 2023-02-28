@@ -4,8 +4,9 @@ mod file_picker_page;
 use std::path::PathBuf;
 use std::sync::mpsc::{self, Receiver};
 
-use egui::Context;
+use egui::{Context, Widget};
 use tokio::task::JoinHandle;
+use crate::constant::ACCENT_COLOR;
 
 use crate::models::app_model::ImportState;
 use crate::models::data_model::ExternalData;
@@ -61,8 +62,7 @@ impl ImportModal {
                             |ui| match self.page_index {
                                 Page::FilePicker => {
                                     ui.add_enabled_ui(!self.edge_file_path.is_empty(), |ui| {
-                                        let next_button = ui.button("   Next   ");
-                                        if next_button.clicked() {
+                                        if egui::Button::new("   Next   ").fill(ACCENT_COLOR).ui(ui).clicked() {
                                             self.on_click_next(models);
                                         }
                                     });
@@ -71,8 +71,7 @@ impl ImportModal {
                                     }
                                 }
                                 Page::Config => {
-                                    let remove_data_button = ui.button("   Done   ");
-                                    if remove_data_button.clicked() {
+                                    if egui::Button::new("   Done   ").fill(ACCENT_COLOR).ui(ui).clicked() {
                                         self.on_click_done();
                                     }
                                     let reimport_data_button = ui.button("   Back   ");

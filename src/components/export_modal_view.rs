@@ -1,7 +1,7 @@
 use std::{fs::File, io::Write};
 use std::default::Default;
 
-use egui::Context;
+use egui::{Context, Widget};
 use rayon::prelude::*;
 
 use crate::{
@@ -12,6 +12,7 @@ use crate::{
         modal::Modal,
     },
 };
+use crate::constant::ACCENT_COLOR;
 use crate::utils::message::message_info;
 
 pub struct ExportModal {
@@ -116,7 +117,7 @@ impl ExportModal {
                     ui.spacing_mut().item_spacing = egui::vec2(8.0, 8.0);
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         ui.add_enabled_ui(self.directory_path.len() != 0, |ui| {
-                            if ui.button("   Done   ").clicked() {
+                            if egui::Button::new("   Done   ").fill(ACCENT_COLOR).ui(ui).clicked() {
                                 self.on_click_done(models).expect("TODO: panic message");
                                 models.app_model.is_export_visible = false;
                             }

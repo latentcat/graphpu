@@ -66,6 +66,24 @@ pub struct NodeSettings {
     pub size_ramp: (String, [f32; 2]),
 }
 
+pub struct CameraSettings {
+    pub look_at: (f32, f32, f32),
+    pub rotation: (f32, f32, f32),
+    pub distance: f32,
+}
+
+
+
+impl Default for CameraSettings {
+    fn default() -> Self {
+        Self {
+            look_at: (0.0, 0.0, 0.0),
+            rotation: (0.0, 0.0, 0.0),
+            distance: 10.0
+        }
+    }
+}
+
 impl Default for NodeSettings {
     fn default() -> Self {
         Self {
@@ -92,6 +110,7 @@ pub struct DataModel {
     pub max_id: u32,
     pub status: GraphicsStatus,
     pub node_settings: NodeSettings,
+    pub camera_settings: CameraSettings,
 }
 
 impl Default for DataModel {
@@ -105,6 +124,7 @@ impl Default for DataModel {
             max_id: 0,
             status: GraphicsStatus::default(),
             node_settings: NodeSettings::default(),
+            camera_settings: Default::default()
         }
     }
 }

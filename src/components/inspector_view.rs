@@ -153,11 +153,6 @@ impl InspectorView {
         inspector_section(ui, true, "Transform", |ui| {
             grid_label(ui, "");
 
-            ui.horizontal(|ui| {
-                ui.add(egui::DragValue::new(&mut node_settings.size_ramp.1[0]).speed(0.1));
-                ui.label("—");
-                ui.add(egui::DragValue::new(&mut node_settings.size_ramp.1[1]).speed(0.1));
-            });
             ui.end_row();
         });
 
@@ -306,7 +301,30 @@ impl InspectorView {
     }
 
     fn camera_inspector(&mut self, _models: &mut Models, ui: &mut Ui) {
+        let camera_settings = &mut _models.data_model.camera_settings;
         inspector_section(ui, true, "Transform", |ui| {
+
+            grid_label(ui, "Look at");
+            ui.horizontal(|ui| {
+                ui.add(egui::DragValue::new(&mut camera_settings.look_at.0).speed(0.1));
+                ui.add(egui::DragValue::new(&mut camera_settings.look_at.1).speed(0.1));
+                ui.add(egui::DragValue::new(&mut camera_settings.look_at.2).speed(0.1));
+            });
+            ui.end_row();
+
+
+            grid_label(ui, "Rotation");
+            ui.horizontal(|ui| {
+                ui.add(egui::DragValue::new(&mut camera_settings.rotation.0).speed(0.1));
+                ui.add(egui::DragValue::new(&mut camera_settings.rotation.1).speed(0.1));
+                ui.add(egui::DragValue::new(&mut camera_settings.rotation.2).speed(0.1));
+            });
+            ui.end_row();
+
+            grid_label(ui, "Distance");
+            ui.horizontal(|ui| {
+                ui.add(egui::DragValue::new(&mut camera_settings.distance).speed(0.1));
+            });
             ui.end_row();
         });
         inspector_section(ui, true, "View", |ui| {
