@@ -29,10 +29,10 @@ impl AppView for KernelView {
             ui.spacing_mut().item_spacing = egui::vec2(4.0, 4.0);
 
             ui.horizontal_wrapped(|ui| {
-                if let Some(graphics_resources) = &mut _models.graphics_model.graphics_resources {
-                    let _kernels = &mut graphics_resources.graph_compute.kernels;
+                if let Some(graph_resources) = &mut _models.graphics_model.graphics_resources.graph_resources {
+
                     for (index, &name) in KERNEL_NAMES.iter().enumerate() {
-                        kernel_label(ui, &mut self.selected_kernel ,index, name, graphics_resources.kernel_status_codes[index]);
+                        kernel_label(ui, &mut self.selected_kernel ,index, name, graph_resources.kernel_status_codes[index]);
                     }
                 }
             });
@@ -47,8 +47,8 @@ impl AppView for KernelView {
 
                     let mut code = 0;
 
-                    if let Some(graphics_resources) = &mut _models.graphics_model.graphics_resources {
-                        code = graphics_resources.kernel_status_codes[self.selected_kernel];
+                    if let Some(graph_resources) = &mut _models.graphics_model.graphics_resources.graph_resources {
+                        code = graph_resources.kernel_status_codes[self.selected_kernel];
                     }
 
                     inspector_grid("kernel_grid")

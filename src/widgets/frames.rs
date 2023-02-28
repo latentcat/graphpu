@@ -105,8 +105,9 @@ pub fn graphics_frame(_style: &egui::Style, is_fullscreen: bool) -> egui::Frame 
 
 pub fn graphics_hover_frame(style: &egui::Style) -> egui::Frame {
     egui::Frame {
-        inner_margin: egui::style::Margin::symmetric(6.0, 2.0),
-        rounding: egui::Rounding::none(),
+        inner_margin: egui::style::Margin::symmetric(8.0, 4.0),
+        // rounding: egui::Rounding::none(),
+        rounding: egui::Rounding::same(8.0),
         fill: Color32::from_gray(20),
         stroke: style.visuals.window_stroke(),
         ..Default::default()

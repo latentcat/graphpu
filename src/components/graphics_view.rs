@@ -15,8 +15,9 @@ pub struct GraphicsView;
 impl AppView for GraphicsView {
     fn show(&mut self, models: &mut Models, ui: &mut Ui, _frame: &mut eframe::Frame) {
 
-        if models.graphics_model.graphics_resources.is_some() {
-            if models.graphics_model.graphics_resources.as_ref().unwrap().is_kernel_error {
+        if let Some(graph_resources) = &mut models.graphics_model.graphics_resources.graph_resources {
+
+            if graph_resources.is_kernel_error {
                 models.graphics_model.set_computing(false);
             }
         }
@@ -29,7 +30,7 @@ impl AppView for GraphicsView {
         models.graphics_model.set_dispatching(false);
     
         egui::CentralPanel::default()
-            .frame(graphics_frame(ui.style(), models.graphics_model.graphics_resources.is_some()))
+            .frame(graphics_frame(ui.style(), models.graphics_model.graphics_resources.graph_resources.is_some()))
             .show_inside(ui, |ui| {
 
                 let max_rect = ui.max_rect();
@@ -43,9 +44,11 @@ impl AppView for GraphicsView {
 
                             // 如果 Compute Model 已经初始化，即数据导入完成，可以开始渲染
                             // 则获取 Compute Resource
-                            if let Some(compute_resources) = &mut models.graphics_model.graphics_resources {
+                            let compute_resources = &mut models.graphics_model.graphics_resources;
 
-                                if compute_resources.is_kernel_error { }
+                            // let graph_resources = compute_resources.graph_resources.as_mut().unwrap();
+
+                                // if graph_resources.is_kernel_error { }
 
                                 // 如果正在持续计算，则计算一次
                                 if is_computing {
@@ -107,18 +110,18 @@ impl AppView for GraphicsView {
                                     models.graphics_model.is_hover_graphics_view = response.hovered();
                                 });
 
-                            }
+
 
 
                         });
                 });
 
-                if let Some(compute_resources) = &mut models.graphics_model.graphics_resources {
+                if let compute_resources = &mut models.graphics_model.graphics_resources {
 
                     if models.app_model.current_tool == Tool::Select && models.graphics_model.is_hover_graphics_view {
                         if let Some(cast_type) = &compute_resources.cast_type {
 
-                            let pos = if let Some(pos) = ui.input().pointer.interact_pos() { pos + egui::Vec2::new(0.0, 30.0) } else { egui::Pos2::ZERO };
+                            let pos = if let Some(pos) = ui.input().pointer.interact_pos() { pos + egui::Vec2::new(0.0, 20.0) } else { egui::Pos2::ZERO };
                             ui.allocate_ui_at_rect(egui::Rect::from_min_size(pos, egui::Vec2::new(200.0, 200.0)), |ui| {
                                 graphics_hover_frame(ui.style())
                                     .show(ui, |ui| {
@@ -203,7 +206,7 @@ impl AppView for GraphicsView {
 
                             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                                 ui.horizontal(|ui| {
-                                    if let Some(graphics_resources) = &mut models.graphics_model.graphics_resources {
+                                    if let graphics_resources = &mut models.graphics_model.graphics_resources {
 
                                         let fullscreen_btn = ui.button("🗖");
                                         // let fullscreen = _frame.info().window_info.fullscreen;
@@ -230,19 +233,13 @@ impl AppView for GraphicsView {
                                             .on_hover_text("Toggle Nodes")
                                             .clicked().then(|| { need_update(ui, graphics_resources) });
 
-                                    } else {
-                                        ui.set_enabled(false);
-
-                                        toggle_button(ui, &mut false, "⛶");
-                                        toggle_button(ui, &mut false, "➖");
-                                        toggle_button(ui, &mut false, "⚫");
                                     }
                                 });
                             });
 
                         });
 
-                    if let Some(graphics_resources) = &mut models.graphics_model.graphics_resources {
+                    if let graphics_resources = &mut models.graphics_model.graphics_resources {
                         if !graphics_resources.render_options.is_showing_debug {
                             ui.set_visible(false);
                         }

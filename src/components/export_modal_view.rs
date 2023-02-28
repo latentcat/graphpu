@@ -135,24 +135,24 @@ impl ExportModal {
         let node_path = path_prefix.clone() + "_node.pcache";
         let edge_path = path_prefix + "_edge.pcache";
 
-        if let Some(graphics_resource) = &mut models.graphics_model.graphics_resources {
-            graphics_resource.debug();
-            if let Some(data) = &graphics_resource.buffer_bytes {
+        let graphics_resource = &mut models.graphics_model.graphics_resources;
+        graphics_resource.debug();
+        if let Some(graph_resources) = &graphics_resource.graph_resources {
 
-                let mut file = File::create(&node_path)?;
-                file.write_all(b"pcache\n")?;
-                file.write_all(b"comment Node PCACHE file Exported from GraphPU\n")?;
-                file.write_all(b"format binary 1.0\n")?;
-                file.write_fmt(format_args!("elements {}\n", graphics_resource.status.node_count))?;
+            let mut file = File::create(&node_path)?;
+            file.write_all(b"pcache\n")?;
+            file.write_all(b"comment Node PCACHE file Exported from GraphPU\n")?;
+            file.write_all(b"format binary 1.0\n")?;
+            file.write_fmt(format_args!("elements {}\n", graph_resources.status.node_count))?;
 
-                file.write_fmt(format_args!("property {} {}\n", "float", "position.x"))?;
-                file.write_fmt(format_args!("property {} {}\n", "float", "position.y"))?;
-                file.write_fmt(format_args!("property {} {}\n", "float", "position.z"))?;
+            file.write_fmt(format_args!("property {} {}\n", "float", "position.x"))?;
+            file.write_fmt(format_args!("property {} {}\n", "float", "position.y"))?;
+            file.write_fmt(format_args!("property {} {}\n", "float", "position.z"))?;
 
-                file.write_all(b"end_header\n")?;
-                file.write_all(bytemuck::cast_slice(&data))?;
-            }
+            file.write_all(b"end_header\n")?;
+            file.write_all(bytemuck::cast_slice(graph_resources.buffer_bytes.as_ref().unwrap()))?;
         }
+
 
         if let Some(source_target_list) = &models.data_model.source_target_list {
 

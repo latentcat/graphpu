@@ -37,6 +37,11 @@ impl MainApp {
         style.visuals.selection.bg_fill = Color32::from_rgb(86, 89, 225);
         style.visuals.selection.stroke.color = Color32::from_white_alpha(240);
 
+        style.visuals.widgets.hovered.bg_stroke.width = 0.0;
+        style.visuals.widgets.hovered.expansion = 0.0;
+        style.visuals.widgets.active.bg_stroke.width = 0.0;
+        style.visuals.widgets.active.expansion = 0.0;
+
         // style.visuals.collapsing_header_frame = true;
 
         style.spacing.icon_width = 12.0;

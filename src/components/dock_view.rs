@@ -34,11 +34,7 @@ impl AppView for DockView {
                         egui::Layout::right_to_left(egui::Align::Center),
                         |ui| {
 
-                            if let Some(graphics_resources) = &mut models.graphics_model.graphics_resources  {
-                                toggle_button(ui, &mut graphics_resources.render_options.is_showing_debug, "ℹ State");
-                            } else {
-                                toggle_button(ui, &mut false, "ℹ State");
-                            }
+                            toggle_button(ui, &mut models.graphics_model.graphics_resources.render_options.is_showing_debug, "ℹ State");
 
 
                         },

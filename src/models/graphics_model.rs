@@ -112,7 +112,7 @@ pub struct GraphicsModel {
     pub is_dispatching: bool,
     pub is_hover_graphics_view: bool,
     pub compute_render_state: egui_wgpu::RenderState,
-    pub graphics_resources: Option<GraphicsResources>,
+    pub graphics_resources: GraphicsResources,
 }
 
 impl GraphicsModel {
@@ -125,16 +125,13 @@ impl GraphicsModel {
             is_dispatching: false,
             is_hover_graphics_view: false,
             compute_render_state: cc.wgpu_render_state.as_ref().unwrap().clone(),
-            graphics_resources: None,
+            graphics_resources: GraphicsResources::new(cc.wgpu_render_state.as_ref().unwrap().clone()),
         }
     }
 
     // 重置计算 Model，dispose 并删除计算资源
     pub fn reset(&mut self) {
-        if let Some(compute_resources) = &mut self.graphics_resources {
-            compute_resources.dispose();
-        }
-        self.graphics_resources = None;
+        self.graphics_resources.dispose();
     }
 }
 
@@ -161,13 +158,13 @@ impl GraphicsModel {
     }
 
     pub fn cancel_error_state(&mut self) {
-        if self.graphics_resources.is_some() {
-            self.graphics_resources.as_mut().unwrap().is_kernel_error = false
+        if self.graphics_resources.graph_resources.is_some() {
+            self.graphics_resources.graph_resources.as_mut().unwrap().is_kernel_error = false
         }
     }
 
     pub fn render_output(&mut self, out_folder:String) {
-        if let Some(graphics_resources) = &mut self.graphics_resources {
+        if let graphics_resources = &mut self.graphics_resources {
             graphics_resources.prepare_output();
             graphics_resources.render();
             graphics_resources.output_png_after_render(out_folder.to_owned());
@@ -213,9 +210,6 @@ pub enum CastType {
 // 绘图资源 Model，存放和计算和绘图相关的一切资源
 pub struct GraphicsResources {
 
-    // 包含 Node / Edge Count
-    pub status:                     GraphicsStatus,
-
     // 包含 Device、Queue、target_format 和 egui_rpass
     render_state:                   egui_wgpu::RenderState,
 
@@ -240,22 +234,51 @@ pub struct GraphicsResources {
     cast_texture:                 Option<Texture>,
     cast_depth_texture:           Option<Texture>,
 
+    axis_render_pipeline:           wgpu::RenderPipeline,
+
     // 相机
     camera:                         Camera,
     pub control:                    Controls,
 
     // Buffers
-    uniform_buffer:                 wgpu::Buffer,
     quad_buffer:                    wgpu::Buffer,
+    render_uniform_buffer:          wgpu::Buffer,
     bounding_box_vertex_buffer:     wgpu::Buffer,
     bounding_box_index_buffer:      wgpu::Buffer,
+
+    render_uniform_bind_group_layout: wgpu::BindGroupLayout,
+    render_uniform_bind_group:      wgpu::BindGroup,
+
+    pub compute_frame_count:        u32,                      // 帧计数器
+    pub render_frame_count:         u32,                      // 帧计数器
+    last_time:                      i64,                      // 上次记录时间
+    last_frame:                     u32,                      // 上次记录帧数
+    pub frames_per_second:          f64,                      // FPS
+
+    pub render_options:             RenderOptions,
+    pub need_update:                bool,
+
+    pub cast_type:                  Option<CastType>,
+    pub cast_value:                 u32,
+
+    pub shaders:                    Vec<ShaderModule>,
+    pub compute_shader:             ComputeShader,
+
+    pub graph_resources:            Option<GraphResources>,
+}
+
+pub struct GraphResources {
+
+    // 包含 Node / Edge Count
+    pub status:                     GraphicsStatus,
+
+    uniform_buffer:                 wgpu::Buffer,
     node_buffer:                    wgpu::Buffer,
     node_copy_buffer:               wgpu::Buffer,
     node_edge_sort_range_buffer:    wgpu::Buffer,
     edge_buffer:                    wgpu::Buffer,
     edge_sort_node_buffer:          wgpu::Buffer,
     edge_sort_dir_buffer:           wgpu::Buffer,
-    render_uniform_buffer:          wgpu::Buffer,
     bounding_buffer:                wgpu::Buffer,
     tree_buffer:                    wgpu::Buffer,
     tree_node_buffer:               wgpu::Buffer,
@@ -268,18 +291,18 @@ pub struct GraphicsResources {
     node_render_bind_group:         wgpu::BindGroup,
     edge_render_bind_group:         wgpu::BindGroup,
     bounding_box_render_bind_group: wgpu::BindGroup,
-    render_uniform_bind_group:      wgpu::BindGroup,
 
-    // 渲染管线
+
+    pub debugger:                   GraphicsDebugger,
+    pub buffer_bytes:               Option<Vec<u8>>,
+
     node_render_pipeline:           wgpu::RenderPipeline,
     node_cast_render_pipeline:      wgpu::RenderPipeline,
     edge_render_pipeline:           wgpu::RenderPipeline,
     edge_cast_render_pipeline:      wgpu::RenderPipeline,
-    axis_render_pipeline:           wgpu::RenderPipeline,
     bounding_box_render_pipeline:   wgpu::RenderPipeline,
 
     // 计算管线
-    pub graph_compute:              ComputeShader,
     pub kernel_status_codes:        Vec<i32>,
     pub is_kernel_error:            bool,
 
@@ -290,20 +313,6 @@ pub struct GraphicsResources {
     tree_node_work_group_count:     u32,
     step_work_group_count:          u32,
     bb_work_group_count:            u32,
-    pub compute_frame_count:        u32,                      // 帧计数器
-    pub render_frame_count:         u32,                      // 帧计数器
-    last_time:                      i64,                      // 上次记录时间
-    last_frame:                     u32,                      // 上次记录帧数
-    pub frames_per_second:          f64,                      // FPS
-
-    pub render_options:             RenderOptions,
-    pub need_update:                bool,
-
-    pub debugger:                   GraphicsDebugger,
-    pub buffer_bytes:               Option<Vec<u8>>,
-
-    pub cast_type:                  Option<CastType>,
-    pub cast_value:                 u32,
 }
 
 pub struct GraphicsDebugger {
@@ -314,16 +323,8 @@ pub struct GraphicsDebugger {
 impl GraphicsResources {
 
     // 在导入数据后调用的方法，初始化计算和绘图的资源
-    pub fn new(render_state: egui_wgpu::RenderState, model: &mut DataModel) -> Self {
+    pub fn new(render_state: egui_wgpu::RenderState) -> Self {
 
-        // 从 Graphics Model 中获取 Node 和 Edge 的数量
-        let node_count = model.status.node_count as u32;
-        let edge_count = model.status.edge_count as u32;
-        let edge_sort_count = (model.status.edge_count * 2) as u32;
-        let tree_node_count = get_tree_node_count(&node_count);
-
-        // Node 和 Edge 结构体的占内存大小，用于计算 Buffer 长度
-        let node_struct_size = mem::size_of::<Node>();
 
         // 从 render_state 中获取 wgpu 的 device 和 queue
         let device = &render_state.device;
@@ -352,50 +353,9 @@ impl GraphicsResources {
 
         let compute_shader = shaders.pop().unwrap();
 
-        let node_shader = &shaders[0];
-        let edge_shader = &shaders[1];
-        let axis_shader = &shaders[2];
-        let bounding_box_shader = &shaders[3];
-
-        // Bind Group Layout
-        // Bind Group 的布局，允许在布局不变的情况下更换 Bind Group 绑定的 Buffer
-
-        let node_render_bind_group_layout =         BindGroupLayout::create_node_render_bind_group_layout(device).bing_group_layout;
-        let edge_render_bind_group_layout =         BindGroupLayout::create_edge_render_bind_group_layout(device).bing_group_layout;
-        let bounding_box_render_bind_group_layout = BindGroupLayout::create_bounding_box_render_bind_group_layout(device).bing_group_layout;
         let render_uniform_bind_group_layout =      BindGroupLayout::create_render_uniform_bind_group_layout(device).bing_group_layout;
 
-
-        // Render Pipeline
-        // 渲染管线
-
-        let node_render_pipeline = RenderPipeline::create_node_render_pipeline(
-            device,
-            &[&render_uniform_bind_group_layout, &node_render_bind_group_layout],
-            node_shader,
-            false,
-        ).render_pipeline;
-
-        let node_cast_render_pipeline = RenderPipeline::create_node_render_pipeline(
-            device,
-            &[&render_uniform_bind_group_layout, &node_render_bind_group_layout],
-            node_shader,
-            true,
-        ).render_pipeline;
-
-        let edge_render_pipeline = RenderPipeline::create_edge_render_pipeline(
-            device,
-            &[&render_uniform_bind_group_layout, &edge_render_bind_group_layout],
-            edge_shader,
-            false,
-        ).render_pipeline;
-
-        let edge_cast_render_pipeline = RenderPipeline::create_edge_render_pipeline(
-            device,
-            &[&render_uniform_bind_group_layout, &edge_render_bind_group_layout],
-            edge_shader,
-            true,
-        ).render_pipeline;
+        let axis_shader = &shaders[2];
 
         let axis_render_pipeline = RenderPipeline::create_axis_render_pipeline(
             device,
@@ -403,54 +363,7 @@ impl GraphicsResources {
             axis_shader
         ).render_pipeline;
 
-        let bounding_box_render_pipeline = RenderPipeline::create_bounding_box_render_pipeline(
-            device,
-            &[&render_uniform_bind_group_layout, &bounding_box_render_bind_group_layout],
-            bounding_box_shader
-        ).render_pipeline;
 
-
-        // 计算线程组数
-        // 线程组数 = 线程数 / 每组线程数（取整）
-
-        let node_work_group_count =
-            ((node_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
-
-        let edge_work_group_count =
-            ((edge_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
-
-        let edge_sort_work_group_count =
-            ((edge_sort_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
-
-        let tree_node_work_group_count = 
-            (tree_node_count as f32 / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
-
-        let step_work_group_count = 
-            (std::cmp::min(node_count, 16384) as f32 / PARTICLES_PER_GROUP as f32).ceil() as u32;
-
-        let bb_work_group_count =
-            ((node_work_group_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
-
-        // Buffer 创建
-
-
-        let compute_uniform = ComputeUniforms {
-            frame_num: 0,
-            node_count,
-            edge_count,
-            edge_sort_count,
-            tree_node_count,
-            bounding_count: node_work_group_count,
-            kernel_status_count: KERNEL_NAMES.len() as u32,
-        };
-
-        // 创建 Uniform Buffer
-        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(&[compute_uniform]),
-            usage: wgpu::BufferUsages::UNIFORM |
-                wgpu::BufferUsages::COPY_DST,
-        });
 
         // Quad 顶点数据
         let vertex_buffer_data =
@@ -500,6 +413,198 @@ impl GraphicsResources {
             contents: bytemuck::cast_slice(&index_buffer_data),
             usage: wgpu::BufferUsages::INDEX,
         });
+
+
+        let camera = Camera::from(Vec3::new(3.0, 3.0, 6.0));
+        let control = Controls::new();
+
+        //
+        let render_uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Render Uniform Buffer"),
+            size: mem::size_of::<Uniforms>() as _,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false
+        });
+
+        let render_uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &render_uniform_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: render_uniform_buffer.as_entire_binding(),
+                },
+            ],
+            label: None,
+        });
+
+        let mut compute_shader = ComputeShader {
+            shader: compute_shader,
+            device: device.clone(),
+            kernels: Default::default()
+        };
+
+
+        let mut graphics_resources = GraphicsResources {
+            render_state,
+            viewport_depth_texture: None,
+            output_depth_texture: None,
+            cast_texture_extent: Default::default(),
+            cast_texture: None,
+            viewport_texture: None,
+            viewport_msaa_texture: None,
+            output_texture: None,
+            output_msaa_texture: None,
+            viewport_texture_id: Default::default(),
+            viewport_size: Default::default(),
+            viewport_texture_extent: Default::default(),
+            output_texture_extent: Default::default(),
+            is_render_output: false,
+            camera,
+            control,
+            quad_buffer,
+            bounding_box_vertex_buffer,
+            bounding_box_index_buffer,
+            render_uniform_buffer,
+            render_uniform_bind_group,
+            axis_render_pipeline,
+            compute_frame_count: 0,
+            render_frame_count: 0,
+            last_time: 0,
+            last_frame: 0,
+            frames_per_second: 0.0,
+            render_options: RenderOptions {
+                is_rendering_node: true,
+                is_rendering_edge: true,
+                is_rendering_axis: true,
+                is_rendering_bounding_box: false,
+                is_showing_debug: false
+            },
+            need_update: true,
+            cast_depth_texture: None,
+            cast_type: None,
+            cast_value: 0,
+            shaders,
+            compute_shader,
+            graph_resources: None,
+            render_uniform_bind_group_layout
+        };
+
+        graphics_resources
+
+    }
+
+    pub fn init_data(&mut self, render_state: egui_wgpu::RenderState, model: &mut DataModel) {
+
+        let device = &render_state.device;
+        let _queue = &render_state.queue;
+
+        let status = model.status.clone();
+
+
+        // 从 Graphics Model 中获取 Node 和 Edge 的数量
+        let node_count = model.status.node_count as u32;
+        let edge_count = model.status.edge_count as u32;
+        let edge_sort_count = (model.status.edge_count * 2) as u32;
+        let tree_node_count = get_tree_node_count(&node_count);
+
+        // Node 和 Edge 结构体的占内存大小，用于计算 Buffer 长度
+        let node_struct_size = mem::size_of::<Node>();
+
+        let shaders = &self.shaders;
+
+        let node_shader = &shaders[0];
+        let edge_shader = &shaders[1];
+        let axis_shader = &shaders[2];
+        let bounding_box_shader = &shaders[3];
+
+
+        // Bind Group Layout
+        // Bind Group 的布局，允许在布局不变的情况下更换 Bind Group 绑定的 Buffer
+
+        let node_render_bind_group_layout =         BindGroupLayout::create_node_render_bind_group_layout(device).bing_group_layout;
+        let edge_render_bind_group_layout =         BindGroupLayout::create_edge_render_bind_group_layout(device).bing_group_layout;
+        let bounding_box_render_bind_group_layout = BindGroupLayout::create_bounding_box_render_bind_group_layout(device).bing_group_layout;
+
+
+        // Render Pipeline
+        // 渲染管线
+
+        let node_render_pipeline = RenderPipeline::create_node_render_pipeline(
+            device,
+            &[&self.render_uniform_bind_group_layout, &node_render_bind_group_layout],
+            node_shader,
+            false,
+        ).render_pipeline;
+
+        let node_cast_render_pipeline = RenderPipeline::create_node_render_pipeline(
+            device,
+            &[&self.render_uniform_bind_group_layout, &node_render_bind_group_layout],
+            node_shader,
+            true,
+        ).render_pipeline;
+
+        let edge_render_pipeline = RenderPipeline::create_edge_render_pipeline(
+            device,
+            &[&self.render_uniform_bind_group_layout, &edge_render_bind_group_layout],
+            edge_shader,
+            false,
+        ).render_pipeline;
+
+        let edge_cast_render_pipeline = RenderPipeline::create_edge_render_pipeline(
+            device,
+            &[&self.render_uniform_bind_group_layout, &edge_render_bind_group_layout],
+            edge_shader,
+            true,
+        ).render_pipeline;
+
+        let bounding_box_render_pipeline = RenderPipeline::create_bounding_box_render_pipeline(
+            device,
+            &[&self.render_uniform_bind_group_layout, &bounding_box_render_bind_group_layout],
+            bounding_box_shader
+        ).render_pipeline;
+
+
+        // 计算线程组数
+        // 线程组数 = 线程数 / 每组线程数（取整）
+
+        let node_work_group_count =
+            ((node_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
+
+        let edge_work_group_count =
+            ((edge_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
+
+        let edge_sort_work_group_count =
+            ((edge_sort_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
+
+        let tree_node_work_group_count =
+            (tree_node_count as f32 / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
+
+        let step_work_group_count =
+            (std::cmp::min(node_count, 16384) as f32 / PARTICLES_PER_GROUP as f32).ceil() as u32;
+
+        let bb_work_group_count =
+            ((node_work_group_count as f32) / (PARTICLES_PER_GROUP as f32)).ceil() as u32;
+
+        // Buffer 创建
+
+        let compute_uniform = ComputeUniforms {
+            frame_num: 0,
+            node_count,
+            edge_count,
+            edge_sort_count,
+            tree_node_count,
+            bounding_count: node_work_group_count,
+            kernel_status_count: KERNEL_NAMES.len() as u32,
+        };
+
+        // 创建 Uniform Buffer
+        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(&[compute_uniform]),
+            usage: wgpu::BufferUsages::UNIFORM |
+                wgpu::BufferUsages::COPY_DST,
+        });
+
 
         // 计算对齐后的 Node Buffer 大小
         let node_buffer_size = pad_size(node_struct_size, node_count);
@@ -573,7 +678,7 @@ impl GraphicsResources {
         });
 
         let depth_sort_param_buffer_size = 2 * 4;
-        
+
         let depth_sort_param_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Depth Sort Param Buffer"),
             size: depth_sort_param_buffer_size as wgpu::BufferAddress,
@@ -645,27 +750,6 @@ impl GraphicsResources {
         model.clear_source_target_list();
 
 
-        let camera = Camera::from(Vec3::new(3.0, 3.0, 6.0));
-        let control = Controls::new();
-
-        //
-        let render_uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Render Uniform Buffer"),
-            size: mem::size_of::<Uniforms>() as _,
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-            mapped_at_creation: false
-        });
-
-        let kernel_status_buffer_size = KERNEL_STATUS_COUNT * 4;
-        let kernel_status_buffer = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("Kernel Status Buffer"),
-            size: kernel_status_buffer_size as wgpu::BufferAddress,
-            usage: wgpu::BufferUsages::STORAGE
-                | wgpu::BufferUsages::COPY_DST
-                | wgpu::BufferUsages::COPY_SRC,
-            mapped_at_creation: false
-        });
-
         // Bind Group
         // 用于绑定 Buffer 与 Bind Group Layout，后连接 Pipeline Layout 和 Pipeline
         // 需与 Bind Group Layout 保持索引和容量一致
@@ -714,16 +798,17 @@ impl GraphicsResources {
             label: None,
         });
 
-        let render_uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &render_uniform_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: render_uniform_buffer.as_entire_binding(),
-                },
-            ],
-            label: None,
+
+        let kernel_status_buffer_size = KERNEL_STATUS_COUNT * 4;
+        let kernel_status_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("Kernel Status Buffer"),
+            size: kernel_status_buffer_size as wgpu::BufferAddress,
+            usage: wgpu::BufferUsages::STORAGE
+                | wgpu::BufferUsages::COPY_DST
+                | wgpu::BufferUsages::COPY_SRC,
+            mapped_at_creation: false
         });
+
 
         let debug_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Debug Buffer"),
@@ -737,80 +822,76 @@ impl GraphicsResources {
             buffer_size: kernel_status_buffer_size as _,
         };
 
-        let mut graph_compute = ComputeShader {
-            shader: compute_shader,
-            device: device.clone(),
-            kernels: Default::default()
-        };
+        let graph_compute = &mut self.compute_shader;
 
         graph_compute.create_compute_kernel("init_kernel_status", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 11,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: kernel_status_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 11,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: kernel_status_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("gen_node", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 13,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_edge_sort_range_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 14,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_edge_sort_range_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 1,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 3,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: spring_force_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 13,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_edge_sort_range_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 14,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_edge_sort_range_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("cal_mass", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 2,
-                    buffer_type: ComputeBufferType::StorageReadOnly,
-                    buffer: edge_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 1,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 2,
+                buffer_type: ComputeBufferType::StorageReadOnly,
+                buffer: edge_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("cal_gravity_force", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 1,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_buffer.as_entire_binding(),
+            },
+        ]);
 
         graph_compute.create_compute_kernel("prepare_edge_sort", vec![
             ComputeBuffer {
@@ -901,399 +982,379 @@ impl GraphicsResources {
             },
         ]);
         graph_compute.create_compute_kernel("spring_force_reduction", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 12,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: edge_sort_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 13,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: edge_sort_dir_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 14,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_edge_sort_range_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 11,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: kernel_status_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 1,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 3,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: spring_force_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 12,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: edge_sort_node_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 13,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: edge_sort_dir_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 14,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_edge_sort_range_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 11,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: kernel_status_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("spring_force", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 13,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: edge_sort_dir_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 14,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_edge_sort_range_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 3,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: spring_force_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 13,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: edge_sort_dir_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 14,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_edge_sort_range_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("reduction_bounding", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 1,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 4,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: bounding_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("reduction_bounding_2", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 4,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: bounding_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("bounding_box", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 4,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: bounding_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 4,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: bounding_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 5,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: tree_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 6,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: tree_node_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("clear_1", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 7,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: tree_child_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("tree_building", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 11,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: kernel_status_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 1,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 5,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: tree_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 6,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: tree_node_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 7,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: tree_child_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 11,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: kernel_status_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("clear_2", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 6,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: tree_node_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("summarization", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 11,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: kernel_status_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 1,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 5,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: tree_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 6,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: tree_node_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 7,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: tree_child_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 11,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: kernel_status_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("sort", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 11,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: kernel_status_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 1,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 5,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: tree_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 6,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: tree_node_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 7,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: tree_child_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 11,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: kernel_status_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("electron_force", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 5,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 6,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 7,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: tree_child_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 11,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: kernel_status_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 1,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 5,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: tree_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 6,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: tree_node_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 7,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: tree_child_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 11,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: kernel_status_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("main", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 3,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: spring_force_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 1,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 3,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: spring_force_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("displacement", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 1,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("randomize", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 1,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("copy", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 15,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_copy_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 1,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 15,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_copy_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("cal_depth", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 1,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: node_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 10,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: render_uniform_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 1,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: node_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 8,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: depth_sort_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 10,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: self.render_uniform_buffer.as_entire_binding(),
+            },
+        ]);
         graph_compute.create_compute_kernel("sort_by_depth", vec![
-                ComputeBuffer {
-                    binding: 0,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: uniform_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 8,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: depth_sort_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 9,
-                    buffer_type: ComputeBufferType::Uniform,
-                    buffer: depth_sort_param_buffer.as_entire_binding(),
-                },
-                ComputeBuffer {
-                    binding: 11,
-                    buffer_type: ComputeBufferType::Storage,
-                    buffer: kernel_status_buffer.as_entire_binding(),
-                },
-            ]);
+            ComputeBuffer {
+                binding: 0,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: uniform_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 8,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: depth_sort_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 9,
+                buffer_type: ComputeBufferType::Uniform,
+                buffer: depth_sort_param_buffer.as_entire_binding(),
+            },
+            ComputeBuffer {
+                binding: 11,
+                buffer_type: ComputeBufferType::Storage,
+                buffer: kernel_status_buffer.as_entire_binding(),
+            },
+        ]);
 
-        let mut graphics_resources = GraphicsResources {
-            status: model.status.clone(),
-            render_state,
-            viewport_depth_texture: None,
-            output_depth_texture: None,
-            cast_texture_extent: Default::default(),
-            cast_texture: None,
-            viewport_texture: None,
-            viewport_msaa_texture: None,
-            output_texture: None,
-            output_msaa_texture: None,
-            viewport_texture_id: Default::default(),
-            viewport_size: Default::default(),
-            viewport_texture_extent: Default::default(),
-            output_texture_extent: Default::default(),
-            is_render_output: false,
-            camera,
-            control,
+        let mut graph_resources = GraphResources {
+            status,
             uniform_buffer,
-            quad_buffer,
-            bounding_box_vertex_buffer,
-            bounding_box_index_buffer,
             node_buffer,
             node_copy_buffer,
             node_edge_sort_range_buffer,
             edge_buffer,
             edge_sort_node_buffer,
             edge_sort_dir_buffer,
-            render_uniform_buffer,
             bounding_buffer,
             tree_buffer,
             tree_node_buffer,
@@ -1304,14 +1365,13 @@ impl GraphicsResources {
             node_render_bind_group,
             edge_render_bind_group,
             bounding_box_render_bind_group,
-            render_uniform_bind_group,
+            debugger,
+            buffer_bytes: None,
             node_render_pipeline,
             node_cast_render_pipeline,
             edge_render_pipeline,
             edge_cast_render_pipeline,
-            axis_render_pipeline,
             bounding_box_render_pipeline,
-            graph_compute,
             kernel_status_codes: vec![-1; KERNEL_STATUS_COUNT],
             is_kernel_error: false,
             node_work_group_count,
@@ -1319,35 +1379,21 @@ impl GraphicsResources {
             edge_sort_work_group_count,
             tree_node_work_group_count,
             step_work_group_count,
-            bb_work_group_count,
-            compute_frame_count: 0,
-            render_frame_count: 0,
-            last_time: 0,
-            last_frame: 0,
-            frames_per_second: 0.0,
-            render_options: RenderOptions {
-                is_rendering_node: true,
-                is_rendering_edge: true,
-                is_rendering_axis: false,
-                is_rendering_bounding_box: false,
-                is_showing_debug: false
-            },
-            need_update: true,
-            debugger,
-            buffer_bytes: None,
-            cast_depth_texture: None,
-            cast_type: None,
-            cast_value: 0,
+            bb_work_group_count
         };
 
-        graphics_resources.gen_node();
-        graphics_resources.prepare_cast();
+        self.graph_resources = Some(graph_resources);
 
-        graphics_resources
+        self.gen_node();
+        self.prepare_cast();
+        self.need_update = true;
 
     }
 
     pub fn compute(&mut self) {
+
+        if self.graph_resources.is_none() { return; }
+        let graph_resources = self.graph_resources.as_ref().unwrap();
 
         let device = self.render_state.device.clone();
         let queue = self.render_state.queue.clone();
@@ -1362,31 +1408,31 @@ impl GraphicsResources {
 
             Self::dispatch_compute_kernel(&self, &mut cpass, "init_kernel_status", 1);
 
-            Self::dispatch_compute_kernel(&self, &mut cpass, "cal_gravity_force", self.node_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "cal_gravity_force", graph_resources.node_work_group_count);
 
-            Self::dispatch_compute_kernel(&self, &mut cpass, "spring_force_reduction", self.edge_sort_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "spring_force_reduction", graph_resources.edge_sort_work_group_count);
 
-            Self::dispatch_compute_kernel(&self, &mut cpass, "spring_force", self.node_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "spring_force", graph_resources.node_work_group_count);
 
             Self::calc_bounding_box(&self, &mut cpass);
 
             Self::dispatch_compute_kernel(&self, &mut cpass, "bounding_box", 1);
 
-            Self::dispatch_compute_kernel(&self, &mut cpass, "clear_1", self.tree_node_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "clear_1", graph_resources.tree_node_work_group_count);
 
-            Self::dispatch_compute_kernel(&self, &mut cpass, "tree_building", self.step_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "tree_building", graph_resources.step_work_group_count);
 
-            Self::dispatch_compute_kernel(&self, &mut cpass, "clear_2", self.tree_node_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "clear_2", graph_resources.tree_node_work_group_count);
 
-            Self::dispatch_compute_kernel(&self, &mut cpass, "summarization", self.step_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "summarization", graph_resources.step_work_group_count);
 
-            Self::dispatch_compute_kernel(&self, &mut cpass, "sort", self.step_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "sort", graph_resources.step_work_group_count);
 
-            Self::dispatch_compute_kernel(&self, &mut cpass, "electron_force", self.step_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "electron_force", graph_resources.step_work_group_count);
 
-            Self::dispatch_compute_kernel(&self, &mut cpass, "main", self.node_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "main", graph_resources.node_work_group_count);
 
-            Self::dispatch_compute_kernel(&self, &mut cpass, "displacement", self.node_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "displacement", graph_resources.node_work_group_count);
 
         }
 
@@ -1396,8 +1442,10 @@ impl GraphicsResources {
         self.compute_frame_count += 1;
         // device.poll(wgpu::Maintain::Wait);
 
-        let debugger = &mut self.debugger;
-        command_encoder.copy_buffer_to_buffer(&self.kernel_status_buffer, 0, &debugger.debug_buffer, 0, debugger.buffer_size as _);
+        let graph_resources = self.graph_resources.as_mut().unwrap();
+
+        let debugger = &mut graph_resources.debugger;
+        command_encoder.copy_buffer_to_buffer(&graph_resources.kernel_status_buffer, 0, &debugger.debug_buffer, 0, debugger.buffer_size as _);
         queue.submit(Some(command_encoder.finish()));
 
         let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
@@ -1414,16 +1462,16 @@ impl GraphicsResources {
 
                 if *result.par_iter().max().unwrap() > 0 {
                     message_error("Kernel Error", content.as_str());
-                    self.is_kernel_error = true;
+                    graph_resources.is_kernel_error = true;
                 } else {
-                    self.is_kernel_error = false;
+                    graph_resources.is_kernel_error = false;
                     if *result.par_iter().min().unwrap() < 0 {
                         message_warning("Kernel Warning", content.as_str());
                     }
                 }
 
                 if result.len() == KERNEL_STATUS_COUNT {
-                    self.kernel_status_codes = result;
+                    graph_resources.kernel_status_codes = result;
                 }
 
                 drop(data);
@@ -1443,8 +1491,9 @@ impl GraphicsResources {
         let device = &self.render_state.device;
         let queue = &self.render_state.queue;
 
+        let graph_resources = self.graph_resources.as_ref().unwrap();
 
-        let debug_buffer_size = self.status.node_count * 3 * 4;
+        let debug_buffer_size = graph_resources.status.node_count * 3 * 4;
         let debug_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("Debug Buffer"),
             size: debug_buffer_size as _,
@@ -1458,14 +1507,14 @@ impl GraphicsResources {
         {
             let mut cpass =
                 command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-            Self::dispatch_compute_kernel(&self, &mut cpass, "copy", self.node_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "copy", graph_resources.node_work_group_count);
         }
         queue.submit(Some(command_encoder.finish()));
 
         let mut command_encoder_2 =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
-        command_encoder_2.copy_buffer_to_buffer(&self.node_copy_buffer, 0, &debug_buffer, 0, debug_buffer_size as _);
+        command_encoder_2.copy_buffer_to_buffer(&graph_resources.node_copy_buffer, 0, &debug_buffer, 0, debug_buffer_size as _);
         queue.submit(Some(command_encoder_2.finish()));
 
         let (sender, receiver) = futures_intrusive::channel::shared::oneshot_channel();
@@ -1473,6 +1522,7 @@ impl GraphicsResources {
         buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
         device.poll(wgpu::Maintain::Wait);
 
+        let graph_resources = self.graph_resources.as_mut().unwrap();
         pollster::block_on(async {
             if let Some(Ok(())) = receiver.receive().await {
                 let data = buffer_slice.get_mapped_range();
@@ -1481,7 +1531,7 @@ impl GraphicsResources {
                 // let content = format!("{:?}", &result);
                 // println!("{}", content);
                 // println!("{}", result.len());
-                self.buffer_bytes = Some(result);
+                graph_resources.buffer_bytes = Some(result);
 
             } else {
                 panic!("failed to run compute on gpu!")
@@ -1491,9 +1541,11 @@ impl GraphicsResources {
     }
 
     pub fn calc_bounding_box<'a>(&'a self, cpass: &mut ComputePass<'a>) {
-        Self::dispatch_compute_kernel(&self, cpass, "reduction_bounding", self.node_work_group_count);
+        let graph_resources = self.graph_resources.as_ref().unwrap();
+        Self::dispatch_compute_kernel(&self, cpass, "reduction_bounding", graph_resources.node_work_group_count);
 
-        let mut bound_range = self.bb_work_group_count;
+
+        let mut bound_range = graph_resources.bb_work_group_count;
 
         loop {
             Self::dispatch_compute_kernel(&self, cpass, "reduction_bounding_2", bound_range);
@@ -1505,8 +1557,8 @@ impl GraphicsResources {
     }
 
     pub fn dispatch_compute_kernel<'a>(&'a self, cpass: &mut ComputePass<'a>, kernel_name: &'a str, work_group_count: u32) {
-        cpass.set_pipeline(&self.graph_compute.kernels.get(kernel_name).unwrap().compute_pipeline);
-        cpass.set_bind_group(0, &self.graph_compute.kernels.get(kernel_name).unwrap().bind_group, &[]);
+        cpass.set_pipeline(&self.compute_shader.kernels.get(kernel_name).unwrap().compute_pipeline);
+        cpass.set_bind_group(0, &self.compute_shader.kernels.get(kernel_name).unwrap().bind_group, &[]);
         cpass.dispatch_workgroups(work_group_count, 1, 1);
     }
 
@@ -1516,15 +1568,17 @@ impl GraphicsResources {
         let device = &self.render_state.device;
         let queue = &self.render_state.queue;
 
+        let graph_resources = &self.graph_resources.as_ref().unwrap();
+
         let mut command_encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         command_encoder.push_debug_group("Gen Node");
         {
             // compute pass
             let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-            Self::dispatch_compute_kernel(&self, &mut cpass, "gen_node", self.node_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "gen_node", graph_resources.node_work_group_count);
 
-            Self::dispatch_compute_kernel(&self, &mut cpass, "cal_mass", self.edge_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "cal_mass", graph_resources.edge_work_group_count);
 
             Self::calc_bounding_box(&self, &mut cpass);
         }
@@ -1538,7 +1592,7 @@ impl GraphicsResources {
             {
                 let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
 
-                Self::dispatch_compute_kernel(&self, &mut cpass, "prepare_edge_sort", self.edge_work_group_count);
+                Self::dispatch_compute_kernel(&self, &mut cpass, "prepare_edge_sort", graph_resources.edge_work_group_count);
 
             }
             command_encoder.finish()
@@ -1548,15 +1602,15 @@ impl GraphicsResources {
         // sort
         {
             let mut dim = 2;
-            while dim < (self.status.edge_count * 2) * 2 {
+            while dim < (graph_resources.status.edge_count * 2) * 2 {
                 let mut block_count = dim >> 1;
-                queue.write_buffer(&self.depth_sort_param_buffer, 0, bytemuck::cast_slice(&[dim as u32]));
+                queue.write_buffer(&graph_resources.depth_sort_param_buffer, 0, bytemuck::cast_slice(&[dim as u32]));
                 while block_count > 0 {
-                    queue.write_buffer(&self.depth_sort_param_buffer, 4, bytemuck::cast_slice(&[block_count as u32]));
+                    queue.write_buffer(&graph_resources.depth_sort_param_buffer, 4, bytemuck::cast_slice(&[block_count as u32]));
                     let mut command_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
                     {
                         let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-                        Self::dispatch_compute_kernel(&self, &mut cpass, "sort_edge", self.edge_sort_work_group_count);
+                        Self::dispatch_compute_kernel(&self, &mut cpass, "sort_edge", graph_resources.edge_sort_work_group_count);
                     }
                     queue.submit(Some(command_encoder.finish()));
                     block_count = block_count >> 1;
@@ -1572,8 +1626,8 @@ impl GraphicsResources {
             // compute pass
             let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
 
-            Self::dispatch_compute_kernel(&self, &mut cpass, "compute_node_edge_sort_range", self.edge_sort_work_group_count);
-            Self::dispatch_compute_kernel(&self, &mut cpass, "compute_node_edge_sort_range_2", self.edge_sort_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "compute_node_edge_sort_range", graph_resources.edge_sort_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "compute_node_edge_sort_range_2", graph_resources.edge_sort_work_group_count);
         }
         command_encoder.pop_debug_group();
         queue.submit(Some(command_encoder.finish()));
@@ -1586,18 +1640,20 @@ impl GraphicsResources {
         let device = &self.render_state.device;
         let queue = &self.render_state.queue;
 
+        let graph_resources = self.graph_resources.as_ref().unwrap();
+
         let mut command_encoder =
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
-        queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&[self.compute_frame_count as u32]));
+        queue.write_buffer(&graph_resources.uniform_buffer, 0, bytemuck::cast_slice(&[self.compute_frame_count as u32]));
         command_encoder.push_debug_group("randomize render position");
         {
             // compute pass
             let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
 
-            Self::dispatch_compute_kernel(&self, &mut cpass, "randomize", self.node_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "randomize", graph_resources.node_work_group_count);
 
-            Self::dispatch_compute_kernel(&self, &mut cpass, "copy", self.node_work_group_count);
+            Self::dispatch_compute_kernel(&self, &mut cpass, "copy", graph_resources.node_work_group_count);
 
             Self::calc_bounding_box(&self, &mut cpass);
         }
@@ -1607,6 +1663,8 @@ impl GraphicsResources {
     }
 
     pub fn render(&mut self) {
+
+        let is_graph_resources = self.graph_resources.is_some();
 
         let new_time = Utc::now().timestamp_millis();
         let delta_time = new_time - self.last_time;
@@ -1669,7 +1727,8 @@ impl GraphicsResources {
             }),
         };
 
-        if self.render_options.is_rendering_node {
+        if self.render_options.is_rendering_node && is_graph_resources {
+            let graph_resources = self.graph_resources.as_ref().unwrap();
 
             // calc depth
             let command_buffer = {
@@ -1677,7 +1736,7 @@ impl GraphicsResources {
                 {
                     let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
 
-                    Self::dispatch_compute_kernel(&self, &mut cpass, "cal_depth", self.node_work_group_count);
+                    Self::dispatch_compute_kernel(&self, &mut cpass, "cal_depth", graph_resources.node_work_group_count);
 
                 }
                 command_encoder.finish()
@@ -1687,15 +1746,15 @@ impl GraphicsResources {
             // sort
             {
                 let mut dim = 2;
-                while dim < self.status.node_count * 2 {
+                while dim < graph_resources.status.node_count * 2 {
                     let mut block_count = dim >> 1;
-                    queue.write_buffer(&self.depth_sort_param_buffer, 0, bytemuck::cast_slice(&[dim as u32]));
+                    queue.write_buffer(&graph_resources.depth_sort_param_buffer, 0, bytemuck::cast_slice(&[dim as u32]));
                     while block_count > 0 {
-                        queue.write_buffer(&self.depth_sort_param_buffer, 4, bytemuck::cast_slice(&[block_count as u32]));
+                        queue.write_buffer(&graph_resources.depth_sort_param_buffer, 4, bytemuck::cast_slice(&[block_count as u32]));
                         let mut command_encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
                         {
                             let mut cpass = command_encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
-                            Self::dispatch_compute_kernel(&self, &mut cpass, "sort_by_depth", self.node_work_group_count);
+                            Self::dispatch_compute_kernel(&self, &mut cpass, "sort_by_depth", graph_resources.node_work_group_count);
                         }
                         queue.submit(Some(command_encoder.finish()));
                         block_count = block_count >> 1;
@@ -1718,33 +1777,39 @@ impl GraphicsResources {
                         rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
                         rpass.draw(0..4, 0..2);
                     }
+                }
+                if is_graph_resources {
+                    let graph_resources = self.graph_resources.as_ref().unwrap();
 
-                    if self.render_options.is_rendering_bounding_box {
-                        rpass.set_pipeline(&self.bounding_box_render_pipeline);
+                    if !is_render_output {
+
+                        if self.render_options.is_rendering_bounding_box {
+                            rpass.set_pipeline(&graph_resources.bounding_box_render_pipeline);
+                            rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
+                            rpass.set_bind_group(1, &graph_resources.bounding_box_render_bind_group, &[]);
+                            rpass.set_index_buffer(self.bounding_box_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                            rpass.set_vertex_buffer(0, self.bounding_box_vertex_buffer.slice(..));
+                            rpass.draw_indexed(0..24, 0, 0..1);
+                        }
+                    }
+
+                    if self.render_options.is_rendering_node {
+                        rpass.set_pipeline(&graph_resources.node_render_pipeline);
                         rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
-                        rpass.set_bind_group(1, &self.bounding_box_render_bind_group, &[]);
-                        rpass.set_index_buffer(self.bounding_box_index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-                        rpass.set_vertex_buffer(0, self.bounding_box_vertex_buffer.slice(..));
-                        rpass.draw_indexed(0..24, 0, 0..1);
+                        rpass.set_bind_group(1, &graph_resources.node_render_bind_group, &[]);
+                        rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
+                        rpass.draw(0..4, 0..graph_resources.status.node_count as u32);
+                    }
+
+
+                    if self.render_options.is_rendering_edge {
+                        rpass.set_pipeline(&graph_resources.edge_render_pipeline);
+                        rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
+                        rpass.set_bind_group(1, &graph_resources.edge_render_bind_group, &[]);
+                        rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
+                        rpass.draw(0..4, 0..graph_resources.status.edge_count as u32);
                     }
                 }
-
-                if self.render_options.is_rendering_node {
-                    rpass.set_pipeline(&self.node_render_pipeline);
-                    rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
-                    rpass.set_bind_group(1, &self.node_render_bind_group, &[]);
-                    rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
-                    rpass.draw(0..4, 0..self.status.node_count as u32);
-                }
-
-
-                if self.render_options.is_rendering_edge {
-                    rpass.set_pipeline(&self.edge_render_pipeline);
-                    rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
-                    rpass.set_bind_group(1, &self.edge_render_bind_group, &[]);
-                    rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
-                    rpass.draw(0..4, 0..self.status.edge_count as u32);
-                } 
             }
             command_encoder.finish()
         };
@@ -1811,6 +1876,9 @@ impl GraphicsResources {
 
     pub fn render_cast(&mut self) {
 
+        if self.graph_resources.is_none() { return; }
+        let graph_resources = self.graph_resources.as_ref().unwrap();
+
         if self.control.pointer_pos.is_none() { return; }
 
         let device = &self.render_state.device;
@@ -1848,19 +1916,19 @@ impl GraphicsResources {
                 let mut rpass = command_encoder.begin_render_pass(&render_pass_descriptor);
 
                 if self.render_options.is_rendering_node {
-                    rpass.set_pipeline(&self.node_cast_render_pipeline);
+                    rpass.set_pipeline(&graph_resources.node_cast_render_pipeline);
                     rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
-                    rpass.set_bind_group(1, &self.node_render_bind_group, &[]);
+                    rpass.set_bind_group(1, &graph_resources.node_render_bind_group, &[]);
                     rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
-                    rpass.draw(0..4, 0..self.status.node_count as u32);
+                    rpass.draw(0..4, 0..graph_resources.status.node_count as u32);
                 }
 
                 if self.render_options.is_rendering_edge {
-                    rpass.set_pipeline(&self.edge_cast_render_pipeline);
+                    rpass.set_pipeline(&graph_resources.edge_cast_render_pipeline);
                     rpass.set_bind_group(0, &self.render_uniform_bind_group, &[]);
-                    rpass.set_bind_group(1, &self.edge_render_bind_group, &[]);
+                    rpass.set_bind_group(1, &graph_resources.edge_render_bind_group, &[]);
                     rpass.set_vertex_buffer(0, self.quad_buffer.slice(..));
-                    rpass.draw(0..4, 0..self.status.edge_count as u32);
+                    rpass.draw(0..4, 0..graph_resources.status.edge_count as u32);
                 }
             }
             command_encoder.finish()
@@ -2057,14 +2125,20 @@ impl GraphicsResources {
     }
 
     pub fn dispose(&mut self) {
-        self.node_buffer.destroy();
-        self.edge_buffer.destroy();
-        self.bounding_buffer.destroy();
-        self.tree_buffer.destroy();
-        self.tree_node_buffer.destroy();
-        self.tree_child_buffer.destroy();
-        self.depth_sort_buffer.destroy();
-        self.depth_sort_param_buffer.destroy();
+
+        let graph_resources = self.graph_resources.as_mut().unwrap();
+        graph_resources.node_buffer.destroy();
+        graph_resources.edge_buffer.destroy();
+        graph_resources.bounding_buffer.destroy();
+        graph_resources.tree_buffer.destroy();
+        graph_resources.tree_node_buffer.destroy();
+        graph_resources.tree_child_buffer.destroy();
+        graph_resources.depth_sort_buffer.destroy();
+        graph_resources.depth_sort_param_buffer.destroy();
+
+        self.graph_resources = None;
+        self.need_update = true;
+        // self.render();
     }
 
 

@@ -152,6 +152,12 @@ impl InspectorView {
 
         inspector_section(ui, true, "Transform", |ui| {
             grid_label(ui, "");
+
+            ui.horizontal(|ui| {
+                ui.add(egui::DragValue::new(&mut node_settings.size_ramp.1[0]).speed(0.1));
+                ui.label("—");
+                ui.add(egui::DragValue::new(&mut node_settings.size_ramp.1[1]).speed(0.1));
+            });
             ui.end_row();
         });
 
