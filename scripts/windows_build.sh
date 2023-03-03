@@ -3,7 +3,7 @@
 cd ../
 
 BUILD_DIR=windows_build
-APP_BUNDLE_NAME=graphpu-0.4.5-windows-x86_64
+APP_BUNDLE_NAME=graphpu-0.5.0-windows-x86_64
 APP_BUNDLE_DIR=${BUILD_DIR}/${APP_BUNDLE_NAME}
 ARCH=x86_64-pc-windows-msvc
 

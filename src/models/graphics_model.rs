@@ -476,7 +476,7 @@ impl GraphicsResources {
             render_options: RenderOptions {
                 is_rendering_node: true,
                 is_rendering_edge: true,
-                is_rendering_axis: true,
+                is_rendering_axis: false,
                 is_rendering_bounding_box: false,
                 is_showing_debug: false
             },

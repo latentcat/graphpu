@@ -9,11 +9,11 @@
 	<key>CFBundleDisplayName</key>
 	<string>GraphPU</string>
 	<key>CFBundleGetInfoString</key>
-	<string>0.4.5 2023-02-21, Wlab</string>
+	<string>0.5.0 2023-03-03, Wlab</string>
 	<key>CFBundleIconFile</key>
 	<string>app.icns</string>
 	<key>CFBundleIdentifier</key>
-	<string>org.wlab.graphpu</string>
+	<string>org.ioclab.graphpu</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -21,11 +21,11 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.4.5</string>
+	<string>0.5.0</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>0.4.5 2023-02-21</string>
+	<string>0.5.0 2023-03-03</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>NSHighResolutionCapable</key>
