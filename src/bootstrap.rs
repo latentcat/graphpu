@@ -32,7 +32,7 @@ impl Default for ConfigBuilder {
         Self {
             native_options,
             app_creator: Box::new(|cc| Box::new(MainApp::new(cc))),
-            app_name: format!("GraphPU - Dev Demo - {}", APP_VERSION),
+            app_name: format!("GraphPU - Exhibition Special Edit - {}", APP_VERSION),
         }
     }
 }
