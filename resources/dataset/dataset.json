@@ -1,14 +1,54 @@
 [
     {
         "name": "Deezer",
+        "path": "./artist_edges.csv"
+    },
+    {
+        "name": "Deezer",
         "path": "./deezer_europe.csv"
     },
     {
-        "name": "Europe Email",
+        "name": "Deezer",
         "path": "./europe_email.csv"
     },
     {
-        "name": "Twitch Large",
+        "name": "Deezer",
+        "path": "./genshin.csv"
+    },
+    {
+        "name": "Deezer",
+        "path": "./movies_proccesed.csv"
+    },
+    {
+        "name": "Deezer",
+        "path": "./movies_with_meta.csv"
+    },
+    {
+        "name": "Deezer",
+        "path": "./movies.csv"
+    },
+    {
+        "name": "Deezer",
+        "path": "./musae_git_edges.csv"
+    },
+    {
+        "name": "Deezer",
+        "path": "./new_sites_edges.csv"
+    },
+    {
+        "name": "Deezer",
+        "path": "./power_grid.csv"
+    },
+    {
+        "name": "Deezer",
+        "path": "./soc_sign_bitcoinotc.csv"
+    },
+    {
+        "name": "Deezer",
         "path": "./twitch_large.csv"
+    },
+    {
+        "name": "Deezer",
+        "path": "./web_stanford.csv"
     }
 ]
