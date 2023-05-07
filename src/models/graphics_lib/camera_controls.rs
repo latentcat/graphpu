@@ -138,7 +138,7 @@ impl Controls {
         }
 
         let last_zoom = camera.to_zoom;
-        camera.to_zoom *= 0.8;
+        camera.to_zoom *= 0.9;
         camera.zoom(f32::powf(1.2, last_zoom - camera.to_zoom) );
 
         let last_rotate = camera.to_rotate;
