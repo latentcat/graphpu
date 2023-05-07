@@ -105,6 +105,7 @@ impl MainApp {
         let mut exhibition_model = ExhibisionModel::new(&get_resource_path("dataset/dataset.json"));
         if let Some(data) = exhibition_model.current() {
             models.setup_data(data);
+            models.graphics_model.set_computing(true);
         }
 
         let mut main_app = MainApp {
@@ -175,12 +176,14 @@ impl eframe::App for MainApp {
                             self.exhibition_model.prev();
                             if let Some(data) = self.exhibition_model.current() {
                                 self.models.setup_data(data);
+                                self.models.graphics_model.set_computing(true);
                             }
                         }
                         egui::Key::L => {
                             self.exhibition_model.next();
                             if let Some(data) = self.exhibition_model.current() {
                                 self.models.setup_data(data);
+                                self.models.graphics_model.set_computing(true);
                             }
                         }
                         _ => {}
