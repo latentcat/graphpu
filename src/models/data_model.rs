@@ -1,11 +1,11 @@
-use std::collections::HashMap;
 use eframe::epaint::Color32;
+use std::collections::HashMap;
 
 use strum::Display;
 
 use super::graphics_model::ComputeMethod;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct ExternalData {
     pub headers_str_index: HashMap<String, usize>,
     pub headers_index_str: Vec<String>,
@@ -55,12 +55,12 @@ pub struct NodeSettings {
     pub position_type: PositionType,
     pub position_compute: ComputeMethod,
     pub position_set: (f32, f32, f32),
-    
+
     pub color_type: ColorType,
     pub color_constant: Color32,
     pub color_ramp: (String, ColorRamp),
     pub color_partition: (String, ColorPalette),
-    
+
     pub size_type: SizeType,
     pub size_constant: f32,
     pub size_ramp: (String, [f32; 2]),
@@ -72,14 +72,12 @@ pub struct CameraSettings {
     pub distance: f32,
 }
 
-
-
 impl Default for CameraSettings {
     fn default() -> Self {
         Self {
             look_at: (0.0, 0.0, 0.0),
             rotation: (0.0, 0.0, 0.0),
-            distance: 10.0
+            distance: 10.0,
         }
     }
 }
@@ -124,18 +122,21 @@ impl Default for DataModel {
             max_id: 0,
             status: GraphicsStatus::default(),
             node_settings: NodeSettings::default(),
-            camera_settings: Default::default()
+            camera_settings: Default::default(),
         }
     }
 }
 
 impl DataModel {
     pub fn set_status(&mut self) {
-        self.status.node_count =
-            std::cmp::max(
-                self.node_data.data.len(),
-                if self.edge_data.data.len() > 0 { (self.max_id + 1) as usize } else { 0 }
-            );
+        self.status.node_count = std::cmp::max(
+            self.node_data.data.len(),
+            if self.edge_data.data.len() > 0 {
+                (self.max_id + 1) as usize
+            } else {
+                0
+            },
+        );
         self.status.edge_count = self.edge_data.data.len();
         self.status.node_data_length = self.node_data.data.len();
         self.status.edge_data_length = self.edge_data.data.len();

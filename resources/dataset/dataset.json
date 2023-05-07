@@ -1,0 +1,14 @@
+[
+    {
+        "name": "Deezer",
+        "path": "./deezer_europe.csv"
+    },
+    {
+        "name": "Europe Email",
+        "path": "./europe_email.csv"
+    },
+    {
+        "name": "Twitch Large",
+        "path": "./twitch_large.csv"
+    }
+]

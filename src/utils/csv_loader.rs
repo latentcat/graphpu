@@ -1,4 +1,7 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 
 use rayon::prelude::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
@@ -25,11 +28,11 @@ pub fn read_headers_from_csv(
     Ok((headers_str_index, headers_index_str))
 }
 
-pub fn read_from_csv(path: &Option<PathBuf>) -> Result<ExternalData, String> {
-    let path = path.as_deref().ok_or("Can't find file")?;
+pub fn read_from_csv<P: AsRef<Path>>(path: &Option<P>) -> Result<ExternalData, String> {
     let err_fomatter = |err| format!("{}", err);
 
-    let mut rdr = csv::Reader::from_path(path).map_err(err_fomatter)?;
+    let mut rdr =
+        csv::Reader::from_path(path.as_ref().ok_or("Can't find file")?).map_err(err_fomatter)?;
     let headers_str_index: HashMap<_, _> = rdr
         .headers()
         .map_err(err_fomatter)?
@@ -53,17 +56,18 @@ pub fn read_from_csv(path: &Option<PathBuf>) -> Result<ExternalData, String> {
     })
 }
 
-pub fn load_data(
-    node_file_path: &str,
-    edge_file_path: &str,
+pub fn load_data<P: AsRef<Path>>(
+    node_file_path: P,
+    edge_file_path: P,
     source_index: usize,
     target_index: usize,
 ) -> Result<ImportedData, String> {
     let node_data =
-        read_from_csv(&Some(PathBuf::from(node_file_path))).unwrap_or(ExternalData::default());
-    let edge_data = read_from_csv(&Some(PathBuf::from(edge_file_path)))?;
+        read_from_csv(&Some(node_file_path.as_ref())).unwrap_or(ExternalData::default());
+    let edge_data = read_from_csv(&Some(edge_file_path.as_ref()))?;
     let err_mapper = |_| String::from("Source and target isn't uint");
-    let source_target_list  = (0..edge_data.data.len() * 2).into_par_iter()
+    let source_target_list = (0..edge_data.data.len() * 2)
+        .into_par_iter()
         .map::<_, Result<u32, String>>(|index| {
             let item = &edge_data.data[index / 2];
             if index % 2 == 0 {
@@ -75,8 +79,8 @@ pub fn load_data(
         .collect::<Result<Vec<u32>, String>>()?;
     let max_id = *source_target_list.par_iter().max().unwrap();
     Ok(ImportedData {
-        node_file_path: node_file_path.to_string(),
-        edge_file_path: edge_file_path.to_string(),
+        node_file_path: node_file_path.as_ref().to_path_buf(),
+        edge_file_path: edge_file_path.as_ref().to_path_buf(),
         node_data,
         edge_data,
         source_target_list,

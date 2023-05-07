@@ -1,12 +1,13 @@
 use crate::models::data_model::GraphicsStatus;
-use std::path::PathBuf;
 use crate::utils::file::{path_to_string, pick_folder};
 use crate::utils::message::message_info;
+use std::path::PathBuf;
 
 use self::{app_model::ImportState, data_model::ExternalData};
 
 pub mod app_model;
 pub mod data_model;
+pub mod exhibision_model;
 pub mod graphics_lib;
 pub mod graphics_model;
 
@@ -18,8 +19,8 @@ pub struct Models {
 
 #[derive(Debug)]
 pub struct ImportedData {
-    pub node_file_path: String,
-    pub edge_file_path: String,
+    pub node_file_path: PathBuf,
+    pub edge_file_path: PathBuf,
     pub node_data: ExternalData,
     pub edge_data: ExternalData,
     pub source_index: usize,
@@ -31,7 +32,7 @@ pub struct ImportedData {
 unsafe impl Send for ImportedData {}
 
 impl Models {
-    pub fn setup_data(&mut self, data: ImportedData) {
+    pub fn setup_data(&mut self, data: &ImportedData) {
         let ImportedData {
             node_file_path,
             edge_file_path,
@@ -42,15 +43,15 @@ impl Models {
             source_target_list,
             max_id,
         } = data;
-        self.data_model.node_data = node_data;
-        self.data_model.edge_data = edge_data;
-        self.data_model.edge_source = Some(source_index);
-        self.data_model.edge_target = Some(target_index);
-        self.data_model.source_target_list = Some(source_target_list);
-        self.data_model.max_id = max_id;
+        self.data_model.node_data = node_data.clone();
+        self.data_model.edge_data = edge_data.clone();
+        self.data_model.edge_source = Some(*source_index);
+        self.data_model.edge_target = Some(*target_index);
+        self.data_model.source_target_list = Some(source_target_list.clone());
+        self.data_model.max_id = *max_id;
         self.data_model.set_status();
-        self.app_model.node_file_path = Some(PathBuf::from(node_file_path));
-        self.app_model.edge_file_path = Some(PathBuf::from(edge_file_path));
+        self.app_model.node_file_path = Some(node_file_path.clone());
+        self.app_model.edge_file_path = Some(edge_file_path.clone());
         self.app_model.import_state = ImportState::Success;
         self.app_model.is_import_visible = false;
         self.graphics_model.graphics_resources.init_data(
@@ -76,7 +77,10 @@ impl Models {
         self.data_model.status = GraphicsStatus::default();
     }
 
-    pub fn pick_output_folder_and_then(output_folder: &mut String, mut then: impl FnMut(&str) -> ()) {
+    pub fn pick_output_folder_and_then(
+        output_folder: &mut String,
+        mut then: impl FnMut(&str) -> (),
+    ) {
         if output_folder.is_empty() {
             *output_folder = path_to_string(&pick_folder()).unwrap_or(output_folder.clone());
         }

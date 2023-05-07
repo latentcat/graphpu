@@ -4,6 +4,8 @@ use crate::components::drawer_view::DrawerView;
 use crate::components::shortcuts::Shortcut;
 use crate::constant::{FONT_SIZE_BODY, FONT_SIZE_HEADING};
 use crate::models::app_model::DockStage;
+use crate::models::exhibision_model::ExhibisionModel;
+use crate::utils::file::get_resource_path;
 use crate::{
     components::{
         detail_view::DetailView, export_modal_view::ExportModal, graphics_view::GraphicsView,
@@ -21,6 +23,7 @@ use egui::{Color32, TextStyle};
 
 pub struct MainApp {
     pub models: Models,
+    exhibition_model: ExhibisionModel,
     inspector_view: InspectorView,
     drawer_view: DrawerView,
     import_modal: ImportModal,
@@ -94,16 +97,23 @@ impl MainApp {
 
         // cc.egui_ctx.set_debug_on_hover(true);
 
+        let mut models = Models {
+            graphics_model: GraphicsModel::init(cc),
+            data_model: DataModel::default(),
+            app_model: AppModel::default(),
+        };
+        let mut exhibition_model = ExhibisionModel::new(&get_resource_path("dataset/dataset.json"));
+        if let Some(data) = exhibition_model.current() {
+            models.setup_data(data);
+        }
+
         let mut main_app = MainApp {
-            models: Models {
-                graphics_model: GraphicsModel::init(cc),
-                data_model: DataModel::default(),
-                app_model: AppModel::default(),
-            },
+            models,
             inspector_view: Default::default(),
             drawer_view: Default::default(),
             import_modal: ImportModal::default(),
             export_modal: ExportModal::default(),
+            exhibition_model,
         };
 
         if let Some(pixels_per_point) = cc.integration_info.native_pixels_per_point {
@@ -152,6 +162,32 @@ impl eframe::App for MainApp {
 
         if self.models.app_model.is_export_visible {
             self.export_modal.show(ctx, &mut self.models);
+        }
+
+        for event in &ctx.input().events {
+            match event {
+                egui::Event::Key { key, pressed, .. } => {
+                    if !pressed {
+                        return;
+                    }
+                    match *key {
+                        egui::Key::H => {
+                            self.exhibition_model.prev();
+                            if let Some(data) = self.exhibition_model.current() {
+                                self.models.setup_data(data);
+                            }
+                        }
+                        egui::Key::L => {
+                            self.exhibition_model.next();
+                            if let Some(data) = self.exhibition_model.current() {
+                                self.models.setup_data(data);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                _ => {}
+            }
         }
     }
 }
