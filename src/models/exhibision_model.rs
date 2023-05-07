@@ -34,7 +34,7 @@ impl ExhibisionModel {
         let raw = fs::read_to_string(path)?;
         self.metadata_list.append(&mut serde_json::from_str(&raw)?);
         for metadata in self.metadata_list.iter() {
-            let data_path = path.join("..").join(&metadata.path);
+            let data_path = path.parent().unwrap().join(&metadata.path);
             let data = load_data("", data_path.to_str().unwrap(), 0, 1).unwrap();
             self.dataset.push(data);
         }
