@@ -21,14 +21,6 @@
     },
     {
         "name": "Deezer",
-        "path": "./movies_with_meta.csv"
-    },
-    {
-        "name": "Deezer",
-        "path": "./movies.csv"
-    },
-    {
-        "name": "Deezer",
         "path": "./musae_git_edges.csv"
     },
     {

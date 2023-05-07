@@ -48,7 +48,7 @@ impl ExhibisionModel {
     }
 
     pub fn next(&mut self) {
-        self.cursor = (self.cursor + self.dataset.len() + 1) % self.dataset.len();
+        self.cursor = (self.cursor + self.dataset.len() - 1) % self.dataset.len();
     }
 
     pub fn current(&self) -> Option<&ImportedData> {
