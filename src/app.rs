@@ -172,14 +172,14 @@ impl eframe::App for MainApp {
                         return;
                     }
                     match *key {
-                        egui::Key::H => {
+                        egui::Key::F1 => {
                             self.exhibition_model.prev();
                             if let Some(data) = self.exhibition_model.current() {
                                 self.models.setup_data(data);
                                 self.models.graphics_model.set_computing(true);
                             }
                         }
-                        egui::Key::L => {
+                        egui::Key::F3 => {
                             self.exhibition_model.next();
                             if let Some(data) = self.exhibition_model.current() {
                                 self.models.setup_data(data);

@@ -12,6 +12,8 @@ pub struct Camera {
     pub is_updated: bool,
     pub near_far: glam::Vec2,
     pub zoom_factor: f32,
+    pub to_zoom: f32,
+    pub to_rotate: f32,
 }
 
 impl Camera {

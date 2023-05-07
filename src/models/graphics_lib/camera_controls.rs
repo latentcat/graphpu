@@ -137,28 +137,42 @@ impl Controls {
 
         }
 
+        let last_zoom = camera.to_zoom;
+        camera.to_zoom *= 0.8;
+        camera.zoom(f32::powf(1.2, last_zoom - camera.to_zoom) );
+
+        let last_rotate = camera.to_rotate;
+        camera.to_rotate *= 0.9;
+        camera.rotate(glam::Vec2::new(last_rotate - camera.to_rotate, 0.0) * PI);
+        self.is_update = true;
+
         if ui.input().key_down(Key::Minus) {
             camera.zoom(f32::powf(1.2, 0.03) );
             self.is_update = true;
         }
-        if ui.input().key_pressed(Key::Minus) && ui.input().key_released(Key::Minus) {
-            camera.zoom(f32::powf(1.2, 1.0) );
+        if ui.input().key_pressed(Key::F4){
+            // camera.zoom(f32::powf(1.2, 1.0) );
+            camera.to_zoom += 1.0;
             self.is_update = true;
         }
         if ui.input().key_down(Key::PlusEquals) {
             camera.zoom(f32::powf(1.2, -0.03) );
+            camera.to_zoom += 1.0;
             self.is_update = true;
         }
-        if ui.input().key_pressed(Key::PlusEquals) && ui.input().key_released(Key::PlusEquals) {
-            camera.zoom(f32::powf(1.2, -1.0) );
+        if ui.input().key_pressed(Key::F5) {
+            // camera.zoom(f32::powf(1.2, -1.0) );
+            camera.to_zoom -= 1.0;
             self.is_update = true;
         }
         if ui.input().key_pressed(Key::Num9) {
-            camera.rotate(glam::Vec2::new(0.03, 0.0) * PI);
+            // camera.rotate(glam::Vec2::new(0.03, 0.0) * PI);
+            camera.to_rotate += 0.03;
             self.is_update = true;
         }
         if ui.input().key_pressed(Key::Num0) {
-            camera.rotate(glam::Vec2::new(-0.03, 0.0) * PI);
+            // camera.rotate(glam::Vec2::new(-0.03, 0.0) * PI);
+            camera.to_rotate -= 0.03;
             self.is_update = true;
         }
 
