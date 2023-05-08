@@ -21,6 +21,7 @@ pub struct Models {
 pub struct ImportedData {
     pub node_file_path: PathBuf,
     pub edge_file_path: PathBuf,
+    pub file_name: String,
     pub node_data: ExternalData,
     pub edge_data: ExternalData,
     pub source_index: usize,
@@ -36,6 +37,7 @@ impl Models {
         let ImportedData {
             node_file_path,
             edge_file_path,
+            file_name,
             node_data,
             edge_data,
             source_index,
@@ -52,6 +54,7 @@ impl Models {
         self.data_model.set_status();
         self.app_model.node_file_path = Some(node_file_path.clone());
         self.app_model.edge_file_path = Some(edge_file_path.clone());
+        self.app_model.file_name = Some(file_name.clone());
         self.app_model.import_state = ImportState::Success;
         self.app_model.is_import_visible = false;
         self.graphics_model.graphics_resources.init_data(

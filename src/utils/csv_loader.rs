@@ -61,6 +61,7 @@ pub fn load_data<P: AsRef<Path>>(
     edge_file_path: P,
     source_index: usize,
     target_index: usize,
+    file_name: &str,
 ) -> Result<ImportedData, String> {
     let node_data =
         read_from_csv(&Some(node_file_path.as_ref())).unwrap_or(ExternalData::default());
@@ -81,6 +82,7 @@ pub fn load_data<P: AsRef<Path>>(
     Ok(ImportedData {
         node_file_path: node_file_path.as_ref().to_path_buf(),
         edge_file_path: edge_file_path.as_ref().to_path_buf(),
+        file_name: file_name.to_string(),
         node_data,
         edge_data,
         source_target_list,

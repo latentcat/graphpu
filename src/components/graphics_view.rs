@@ -118,6 +118,46 @@ impl AppView for GraphicsView {
 
                 let compute_resources = &mut models.graphics_model.graphics_resources;
 
+
+                ui.allocate_ui_at_rect(max_rect, |ui| {
+
+
+                    if models.app_model.is_fullscreen_graphics {
+
+                        egui::TopBottomPanel::bottom("toolbar-bottom-2")
+                            .frame(toolbar_inner_frame_bottom(ui.style()))
+                            .show_separator_line(false)
+                            .show_inside(ui, |ui| {
+                                ui.set_style(ui.ctx().style());
+                                ui.spacing_mut().item_spacing = egui::vec2(4.0, 0.0);
+                                ui.spacing_mut().button_padding = DEFAULT_BUTTON_PADDING;
+                                ui.spacing_mut().interact_size = Vec2::new(4.0, 4.0);
+
+                                ui.with_layout(egui::Layout::from_main_dir_and_cross_align(egui::Direction::BottomUp, egui::Align::Center), |ui| {
+
+                                    let file_name = models.app_model.file_name.as_ref().unwrap();
+
+                                    ui.add_space(48.0);
+
+                                    ui.centered_and_justified(|ui| {
+                                        let job = egui::text::LayoutJob::single_section(file_name.to_owned(), egui::TextFormat {
+                                            font_id: egui::FontId::new(18.0, Default::default()),
+                                            color: egui::Color32::from_white_alpha(120),
+                                            ..Default::default()
+                                        });
+
+                                        ui.label(job);
+                                    })
+
+                                });
+
+                            });
+                        }
+
+                    });
+
+
+
                 if models.app_model.current_tool == Tool::Select && models.graphics_model.is_hover_graphics_view {
                     if let Some(cast_type) = &compute_resources.cast_type {
 

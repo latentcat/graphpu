@@ -132,6 +132,7 @@ impl ImportModal {
                 &edge_file_path,
                 edge_source,
                 edge_target,
+                ""
             ));
         });
         self.import_promise = Some(recv);

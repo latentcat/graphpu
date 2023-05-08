@@ -106,6 +106,7 @@ impl MainApp {
         if let Some(data) = exhibition_model.current() {
             models.setup_data(data);
             models.graphics_model.set_computing(true);
+            models.app_model.is_fullscreen_graphics = true;
         }
 
         let mut main_app = MainApp {

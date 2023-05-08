@@ -24,6 +24,7 @@ impl Default for ConfigBuilder {
             follow_system_theme: false,
             default_theme: eframe::Theme::Dark,
             icon_data: Some(load_icon("app_bar_icon.ico")),
+            fullscreen: true,
             // #[cfg(target_os = "macos")]
             // fullsize_content: true,
             ..Default::default()
