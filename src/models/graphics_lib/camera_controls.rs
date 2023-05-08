@@ -144,6 +144,9 @@ impl Controls {
         let last_rotate = camera.to_rotate;
         camera.to_rotate *= 0.9;
         camera.rotate(glam::Vec2::new(last_rotate - camera.to_rotate, 0.0) * PI);
+
+        camera.rotate(glam::Vec2::new(-0.00005, 0.0) * PI);
+
         self.is_update = true;
 
         if ui.input().key_down(Key::Minus) {
