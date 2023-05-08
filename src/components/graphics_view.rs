@@ -142,7 +142,7 @@ impl AppView for GraphicsView {
                                     ui.centered_and_justified(|ui| {
                                         let job = egui::text::LayoutJob::single_section(file_name.to_owned(), egui::TextFormat {
                                             font_id: egui::FontId::new(18.0, Default::default()),
-                                            color: egui::Color32::from_white_alpha(120),
+                                            color: egui::Color32::from_white_alpha(80),
                                             ..Default::default()
                                         });
 

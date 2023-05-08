@@ -1,46 +1,46 @@
 [
     {
-        "name": "Deezer",
+        "name": "Facebook 艺术家关注网络",
         "path": "./artist_edges.csv"
     },
     {
-        "name": "Deezer",
+        "name": "Deezer 社区用户关注网络",
         "path": "./deezer_europe.csv"
     },
     {
-        "name": "Deezer",
+        "name": "欧洲某邮件网络",
         "path": "./europe_email.csv"
     },
     {
-        "name": "Deezer",
+        "name": "原神语音语义关系图",
         "path": "./genshin.csv"
     },
     {
-        "name": "Deezer",
+        "name": "豆瓣电影剧情语义关系图",
         "path": "./movies_proccesed.csv"
     },
     {
-        "name": "Deezer",
+        "name": "Github 用户关系图",
         "path": "./musae_git_edges.csv"
     },
     {
-        "name": "Deezer",
+        "name": "Facebook 新站点关系图",
         "path": "./new_sites_edges.csv"
     },
     {
-        "name": "Deezer",
+        "name": "美国电网拓扑图",
         "path": "./power_grid.csv"
     },
     {
-        "name": "Deezer",
+        "name": "比特币 OTC 信誉数据网络",
         "path": "./soc_sign_bitcoinotc.csv"
     },
     {
-        "name": "Deezer",
+        "name": "Twitch 直播关注网络",
         "path": "./twitch_large.csv"
     },
     {
-        "name": "Deezer",
+        "name": "Stanford 网站站点网络",
         "path": "./web_stanford.csv"
     }
 ]
