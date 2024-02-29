@@ -6,3 +6,5 @@ edges in real-time on Vulkan and Metal platforms. The demo contains multiple lar
 including movie semantics, emails, large website structures, personal WeChat relationships, and social media
 connections. The audience can interact with these data through a controller knob, experiencing social physics
 and complex networks in a particle universe.
+
+See more: [troyni.com/graphpu](https://troyni.com/graphpu)
