@@ -8,3 +8,5 @@ connections. The audience can interact with these data through a controller knob
 and complex networks in a particle universe.
 
 See more: [troyni.com/graphpu](https://troyni.com/graphpu)
+
+![](github/screenshot_1.png)
